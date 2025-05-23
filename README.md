@@ -1,10 +1,7 @@
 # Matt's Quickshell Hyprland Configuration Changelog
 
-<div align="center">
-    <img src="assets/preview.png" alt="Matt's Quickshell Hyprland Desktop">
-    <br>
-    <em>My Quickshell-powered Hyprland Desktop Environment</em>
-</div>
+![image](https://github.com/user-attachments/assets/49bba28f-776e-454d-a351-a42bba898cd6)
+
 
 ---
 
