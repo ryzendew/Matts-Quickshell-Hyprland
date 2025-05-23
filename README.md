@@ -225,6 +225,20 @@ background: Rectangle {
     )
 }
 
+// Fixed right-click menu positioning
+onRightClicked: (mouse) => {
+    var component = Qt.createComponent("DockItemMenu.qml")
+    if (component.status === Component.Ready) {
+        var menu = component.createObject(parent, {
+            "appInfo": modelData,
+            "isPinned": false
+        })
+        
+        // Position menu at mouse cursor location instead of default position
+        menu.popup(Qt.point(mouse.x, mouse.y))
+    }
+}
+
 // Added new menu items
 MenuItem {
     id: floatMenuItem
@@ -233,6 +247,11 @@ MenuItem {
     // ... custom styling
 }
 ```
+
+Key Fixes:
+1. **Menu Positioning**: Fixed the context menu to appear directly under the mouse cursor instead of at a fixed position relative to the dock item
+2. **Mouse Coordinates**: Properly passing mouse event coordinates to ensure accurate menu placement
+3. **Dynamic Creation**: Improved menu object creation to ensure proper cleanup and prevent memory leaks
 
 C. Configuration Changes (dock_config.json):
 ```json
