@@ -43,7 +43,18 @@ MouseArea {
 
     IconImage {
         id: trayIcon
-        source: root.item.icon
+        //source: root.item.icon <- old
+
+        // Possible tray icon fix
+        source: {
+            let icon = modelData?.icon || "";
+            if (icon.includes("?path=")) {
+                    const [name, path] = icon.split("?path=");
+                    const fileName = name.substring(name.lastIndexOf("/") + 1);
+                    return `file://${path}/${fileName}`;
+            }
+            return icon;
+        }
         anchors.centerIn: parent
         width: parent.width
         height: parent.height
