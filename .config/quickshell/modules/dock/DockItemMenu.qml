@@ -1,0 +1,225 @@
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import Quickshell
+import Quickshell.Hyprland
+import "root:/modules/common"
+
+Menu {
+    id: dockItemMenu
+    
+    property var appInfo: ({})
+    property bool isPinned: false
+    
+    // Signal emitted when user wants to pin an app
+    signal pinApp()
+    
+    // Signal emitted when pinning has been processed
+    signal pinAppProcessed()
+    
+    // Signal emitted when user wants to unpin an app
+    signal unpinApp()
+    
+    // Signal emitted when user wants to close an app
+    signal closeApp()
+
+    // Default positioning
+    y: parent.height
+    x: -width/2 + parent.width/2
+
+    // Menu background styling
+    background: Rectangle {
+        implicitWidth: 200
+        color: Qt.rgba(
+            Appearance.colors.colLayer0.r,
+            Appearance.colors.colLayer0.g,
+            Appearance.colors.colLayer0.b,
+            1.0
+        )
+        radius: Appearance.rounding.small
+        
+        // Add a subtle border
+        border.width: 1
+        border.color: Qt.rgba(
+            Appearance.colors.colOnLayer0.r,
+            Appearance.colors.colOnLayer0.g,
+            Appearance.colors.colOnLayer0.b,
+            0.1
+        )
+    }
+    
+    // Menu items
+    MenuItem {
+        id: pinMenuItem
+        text: isPinned ? qsTr("Unpin from dock") : qsTr("Pin to dock")
+        icon.name: isPinned ? "window-unpin" : "window-pin"
+        
+        contentItem: Text {
+            text: pinMenuItem.text
+            color: "#ffffff"
+            font: pinMenuItem.font
+        }
+        
+        background: Rectangle {
+            color: pinMenuItem.highlighted ? Qt.rgba(
+                Appearance.colors.colPrimary.r,
+                Appearance.colors.colPrimary.g,
+                Appearance.colors.colPrimary.b,
+                0.2
+            ) : "transparent"
+            radius: Appearance.rounding.small
+        }
+        
+        onTriggered: {
+            if (isPinned) {
+                dockItemMenu.unpinApp()
+            } else {
+                dockItemMenu.pinApp()
+            }
+        }
+    }
+    
+    MenuItem {
+        id: newInstanceMenuItem
+        text: qsTr("Launch new instance")
+        icon.name: "window-new"
+        
+        contentItem: Text {
+            text: newInstanceMenuItem.text
+            color: "#ffffff"
+            font: newInstanceMenuItem.font
+        }
+        
+        background: Rectangle {
+            color: newInstanceMenuItem.highlighted ? Qt.rgba(
+                Appearance.colors.colPrimary.r,
+                Appearance.colors.colPrimary.g,
+                Appearance.colors.colPrimary.b,
+                0.2
+            ) : "transparent"
+            radius: Appearance.rounding.small
+        }
+        
+        onTriggered: {
+            var command = appInfo.command || appInfo.class.toLowerCase()
+            Hyprland.dispatch(`exec ${command}`)
+        }
+    }
+    
+    MenuSeparator {
+        contentItem: Rectangle {
+            implicitWidth: 200
+            implicitHeight: 1
+            color: Qt.rgba(
+                Appearance.colors.colOnLayer0.r,
+                Appearance.colors.colOnLayer0.g,
+                Appearance.colors.colOnLayer0.b,
+                0.1
+            )
+        }
+    }
+    
+    MenuItem {
+        id: moveToWorkspaceMenuItem
+        text: qsTr("Move to workspace")
+        icon.name: "window-move"
+        
+        contentItem: Text {
+            text: moveToWorkspaceMenuItem.text
+            color: "#ffffff"
+            font: moveToWorkspaceMenuItem.font
+        }
+        
+        background: Rectangle {
+            color: moveToWorkspaceMenuItem.highlighted ? Qt.rgba(
+                Appearance.colors.colPrimary.r,
+                Appearance.colors.colPrimary.g,
+                Appearance.colors.colPrimary.b,
+                0.2
+            ) : "transparent"
+            radius: Appearance.rounding.small
+        }
+        
+        onTriggered: {
+            if (appInfo.address) {
+                // TODO: Add workspace selection submenu
+                // For now just move to next workspace
+                Hyprland.dispatch(`dispatch movetoworkspace +1 address:${appInfo.address}`)
+            }
+        }
+    }
+    
+    MenuItem {
+        id: floatMenuItem
+        text: qsTr("Toggle floating")
+        icon.name: "window-float"
+        
+        contentItem: Text {
+            text: floatMenuItem.text
+            color: "#ffffff"
+            font: floatMenuItem.font
+        }
+        
+        background: Rectangle {
+            color: floatMenuItem.highlighted ? Qt.rgba(
+                Appearance.colors.colPrimary.r,
+                Appearance.colors.colPrimary.g,
+                Appearance.colors.colPrimary.b,
+                0.2
+            ) : "transparent"
+            radius: Appearance.rounding.small
+        }
+        
+        onTriggered: {
+            if (appInfo.address) {
+                Hyprland.dispatch(`dispatch togglefloating address:${appInfo.address}`)
+            }
+        }
+    }
+    
+    MenuSeparator {
+        contentItem: Rectangle {
+            implicitWidth: 200
+            implicitHeight: 1
+            color: Qt.rgba(
+                Appearance.colors.colOnLayer0.r,
+                Appearance.colors.colOnLayer0.g,
+                Appearance.colors.colOnLayer0.b,
+                0.1
+            )
+        }
+    }
+    
+    MenuItem {
+        id: closeMenuItem
+        text: qsTr("Close")
+        icon.name: "window-close"
+        
+        contentItem: Text {
+            text: closeMenuItem.text
+            color: "#ff4444"  // Keep close button text red
+            font: closeMenuItem.font
+        }
+        
+        background: Rectangle {
+            color: closeMenuItem.highlighted ? Qt.rgba(
+                Appearance.colors.colError.r,
+                Appearance.colors.colError.g,
+                Appearance.colors.colError.b,
+                0.2
+            ) : "transparent"
+            radius: Appearance.rounding.small
+        }
+        
+        onTriggered: {
+            if (appInfo.address) {
+                Hyprland.dispatch(`dispatch closewindow address:${appInfo.address}`)
+            } else if (appInfo.pid) {
+                Hyprland.dispatch(`dispatch closewindow pid:${appInfo.pid}`)
+            } else {
+                Hyprland.dispatch(`dispatch closewindow class:${appInfo.class}`)
+            }
+            dockItemMenu.closeApp()
+        }
+    }
+}

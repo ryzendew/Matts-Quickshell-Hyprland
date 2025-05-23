@@ -1,0 +1,15 @@
+{
+  "pinnedApps": [
+    "org.gnome.Nautilus",
+    "vesktop",
+    "cider",
+    "steam-native",
+    "lutris",
+    "heroic.desktop",
+    "obs.desktop",
+    "com.blackmagicdesign.resolve.desktop",
+    "AffinityPhoto.desktop",
+    "ptyxis"
+  ],
+  "autoHide": false
+} 

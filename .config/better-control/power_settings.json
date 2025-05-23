@@ -1,0 +1,33 @@
+{
+  "lock": true,
+  "logout": true,
+  "suspend": true,
+  "hibernate": true,
+  "reboot": true,
+  "shutdown": true,
+  "commands": {
+    "lock": "loginctl lock-session",
+    "logout": "loginctl terminate-user $USER",
+    "suspend": "systemctl suspend",
+    "hibernate": "systemctl hibernate",
+    "reboot": "systemctl reboot",
+    "shutdown": "systemctl poweroff"
+  },
+  "colors": {
+    "lock": "#4A90D9",
+    "logout": "#729FCF",
+    "suspend": "#8DB67A",
+    "hibernate": "#AD7FA8",
+    "reboot": "#F8C146",
+    "shutdown": "#EF5350"
+  },
+  "shortcuts": {
+    "lock": "l",
+    "logout": "o",
+    "suspend": "s",
+    "hibernate": "h",
+    "reboot": "r",
+    "shutdown": "p"
+  },
+  "show_keybinds": true
+}
