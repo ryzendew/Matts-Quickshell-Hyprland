@@ -8,7 +8,7 @@
 
 ---
 
-A comprehensive documentation of all changes made in converting end-4's AGS-based Hyprland configuration (https://github.com/end-4/dots-hyprland) to Quickshell.
+A comprehensive documentation of all changes made in converting end-4's AGS-based Hyprland configuration (https://github.com/end-4/dots-hyprland) to Quickshell, with dock implementation based on Pharmaracist's work.
 
 File Locations Overview
 ----------------------
@@ -127,45 +127,142 @@ Scope {
 }
 ```
 
-3. Dock Implementation
----------------------
-File: ~/.config/quickshell/modules/dock/Dock.qml (New implementation)
+3. Dock Implementation (Based on Pharmaracist's Work)
+--------------------------------------------------
+File: ~/.config/quickshell/modules/dock/Dock.qml
 
-Original: No dock in AGS version
+Original Source: Adapted from [Pharmaracist's Quickshell implementation](https://github.com/Pharmaracist/dots-hyprland/tree/ii-qs/.config/quickshell)
 
-New (Quickshell):
+Key Modifications:
 ```qml
-Scope {
-    id: dock
+// Added custom dock dimensions
+readonly property int dockHeight: Appearance.sizes.barHeight * 1.5
+readonly property int dockWidth: Appearance.sizes.barHeight * 1.5
+readonly property int dockSpacing: Appearance.sizes.elevationMargin
 
-    readonly property int dockWidth: 60
-    readonly property int dockSpacing: 8
+// Modified background transparency
+readonly property color backgroundColor: Qt.rgba(
+    Appearance.colors.colLayer0.r,
+    Appearance.colors.colLayer0.g,
+    Appearance.colors.colLayer0.b,
+    0.65  // Adjusted transparency
+)
+
+// Added custom pinned apps configuration
+readonly property var defaultPinnedApps: [
+    "microsoft-edge-dev",
+    "org.gnome.Nautilus",
+    "vesktop",
+    "cider",
+    "steam-native",
+    "lutris",
+    "heroic",
+    "obs",
+    "com.blackmagicdesign.resolve.desktop",
+    "AffinityPhoto.desktop",
+    "ptyxis"
+]
+
+// Added custom Arch menu button
+Rectangle {
+    id: archButton
+    anchors.fill: parent
+    anchors.margins: 4
+    radius: Appearance.rounding.full
+    color: archMouseArea.containsMouse ? Appearance.colors.colPrimary : "transparent"
+    opacity: archMouseArea.containsMouse ? 0.8 : 0.5
     
-    PanelWindow {
-        id: dockRoot
-        screen: modelData
-        WlrLayershell.namespace: "quickshell:dock"
-        
-        DockContent {
-            id: dockContent
-            anchors.fill: parent
-            
-            // Pinned apps configuration from dock_config.json
-            pinnedApps: [
-                "org.gnome.Nautilus",
-                "vesktop",
-                "cider",
-                "steam-native",
-                "lutris",
-                "heroic.desktop",
-                "obs.desktop",
-                "com.blackmagicdesign.resolve.desktop",
-                "AffinityPhoto.desktop",
-                "ptyxis"
-            ]
-        }
+    Image {
+        anchors.centerIn: parent
+        source: "/home/matt/.config/quickshell/logo/Arch-linux-logo.png"
+        width: parent.width * 0.9
+        height: parent.height * 0.9
+        fillMode: Image.PreserveAspectFit
     }
 }
+```
+
+A. Dock Item Modifications (DockItem.qml):
+```qml
+// Enhanced dock item styling
+Rectangle {
+    implicitWidth: dock.dockWidth - 10
+    implicitHeight: dock.dockWidth - 10
+    radius: Appearance.rounding.full
+    
+    // Modified hover effects
+    color: mouseArea.pressed ? Appearance.colors.colLayer1Active : 
+           mouseArea.containsMouse ? Appearance.colors.colLayer1Hover : 
+           "transparent"
+    
+    // Added custom icon sizing
+    Image {
+        width: parent.width * 0.65
+        height: parent.height * 0.65
+        anchors.bottomMargin: 10
+    }
+}
+```
+
+B. Context Menu Enhancements (DockItemMenu.qml):
+```qml
+// Added custom menu styling
+background: Rectangle {
+    implicitWidth: 200
+    color: Qt.rgba(
+        Appearance.colors.colLayer0.r,
+        Appearance.colors.colLayer0.g,
+        Appearance.colors.colLayer0.b,
+        1.0
+    )
+    radius: Appearance.rounding.small
+    border.width: 1
+    border.color: Qt.rgba(
+        Appearance.colors.colOnLayer0.r,
+        Appearance.colors.colOnLayer0.g,
+        Appearance.colors.colOnLayer0.b,
+        0.1
+    )
+}
+
+// Added new menu items
+MenuItem {
+    id: floatMenuItem
+    text: qsTr("Toggle floating")
+    icon.name: "window-float"
+    // ... custom styling
+}
+```
+
+C. Configuration Changes (dock_config.json):
+```json
+{
+  "pinnedApps": [
+    "org.gnome.Nautilus",
+    "vesktop",
+    "cider",
+    "steam-native",
+    "lutris",
+    "heroic.desktop",
+    "obs.desktop",
+    "com.blackmagicdesign.resolve.desktop",
+    "AffinityPhoto.desktop",
+    "ptyxis"
+  ],
+  "autoHide": false
+}
+```
+
+D. Hyprland Integration (hyprland-rules.conf):
+```conf
+# Added custom window rules for dock
+windowrulev2 = blur,class:^(quickshell)$
+windowrulev2 = rounding 30,class:^(quickshell)$
+windowrulev2 = nofocus,class:^(quickshell)$
+
+# Added layer rules for proper blur
+layerrule = blur,quickshell:dock:blur
+layerrule = ignorezero,quickshell:dock:blur
 ```
 
 4. Theme System Migration
@@ -326,8 +423,9 @@ Remember to backup your configuration files before applying changes.
 ## Credits
 
 - Original dotfiles by [end-4](https://github.com/end-4/dots-hyprland)
+- Dock implementation based on [Pharmaracist's work](https://github.com/Pharmaracist/dots-hyprland)
 - Weather module by lysec
-- Quickshell implementation by Matt
+- Quickshell implementation and customizations by Matt
 
 ## License
 
