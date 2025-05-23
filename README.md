@@ -324,7 +324,7 @@ Remember to backup your configuration files before applying changes.
 
 - Original dotfiles by [end-4](https://github.com/end-4/dots-hyprland)
 - Weather module by lysec
-- Quickshell implementation by Matt
+- Quickshell changes by Matt
 
 ## License
 
