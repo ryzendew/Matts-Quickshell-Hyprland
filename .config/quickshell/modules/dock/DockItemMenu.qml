@@ -23,10 +23,6 @@ Menu {
     // Signal emitted when user wants to close an app
     signal closeApp()
 
-    // Default positioning
-    y: parent.height
-    x: -width/2 + parent.width/2
-
     // Menu background styling
     background: Rectangle {
         implicitWidth: 200

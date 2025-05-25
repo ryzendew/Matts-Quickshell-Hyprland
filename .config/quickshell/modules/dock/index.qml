@@ -1,4 +1,7 @@
 pragma ComponentBehavior: Bound
- 
+
 import "./Dock.qml"
-export Dock 
+import "./DockItem.qml"
+
+export Dock
+export DockItem 

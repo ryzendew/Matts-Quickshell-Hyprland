@@ -39,6 +39,12 @@ Scope {
     // Property to track if mouse is over any dock item
     property bool mouseOverDockItem: false
     
+    // Menu properties
+    property bool showDockMenu: false
+    property var menuAppInfo: ({})
+    property rect menuTargetRect: Qt.rect(0, 0, 0, 0)  // Store position and size of target item
+    property var activeMenuItem: null  // Track which item triggered the menu
+    
     // Default pinned apps to use if no saved settings exist
     readonly property var defaultPinnedApps: [
             "microsoft-edge-dev",
@@ -186,6 +192,11 @@ Scope {
         // Apply initial blur settings
         Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
         Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
+    }
+    
+    function showMenuForApp(appInfo) {
+        menuAppInfo = appInfo
+        showDockMenu = true
     }
     
     Variants {
@@ -393,6 +404,11 @@ Scope {
                                     icon: Icons.noKnowledgeIconGuess(modelData) || modelData.toLowerCase()
                                     tooltip: ""
                                     isActive: dockRoot.isWindowActive(modelData)
+                                    isPinned: true
+                                    appInfo: ({
+                                        class: modelData,
+                                        command: modelData.toLowerCase()
+                                    })
                                     onClicked: {
                                         let cmd = dock.desktopIdToCommand[modelData] || modelData.toLowerCase();
                                         if (dockRoot.isWindowActive(modelData)) {
@@ -401,26 +417,8 @@ Scope {
                                             Hyprland.dispatch(`exec ${cmd}`)
                                         }
                                     }
-                                    
-                                    onRightClicked: (mouse) => {
-                                        // Create a context menu for the app
-                                        var component = Qt.createComponent("DockItemMenu.qml")
-                                        if (component.status === Component.Ready) {
-                                            var menu = component.createObject(parent, {
-                                                "appInfo": {
-                                                    class: modelData,
-                                                    command: modelData.toLowerCase()
-                                                },
-                                                "isPinned": true
-                                            })
-                                            
-                                            // Handle unpin app action
-                                            menu.unpinApp.connect(function() {
-                                                dock.removePinnedApp(modelData)
-                                            })
-
-                                            menu.popup()
-                                        }
+                                    onUnpinApp: {
+                                        dock.removePinnedApp(modelData)
                                     }
                                 }
                             }
@@ -463,6 +461,8 @@ Scope {
                                     icon: Icons.noKnowledgeIconGuess(modelData.class) || modelData.class.toLowerCase()
                                     tooltip: modelData.title || modelData.class
                                     isActive: true
+                                    isPinned: false
+                                    appInfo: modelData
                                     onClicked: {
                                         // Use address for more precise window focusing when available
                                         if (modelData.address) {
@@ -471,25 +471,8 @@ Scope {
                                             Hyprland.dispatch(`dispatch focuswindow class:${modelData.class}`)
                                         }
                                     }
-                                    
-                                    onRightClicked: (mouse) => {
-                                        // Create a context menu for the app
-                                        var component = Qt.createComponent("DockItemMenu.qml")
-                                        if (component.status === Component.Ready) {
-                                            var menu = component.createObject(parent, {
-                                                "appInfo": modelData,
-                                                "isPinned": false
-                                            })
-                                            
-                                            // Handle pin app action
-                                            menu.pinApp.connect(function() {
-                                                // Add to pinned apps
-                                                dock.addPinnedApp(modelData.class)
-                                            })
-                                            
-                                            // Position relative to mouse cursor
-                                            menu.popup(Qt.point(mouse.x, mouse.y))
-                                        }
+                                    onPinApp: {
+                                        dock.addPinnedApp(modelData.class)
                                     }
                                 }
                             }
@@ -504,9 +487,9 @@ Scope {
 
                             // Media controls at right edge
                             Item {
-                                Layout.preferredWidth: mediaComponent.implicitWidth  // Use Media component's width
+                                Layout.preferredWidth: mediaComponent.implicitWidth
                                 Layout.preferredHeight: dockHeight * 0.65
-                                Layout.rightMargin: dockHeight * 0.25  // Add right margin to match left side spacing
+                                Layout.rightMargin: dockHeight * 0.25
 
                                 Media {
                                     id: mediaComponent

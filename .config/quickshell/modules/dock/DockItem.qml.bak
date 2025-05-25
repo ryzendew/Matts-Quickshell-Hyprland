@@ -23,7 +23,6 @@ Rectangle {
     property string clickedAppClass: ""
     property int itemIndex: parent ? parent.children.indexOf(this) : 0
     property point lastClickPos: Qt.point(0, 0)  // Store the last click position
-    property bool isActiveMenu: false
     
     signal clicked()
     signal pinApp()
@@ -69,23 +68,9 @@ Rectangle {
             if (mouse.button === Qt.LeftButton) {
                 dockItem.clicked()
             } else if (mouse.button === Qt.RightButton) {
-                // Close any other open menus first
-                var items = parent.children
-                for (var i = 0; i < items.length; i++) {
-                    var item = items[i]
-                    if (item !== dockItem && item.closeMenu) {
-                        item.closeMenu()
-                    }
-                }
-                
-                // Toggle this menu
-                if (dockItem.showMenu) {
-                    dockItem.closeMenu()
-                } else {
-                    lastClickPos = Qt.point(mouse.x, mouse.y)
-                    dockItem.showMenu = true
-                    dockItem.isActiveMenu = true
-                }
+                // Store global mouse position
+                lastClickPos = mouseArea.mapToGlobal(mouse.x, mouse.y)
+                dockItem.showMenu = !dockItem.showMenu
             }
         }
         
@@ -127,12 +112,10 @@ Rectangle {
 
     // Menu loader
     Loader {
-        id: menuLoader
         active: dockItem.showMenu
         sourceComponent: PanelWindow {
-            id: menuPanel
             visible: dockItem.showMenu
-            color: Qt.rgba(0, 0, 0, 0)
+            color: "transparent"
             implicitWidth: 200
             implicitHeight: menuContent.implicitHeight
 
@@ -141,23 +124,23 @@ Rectangle {
             WlrLayershell.namespace: "quickshell:dockmenu"
 
             // Let the window float freely
-            anchors.left: true
+            anchors.left: false
             anchors.right: false
             anchors.top: false
             anchors.bottom: true
 
             margins {
-                left: dockItem.x + lastClickPos.x + 500
                 bottom: 2
+                left: dockItem.lastClickPos.x - (implicitWidth / 2)  // Center menu on click position
             }
 
             // Click outside to close
             HyprlandFocusGrab {
-                windows: [menuPanel]
-                active: menuPanel.visible
+                windows: [parent]
+                active: parent.visible
                 onCleared: () => {
                     if (!active) {
-                        dockItem.closeMenu()
+                        dockItem.showMenu = false
                     }
                 }
             }
@@ -194,7 +177,7 @@ Rectangle {
                             } else {
                                 dockItem.pinApp()
                             }
-                            dockItem.closeMenu()
+                            dockItem.showMenu = false
                         }
                     }
 
@@ -204,7 +187,7 @@ Rectangle {
                         onClicked: {
                             var command = dockItem.appInfo.command || dockItem.appInfo.class.toLowerCase()
                             Hyprland.dispatch(`exec ${command}`)
-                            dockItem.closeMenu()
+                            dockItem.showMenu = false
                         }
                     }
 
@@ -227,45 +210,19 @@ Rectangle {
                             if (dockItem.appInfo.address) {
                                 Hyprland.dispatch(`dispatch movetoworkspace +1 address:${dockItem.appInfo.address}`)
                             }
-                            dockItem.closeMenu()
+                            dockItem.showMenu = false
                         }
                     }
 
                     MenuButton {
                         Layout.fillWidth: true
                         buttonText: qsTr("Toggle floating")
-                        enabled: dockItem.appInfo && (dockItem.appInfo.address || dockItem.appInfo.pid || dockItem.appInfo.class)
+                        enabled: dockItem.appInfo.address !== undefined
                         onClicked: {
-                            console.log("Toggle floating clicked")
-                            console.log("App info:", JSON.stringify(dockItem.appInfo, null, 2))
-                            
-                            // Try to find the actual window in HyprlandData
-                            var actualWindow = null
                             if (dockItem.appInfo.address) {
-                                actualWindow = HyprlandData.windowByAddress[dockItem.appInfo.address]
-                            } else {
-                                actualWindow = HyprlandData.windowList.find(w => 
-                                    w.class.toLowerCase() === dockItem.appInfo.class.toLowerCase() ||
-                                    w.initialClass.toLowerCase() === dockItem.appInfo.class.toLowerCase()
-                                )
+                                Hyprland.dispatch(`dispatch togglefloating address:${dockItem.appInfo.address}`)
                             }
-                            
-                            console.log("Found window:", JSON.stringify(actualWindow, null, 2))
-                            
-                            if (actualWindow?.address) {
-                                console.log("Using address:", actualWindow.address)
-                                Hyprland.dispatch(`togglefloating address:${actualWindow.address}`)
-                            } else if (actualWindow?.class) {
-                                console.log("Using class:", actualWindow.class)
-                                Hyprland.dispatch(`togglefloating class:${actualWindow.class}`)
-                            } else if (dockItem.appInfo.pid) {
-                                console.log("Using PID:", dockItem.appInfo.pid)
-                                Hyprland.dispatch(`togglefloating pid:${dockItem.appInfo.pid}`)
-                            } else if (dockItem.appInfo.class) {
-                                console.log("Using fallback class:", dockItem.appInfo.class)
-                                Hyprland.dispatch(`togglefloating class:${dockItem.appInfo.class}`)
-                            }
-                            dockItem.closeMenu()
+                            dockItem.showMenu = false
                         }
                     }
 
@@ -284,47 +241,19 @@ Rectangle {
                         Layout.fillWidth: true
                         buttonText: qsTr("Close")
                         onClicked: {
-                            console.log("Close clicked")
-                            console.log("App info:", JSON.stringify(dockItem.appInfo, null, 2))
-                            
-                            // Try to find the actual window in HyprlandData
-                            var actualWindow = null
                             if (dockItem.appInfo.address) {
-                                actualWindow = HyprlandData.windowByAddress[dockItem.appInfo.address]
-                            } else {
-                                actualWindow = HyprlandData.windowList.find(w => 
-                                    w.class.toLowerCase() === dockItem.appInfo.class.toLowerCase() ||
-                                    w.initialClass.toLowerCase() === dockItem.appInfo.class.toLowerCase()
-                                )
-                            }
-                            
-                            console.log("Found window:", JSON.stringify(actualWindow, null, 2))
-                            
-                            if (actualWindow?.address) {
-                                console.log("Using address:", actualWindow.address)
-                                Hyprland.dispatch(`closewindow address:${actualWindow.address}`)
-                            } else if (actualWindow?.class) {
-                                console.log("Using class:", actualWindow.class)
-                                Hyprland.dispatch(`closewindow class:${actualWindow.class}`)
+                                Hyprland.dispatch(`dispatch closewindow address:${dockItem.appInfo.address}`)
                             } else if (dockItem.appInfo.pid) {
-                                console.log("Using PID:", dockItem.appInfo.pid)
-                                Hyprland.dispatch(`closewindow pid:${dockItem.appInfo.pid}`)
-                            } else if (dockItem.appInfo.class) {
-                                console.log("Using fallback class:", dockItem.appInfo.class)
-                                Hyprland.dispatch(`closewindow class:${dockItem.appInfo.class}`)
+                                Hyprland.dispatch(`dispatch closewindow pid:${dockItem.appInfo.pid}`)
+                            } else {
+                                Hyprland.dispatch(`dispatch closewindow class:${dockItem.appInfo.class}`)
                             }
                             dockItem.closeApp()
-                            dockItem.closeMenu()
+                            dockItem.showMenu = false
                         }
                     }
                 }
             }
         }
     }
-
-    // Function to close menu
-    function closeMenu() {
-        showMenu = false
-        isActiveMenu = false
-    }
-}
+} 
