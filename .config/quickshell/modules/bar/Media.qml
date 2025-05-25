@@ -22,7 +22,7 @@ Item {
     readonly property real progress: totalLength > 0 ? Math.min(1, Math.max(0, currentPosition / totalLength)) : 0
 
     Layout.fillHeight: true
-    implicitWidth: contentRow.implicitWidth + 32
+    implicitWidth: contentRow.implicitWidth + 35
     implicitHeight: parent.height
 
     // Update position when player changes

@@ -68,9 +68,22 @@ Scope {
     
     // Map desktop IDs to executable commands
     readonly property var desktopIdToCommand: ({
-        "org.gnome.Nautilus": "nautilus",
-        "org.gnome.nautilus": "nautilus",
-        // Add more mappings as needed
+        // Nautilus variations
+        "org.gnome.Nautilus": "nautilus --new-window",
+        "org.gnome.nautilus": "nautilus --new-window",
+        "nautilus": "nautilus --new-window",
+        "Nautilus": "nautilus --new-window",
+        
+        // Other apps
+        "vesktop": "vesktop --new-window",
+        "microsoft-edge-dev": "microsoft-edge-dev --new-window",
+        "steam-native": "steam-native -newbigpicture",
+        "lutris": "lutris",
+        "heroic": "heroic",
+        "obs": "obs",
+        "com.blackmagicdesign.resolve": "resolve",
+        "AffinityPhoto": "AffinityPhoto",
+        "ptyxis": "ptyxis"
     })
     
     // Watch for changes in blur settings
@@ -342,57 +355,43 @@ Scope {
 
                             // Arch menu button (replacing the pin/unpin button)
                             Item {
-                                Layout.preferredWidth: dockHeight * 0.65
-                                Layout.preferredHeight: dockHeight * 0.65
+                                Layout.preferredWidth: dock.dockWidth - 10
+                                Layout.preferredHeight: dock.dockWidth - 10
                                 Layout.leftMargin: 0 // Remove left margin completely
                                 
                                 Rectangle {
                                     id: archButton
                                     anchors.fill: parent
-                                    anchors.margins: 4 // Reduce margins from 6 to 4
                                     radius: Appearance.rounding.full
-                                    color: archMouseArea.containsMouse ? Appearance.colors.colPrimary : "transparent"
-                                    opacity: archMouseArea.containsMouse ? 0.8 : 0.5
+                                    color: archMouseArea.pressed ? Appearance.colors.colLayer1Active : 
+                                           archMouseArea.containsMouse ? Appearance.colors.colLayer1Hover : 
+                                           "transparent"
+                                    
+                                    Behavior on color {
+                                        ColorAnimation {
+                                            duration: Appearance.animation.elementMoveFast.duration
+                                            easing.type: Appearance.animation.elementMoveFast.type
+                                        }
+                                    }
                                     
                                     // Arch Linux logo
                                     Image {
                                         anchors.centerIn: parent
                                         source: "/home/matt/.config/quickshell/logo/Arch-linux-logo.png"
-                                        width: parent.width * 0.9
-                                        height: parent.height * 0.9
+                                        width: parent.width * 0.65
+                                        height: parent.height * 0.65
                                         fillMode: Image.PreserveAspectFit
                                     }
                                     
-                                    // Hover effects
-                                    Behavior on opacity {
-                                        NumberAnimation { 
-                                            duration: Appearance.animation.elementMoveFast.duration
-                                            easing.type: Appearance.animation.elementMoveFast.type
+                                    MouseArea {
+                                        id: archMouseArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        
+                                        onClicked: {
+                                            Hyprland.dispatch("exec hyprmenu")
                                         }
                                     }
-                                    
-                                    Behavior on color {
-                                        ColorAnimation { 
-                                            duration: Appearance.animation.elementMoveFast.duration
-                                            easing.type: Appearance.animation.elementMoveFast.type
-                                        }
-                                    }
-                                }
-                                
-                                MouseArea {
-                                    id: archMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
-                                    
-                                    // Track hover state to prevent auto-hide
-                                    onEntered: dock.mouseOverDockItem = true
-                                    onExited: dock.mouseOverDockItem = false
-                                    
-                                    // Launch hyprmenu when clicked
-                                    onClicked: {
-                                        Hyprland.dispatch("exec hyprmenu")
-                                    }
-                                 
                                 }
                             }
                             
@@ -402,7 +401,7 @@ Scope {
                                 
                                 DockItem {
                                     icon: Icons.noKnowledgeIconGuess(modelData) || modelData.toLowerCase()
-                                    tooltip: ""
+                                    tooltip: modelData  // Use the app class name for pinned apps
                                     isActive: dockRoot.isWindowActive(modelData)
                                     isPinned: true
                                     appInfo: ({
@@ -418,7 +417,7 @@ Scope {
                                         }
                                     }
                                     onUnpinApp: {
-                                        dock.removePinnedApp(modelData)
+                                                dock.removePinnedApp(modelData)
                                     }
                                 }
                             }
@@ -472,7 +471,7 @@ Scope {
                                         }
                                     }
                                     onPinApp: {
-                                        dock.addPinnedApp(modelData.class)
+                                                dock.addPinnedApp(modelData.class)
                                     }
                                 }
                             }

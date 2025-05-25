@@ -5,7 +5,6 @@ import "./calendar"
 import "./notifications"
 import "./todo"
 import "./volumeMixer"
-import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -16,12 +15,51 @@ Rectangle {
     radius: Appearance.rounding.normal
     color: Appearance.colors.colLayer1
 
+    // Debug mode - prevent closing
+    property bool debugMode: true  // Set to true to prevent closing
+
+    // Block ALL closing attempts while in debug mode
+    Connections {
+        target: Quickshell
+        function onSidebarRightCloseRequested() {
+            if (debugMode) {
+                console.log("Sidebar closing prevented (debug mode)")
+                return
+            }
+            Hyprland.dispatch("global quickshell:sidebarRightClose")
+        }
+    }
+
+    // Block escape key
+    Keys.onEscapePressed: {
+        if (debugMode) {
+            console.log("Escape key blocked (debug mode)")
+            event.accepted = true
+        }
+    }
+
+    // Block clicking outside
+    MouseArea {
+        anchors.fill: parent
+        onClicked: mouse.accepted = debugMode
+    }
+
     property int selectedTab: 0
     property var tabButtonList: [
         {"icon": "notifications", "name": qsTr("Notifications")},
         {"icon": "volume_up", "name": qsTr("Volume mixer")},
         {"icon": "palette", "name": qsTr("Appearance")}
     ]
+
+    // Intercept the close signal
+    Connections {
+        target: Quickshell
+        function onSidebarRightCloseRequested() {
+            if (!root.preventClosing) {
+                Hyprland.dispatch("global quickshell:sidebarRightClose")
+            }
+        }
+    }
 
     Keys.onPressed: (event) => {
         if (event.key === Qt.Key_PageDown || event.key === Qt.Key_PageUp) {
@@ -68,16 +106,7 @@ Rectangle {
                 tabBar.enableIndicatorAnimation = true
                 root.selectedTab = currentIndex
             }
-
             clip: true
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: swipeView.width
-                    height: swipeView.height
-                    radius: Appearance.rounding.small
-                }
-            }
 
             NotificationList {}
             VolumeMixer {}

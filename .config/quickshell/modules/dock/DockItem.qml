@@ -13,7 +13,7 @@ Rectangle {
     id: dockItem
     
     property string icon: ""
-    property string tooltip: ""
+    property string tooltip: isPinned ? appInfo.class || "" : (appInfo.title || appInfo.class || "")
     property bool isActive: false
     property bool showMenu: false
     property var appInfo: ({})
@@ -24,6 +24,7 @@ Rectangle {
     property int itemIndex: parent ? parent.children.indexOf(this) : 0
     property point lastClickPos: Qt.point(0, 0)  // Store the last click position
     property bool isActiveMenu: false
+    property point lastHoverPos: Qt.point(0, 0)  // Add this property to track hover position
     
     signal clicked()
     signal pinApp()
@@ -59,11 +60,78 @@ Rectangle {
         anchors.bottomMargin: 10
     }
     
+    // Replace ToolTip with Loader for hover tooltip
+    Loader {
+        id: tooltipLoader
+        active: mouseArea.containsMouse && dockItem.tooltip !== ""
+        sourceComponent: PanelWindow {
+            id: tooltipPanel
+            visible: tooltipLoader.active
+            color: Qt.rgba(0, 0, 0, 0)
+            implicitWidth: tooltipContent.implicitWidth
+            implicitHeight: tooltipContent.implicitHeight
+
+            // Set up as a popup window
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.namespace: "quickshell:docktooltip"
+
+            // Let the window float freely
+            anchors.left: true
+            anchors.right: false
+            anchors.top: false
+            anchors.bottom: true
+            
+            margins {
+                left: {
+                    var basePosition = dockItem.mapToItem(null, mouseArea.mouseX, 0).x - (tooltipContent.implicitWidth / 2) + (dockItem.width / 2)
+                    return dockItem.isPinned ? basePosition + 512 : basePosition + 512
+                }
+                bottom: 2
+            }
+
+            Rectangle {
+                id: tooltipContent
+                anchors.fill: parent
+                color: Qt.rgba(
+                    Appearance.colors.colLayer0.r,
+                    Appearance.colors.colLayer0.g,
+                    Appearance.colors.colLayer0.b,
+                    1.0
+                )
+                radius: Appearance.rounding.small
+                implicitWidth: tooltipText.implicitWidth + 30
+                implicitHeight: tooltipText.implicitHeight + 16
+
+                DropShadow {
+                    anchors.fill: parent
+                    horizontalOffset: 0
+                    verticalOffset: 1
+                    radius: 8.0
+                    samples: 17
+                    color: Appearance.colors.colShadow
+                    source: parent
+                }
+
+                Text {
+                    id: tooltipText
+                    anchors.centerIn: parent
+                    text: dockItem.tooltip
+                    color: Appearance.colors.colOnLayer0
+                    font: dockItem.font
+                }
+            }
+        }
+    }
+    
     MouseArea {
         id: mouseArea
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
+        
+        onPositionChanged: (mouse) => {
+            lastHoverPos = dockItem.mapToItem(null, mouse.x, mouse.y)
+        }
         
         onClicked: (mouse) => {
             if (mouse.button === Qt.LeftButton) {
@@ -107,24 +175,6 @@ Rectangle {
         anchors.bottomMargin: 1.5
     }
     
-    ToolTip {
-        id: itemTooltip
-        visible: mouseArea.containsMouse && dockItem.tooltip !== ""
-        text: dockItem.tooltip
-        delay: 0
-        timeout: 5000
-        contentItem: StyledText {
-            text: itemTooltip.text
-            color: Appearance.colors.colOnTooltip
-            horizontalAlignment: Text.AlignHCenter
-        }
-        
-        background: Rectangle {
-            color: Appearance.colors.colTooltip
-            radius: Appearance.rounding.small
-        }
-    }
-
     // Menu loader
     Loader {
         id: menuLoader
@@ -202,7 +252,23 @@ Rectangle {
                         Layout.fillWidth: true
                         buttonText: qsTr("Launch new instance")
                         onClicked: {
-                            var command = dockItem.appInfo.command || dockItem.appInfo.class.toLowerCase()
+                            // Use the mapped command from desktopIdToCommand if available
+                            var command = ""
+                            if (dockItem.appInfo.class) {
+                                // Try different variations of the class name
+                                var classLower = dockItem.appInfo.class.toLowerCase()
+                                var classWithDesktop = dockItem.appInfo.class + ".desktop"
+                                if (dock.desktopIdToCommand[dockItem.appInfo.class]) {
+                                    command = dock.desktopIdToCommand[dockItem.appInfo.class]
+                                } else if (dock.desktopIdToCommand[classLower]) {
+                                    command = dock.desktopIdToCommand[classLower]
+                                } else if (dock.desktopIdToCommand[classWithDesktop]) {
+                                    command = dock.desktopIdToCommand[classWithDesktop]
+                                } else {
+                                    command = dockItem.appInfo.command || dockItem.appInfo.class.toLowerCase()
+                                }
+                            }
+                            console.log("Launching new instance with command:", command)
                             Hyprland.dispatch(`exec ${command}`)
                             dockItem.closeMenu()
                         }
@@ -248,7 +314,7 @@ Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: Math.min(workspaceLayout.implicitHeight, 300)
                         color: Appearance.colors.colLayer0
-                        radius: Appearance.rounding.small
+            radius: Appearance.rounding.small
                         clip: true
 
                         // Get current workspace
