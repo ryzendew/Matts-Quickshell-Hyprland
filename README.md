@@ -698,3 +698,65 @@ MediaController {
     // Media control implementation
 }
 ```
+
+A. Media Controls Cover Art Consistency:
+File: ~/.config/quickshell/modules/mediaControls/PlayerControl.qml
+```qml
+// Previous art URL handling
+property var artUrl: player?.metadata["xesam:url"] || player?.metadata["mpris:artUrl"] || player?.trackArtUrl
+
+// New robust art URL handling with fallback mechanism
+property var artUrl: {
+    // Try different metadata sources in order of preference
+    const sources = [
+        player?.metadata["mpris:artUrl"],
+        player?.metadata["xesam:artUrl"],
+        player?.trackArtUrl,
+        "" // Fallback empty string if no art found
+    ];
+    // Return first non-empty valid URL
+    return sources.find(url => url && url.length > 0) || "";
+}
+
+// Enhanced error handling for art loading
+Image {
+    id: mediaArt
+    // ... existing properties ...
+    
+    onStatusChanged: {
+        if (status === Image.Error) {
+            playerController.artLoadError = true;
+            playerController.artDominantColor = Appearance.m3colors.m3secondaryContainer;
+        } else if (status === Image.Ready) {
+            playerController.artLoadError = false;
+        }
+    }
+}
+```
+
+B. Idle/Suspend Steam Compatibility:
+File: ~/.config/quickshell/scripts/wayland-idle-inhibitor.py
+```python
+# Added Steam process detection
+def is_steam_running() -> bool:
+    try:
+        # Check if steam process is running
+        subprocess.run(["pidof", "steam"], check=True, capture_output=True)
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+# Modified inhibitor destruction logic
+def main() -> None:
+    # ... existing setup code ...
+    
+    print("Inhibiting idle...")
+    done.wait()
+    print("Shutting down...")
+
+    # Only destroy inhibitor if Steam is not running
+    if not is_steam_running():
+        inhibitor.destroy()
+
+    shutdown()
+```

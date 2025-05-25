@@ -19,8 +19,19 @@ Item { // Player instance
     id: playerController
     required property MprisPlayer player
     // property var artUrl: player?.metadata["xesam:url"] || player?.metadata["mpris:artUrl"] || player?.trackArtUrl
-    property var artUrl: player?.trackArtUrl
+    property var artUrl: {
+        // Try different metadata sources in order of preference
+        const sources = [
+            player?.metadata["mpris:artUrl"],
+            player?.metadata["xesam:artUrl"],
+            player?.trackArtUrl,
+            "" // Fallback empty string if no art found
+        ];
+        // Return first non-empty valid URL
+        return sources.find(url => url && url.length > 0) || "";
+    }
     property color artDominantColor: Appearance.m3colors.m3secondaryContainer
+    property bool artLoadError: false
 
     implicitWidth: widgetWidth
     implicitHeight: widgetHeight
@@ -180,6 +191,15 @@ Item { // Player instance
                     cache: false
                     antialiasing: true
                     asynchronous: true
+
+                    onStatusChanged: {
+                        if (status === Image.Error) {
+                            playerController.artLoadError = true;
+                            playerController.artDominantColor = Appearance.m3colors.m3secondaryContainer;
+                        } else if (status === Image.Ready) {
+                            playerController.artLoadError = false;
+                        }
+                    }
 
                     width: size
                     height: size
