@@ -222,11 +222,20 @@ Rectangle {
                     MenuButton {
                         Layout.fillWidth: true
                         buttonText: qsTr("Move to workspace") + " >"
-                        enabled: dockItem.appInfo && (dockItem.appInfo.address || dockItem.appInfo.pid || dockItem.appInfo.class)
+                        enabled: {
+                            // Check if we have an active window
+                            var hasActiveWindow = false
+                            if (dockItem.appInfo.address) {
+                                hasActiveWindow = HyprlandData.windowByAddress[dockItem.appInfo.address] !== undefined
+                            } else if (dockItem.appInfo.class) {
+                                hasActiveWindow = HyprlandData.windowList.some(w => 
+                                    w.class.toLowerCase() === dockItem.appInfo.class.toLowerCase() ||
+                                    w.initialClass.toLowerCase() === dockItem.appInfo.class.toLowerCase()
+                                )
+                            }
+                            return hasActiveWindow
+                        }
                         onClicked: {
-                            console.log("=== Move to workspace button clicked ===")
-                            console.log("dockItem.appInfo:", JSON.stringify(dockItem.appInfo, null, 2))
-                            console.log("Button enabled:", enabled)
                             // Show workspace submenu
                             workspaceSubmenu.visible = true
                         }
@@ -333,7 +342,19 @@ Rectangle {
                     MenuButton {
                         Layout.fillWidth: true
                         buttonText: qsTr("Toggle floating")
-                        enabled: dockItem.appInfo && (dockItem.appInfo.address || dockItem.appInfo.pid || dockItem.appInfo.class)
+                        enabled: {
+                            // Check if we have an active window
+                            var hasActiveWindow = false
+                            if (dockItem.appInfo.address) {
+                                hasActiveWindow = HyprlandData.windowByAddress[dockItem.appInfo.address] !== undefined
+                            } else if (dockItem.appInfo.class) {
+                                hasActiveWindow = HyprlandData.windowList.some(w => 
+                                    w.class.toLowerCase() === dockItem.appInfo.class.toLowerCase() ||
+                                    w.initialClass.toLowerCase() === dockItem.appInfo.class.toLowerCase()
+                                )
+                            }
+                            return hasActiveWindow
+                        }
                         onClicked: {
                             console.log("Toggle floating clicked")
                             console.log("App info:", JSON.stringify(dockItem.appInfo, null, 2))
@@ -382,6 +403,19 @@ Rectangle {
                     MenuButton {
                         Layout.fillWidth: true
                         buttonText: qsTr("Close")
+                        enabled: {
+                            // Check if we have an active window
+                            var hasActiveWindow = false
+                            if (dockItem.appInfo.address) {
+                                hasActiveWindow = HyprlandData.windowByAddress[dockItem.appInfo.address] !== undefined
+                            } else if (dockItem.appInfo.class) {
+                                hasActiveWindow = HyprlandData.windowList.some(w => 
+                                    w.class.toLowerCase() === dockItem.appInfo.class.toLowerCase() ||
+                                    w.initialClass.toLowerCase() === dockItem.appInfo.class.toLowerCase()
+                                )
+                            }
+                            return hasActiveWindow
+                        }
                         onClicked: {
                             console.log("Close clicked")
                             console.log("App info:", JSON.stringify(dockItem.appInfo, null, 2))
