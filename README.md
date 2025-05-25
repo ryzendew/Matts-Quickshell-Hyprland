@@ -760,3 +760,41 @@ def main() -> None:
 
     shutdown()
 ```
+
+How to Apply Changes
+------------------
+1. Install required packages:
+```bash
+yay -S quickshell matugen-bin grimblast wtype qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt6-5compat qt6-base qt6-declarative qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-svg qt6-tools qt6-translations qt6-virtualkeyboard qt6-wayland syntax-highlighting
+```
+
+2. Copy configuration files:
+```bash
+cp -r .config/* ~/.config/
+```
+
+3. Start Quickshell:
+```bash
+qs
+```
+
+Notes
+-----
+- Complete rewrite from AGS JavaScript to Quickshell QML
+- Maintains functionality while improving performance
+- Weather module implementation by lysec
+- Based on end-4's Hyprland dotfiles
+- Extensive use of Qt Quick and Material Design
+
+Remember to backup your configuration files before applying changes.
+
+## Credits
+
+- Original dotfiles by [end-4](https://github.com/end-4/dots-hyprland)
+- Dock implementation based on [Pharmaracist's work](https://github.com/Pharmaracist/dots-hyprland)
+- Weather module by lysec
+- Quickshell implementation and customizations by Matt
+
+## License
+
+GPL-3.0 License - See LICENSE file for details 
