@@ -13,12 +13,13 @@ Singleton {
     property string networkName: ""
     property int networkStrength: 0
     property bool wifiEnabled: false
-    property string networkType: ""  // "ethernet", "wifi", or "none"
+    property string networkType: "none"  // "ethernet", "wifi", or "none"
 
     function update() {
         updateNetworkName.running = true
         updateNetworkStrength.running = true
         updateWifiState.running = true
+        updateNetworkType.running = true
     }
 
     Timer {
@@ -33,18 +34,11 @@ Singleton {
 
     Process {
         id: updateNetworkName
-        command: ["sh", "-c", "nmcli -t -f NAME,TYPE c show --active | head -1"]
+        command: ["sh", "-c", "nmcli -t -f NAME c show --active | head -1"]
         running: true
         stdout: SplitParser {
             onRead: data => {
-                if (data) {
-                    let parts = data.split(":");
-                    root.networkName = parts[0] || "";
-                    root.networkType = parts[1] || "";
-                } else {
-                    root.networkName = "";
-                    root.networkType = "none";
-                }
+                root.networkName = data || ""
             }
         }
     }
@@ -67,6 +61,24 @@ Singleton {
         stdout: SplitParser {
             onRead: data => {
                 root.wifiEnabled = (parseInt(data) === 1);
+            }
+        }
+    }
+
+    Process {
+        id: updateNetworkType
+        running: true
+        command: ["sh", "-c", "nmcli device | awk '$3==\"connected\" {print $2}' | head -1"]
+        stdout: SplitParser {
+            onRead: data => {
+                const type = data.trim().toLowerCase()
+                if (type === "wifi") {
+                    root.networkType = "wifi"
+                } else if (type === "ethernet") {
+                    root.networkType = "ethernet"
+                } else {
+                    root.networkType = "none"
+                }
             }
         }
     }

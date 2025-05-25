@@ -8,6 +8,7 @@ import Quickshell.Io
 import Quickshell.Services.Mpris
 
 Rectangle {
+    property bool alwaysShowAllResources: false
     property bool borderless: ConfigOptions.bar.borderless
     implicitWidth: rowLayout.implicitWidth + rowLayout.anchors.leftMargin + rowLayout.anchors.rightMargin
     implicitHeight: 32

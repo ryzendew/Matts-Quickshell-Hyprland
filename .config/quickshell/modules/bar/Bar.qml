@@ -20,6 +20,33 @@ Scope {
     readonly property int osdHideMouseMoveThreshold: 20
     property bool showBarBackground: ConfigOptions.bar.showBackground
 
+    // Watch for changes in blur settings
+    Connections {
+        target: AppearanceSettingsState
+        function onBarBlurAmountChanged() {
+            // Update Hyprland blur rules for bar
+            Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.barBlurPasses}`)
+            Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.barBlurAmount}`)
+            // Reload Quickshell
+            Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+        }
+        function onBarBlurPassesChanged() {
+            Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.barBlurPasses}`)
+            // Reload Quickshell
+            Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+        }
+        function onBarTransparencyChanged() {
+            // Reload Quickshell
+            Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+        }
+    }
+
+    Component.onCompleted: {
+        // Apply initial blur settings
+        Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.barBlurPasses}`)
+        Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.barBlurAmount}`)
+    }
+
     Variants { // For each monitor
         model: Quickshell.screens
 
@@ -28,9 +55,19 @@ Scope {
 
             property ShellScreen modelData
             property var brightnessMonitor: Brightness.getMonitorForScreen(modelData)
+            property real useShortenedForm: (Appearance.sizes.barHellaShortenScreenWidthThreshold >= screen.width) ? 2 :
+                (Appearance.sizes.barShortenScreenWidthThreshold >= screen.width) ? 1 : 0
+            readonly property int centerSideModuleWidth: 
+                (useShortenedForm == 2) ? Appearance.sizes.barCenterSideModuleWidthHellaShortened :
+                (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened : 
+                    Appearance.sizes.barCenterSideModuleWidth
+
+            NetworkTooltip {
+                id: networkTooltip
+                screen: modelData
+            }
 
             screen: modelData
-            WlrLayershell.namespace: "quickshell:bar:blur"
             implicitHeight: barHeight
             exclusiveZone: showBarBackground ? barHeight : (barHeight - 4)
             mask: Region {
@@ -49,23 +86,38 @@ Scope {
                 anchors.right: parent.right
                 anchors.left: parent.left
                 anchors.top: parent.top
-                color: showBarBackground ? Qt.rgba(
-                    Appearance.colors.colLayer0.r,
-                    Appearance.colors.colLayer0.g,
-                    Appearance.colors.colLayer0.b,
-                    0.8
-                ) : "transparent"
-                border.color: "black"
-                border.width: 1
-                
-                Behavior on color {
-                    ColorAnimation {
-                        duration: Appearance.animation.elementMoveFast.duration
-                        easing.type: Appearance.animation.elementMoveFast.type
+                height: barHeight
+
+                // Blur background layer
+                Rectangle {
+                    id: blurLayer
+                    anchors.fill: parent
+                    color: "transparent"
+                    
+                    layer.enabled: true
+                    layer.effect: FastBlur {
+                        radius: AppearanceSettingsState.barBlurAmount
+                        cached: true
                     }
                 }
-                
-                height: barHeight
+
+                // Content layer
+                Rectangle {
+                    anchors.fill: parent
+                    color: showBarBackground ? Qt.rgba(
+                        Appearance.colors.colLayer0.r,
+                        Appearance.colors.colLayer0.g,
+                        Appearance.colors.colLayer0.b,
+                        1 - AppearanceSettingsState.barTransparency
+                    ) : "transparent"
+                    
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: Appearance.animation.elementMoveFast.duration
+                            easing.type: Appearance.animation.elementMoveFast.type
+                        }
+                    }
+                }
 
                 // Bottom border
                 Rectangle {
@@ -83,7 +135,7 @@ Scope {
                     width: (barRoot.width - middleSection.width) / 2
                     property bool hovered: false
                     property real lastScrollX: 0
-                    property real lastScrollY: 0
+                    property real lastScrollY: 1
                     property bool trackingScroll: false
                     acceptedButtons: Qt.LeftButton
                     hoverEnabled: true
@@ -189,27 +241,37 @@ Scope {
                     anchors.centerIn: parent
                     spacing: 8
 
-                    Item { // Left spacer
+                    RowLayout {
+                        id: leftCenterGroup
                         Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        // (empty, reserved for future symmetry)
                     }
 
-                    Workspaces {
-                        bar: barRoot
-                        Layout.alignment: Qt.AlignCenter
-                        MouseArea { // Right-click to toggle overview
-                            anchors.fill: parent
-                            acceptedButtons: Qt.RightButton
-                            
-                            onPressed: (event) => {
-                                if (event.button === Qt.RightButton) {
-                                    Hyprland.dispatch('global quickshell:overviewToggle')
+                    RowLayout {
+                        id: middleCenterGroup
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Workspaces {
+                            bar: barRoot
+                            Layout.alignment: Qt.AlignCenter
+                            MouseArea { // Right-click to toggle overview
+                                anchors.fill: parent
+                                acceptedButtons: Qt.RightButton
+                                onPressed: (event) => {
+                                    if (event.button === Qt.RightButton) {
+                                        Hyprland.dispatch('global quickshell:overviewToggle')
+                                    }
                                 }
                             }
                         }
                     }
 
-                    Item { // Right spacer
+                    RowLayout {
+                        id: rightCenterGroup
                         Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        // (empty, reserved for future symmetry)
                     }
                 }
 
@@ -351,17 +413,19 @@ Scope {
                                             anchors.fill: parent
                                             spacing: 4
 
-                                            // Ethernet icon - debug mode
-                                            Rectangle {  // Debug border
+                                            // Ethernet icon
+                                            Rectangle {
                                                 Layout.preferredWidth: Appearance.font.pixelSize.larger * 0.85
                                                 Layout.preferredHeight: Appearance.font.pixelSize.larger * 0.85
                                                 color: "transparent"
+                                                visible: Network.networkType === "ethernet"
 
                                                 Image {
                                                     id: ethernetIcon
                                                     anchors.fill: parent
-                                                    source: "root:/logo/ethernet.svg"  // Using root relative path
+                                                    source: "root:/logo/ethernet.svg"
                                                     fillMode: Image.PreserveAspectFit
+                                                    visible: true
                                                 }
 
                                                 ColorOverlay {
@@ -372,30 +436,49 @@ Scope {
                                             }
 
                                             // WiFi icon
-                                            MaterialSymbol {
-                                                text: Network.wifiEnabled ? (
-                                                    Network.networkStrength > 80 ? "signal_wifi_4_bar" :
-                                                    Network.networkStrength > 60 ? "network_wifi_3_bar" :
-                                                    Network.networkStrength > 40 ? "network_wifi_2_bar" :
-                                                    Network.networkStrength > 20 ? "signal_wifi_1_bar" :
-                                                    "signal_wifi_0_bar"
-                                                ) : "signal_wifi_off"
-                                                iconSize: Appearance.font.pixelSize.larger
-                                                color: Appearance.colors.colOnLayer0
-                                                opacity: Network.networkType === "wifi" && Network.wifiEnabled ? 1 : 0
-                                                visible: opacity > 0
+                                            Rectangle {
+                                                id: wifiIconRect
+                                                Layout.preferredWidth: Appearance.font.pixelSize.larger * 0.85
+                                                Layout.preferredHeight: Appearance.font.pixelSize.larger * 0.85
+                                                color: "transparent"
+                                                visible: Network.networkType === "wifi"
+
+                                                Image {
+                                                    id: wifiIcon
+                                                    anchors.fill: parent
+                                                    source: Network.wifiEnabled ? (
+                                                        Network.networkStrength > 80 ? "root:/logo/wifi-4.svg" :
+                                                        Network.networkStrength > 60 ? "root:/logo/wifi-3.svg" :
+                                                        Network.networkStrength > 40 ? "root:/logo/wifi-2.svg" :
+                                                        Network.networkStrength > 20 ? "root:/logo/wifi-1.svg" :
+                                                        "root:/logo/wifi-0.svg"
+                                                    ) : "root:/logo/wifi-0.svg"
+                                                    fillMode: Image.PreserveAspectFit
+                                                    visible: true
+                                                    opacity: Network.wifiEnabled ? 1.0 : 0.5
                                                 
-                                                Behavior on opacity {
-                                                    NumberAnimation {
+                                                    Behavior on source {
+                                                        PropertyAnimation {
                                                         duration: Appearance.animation.elementMoveFast.duration
                                                         easing.type: Appearance.animation.elementMoveFast.type
                                                     }
                                                 }
-                                                
-                                                Behavior on text {
-                                                    PropertyAnimation {
-                                                        duration: Appearance.animation.elementMoveFast.duration
-                                                        easing.type: Appearance.animation.elementMoveFast.type
+                                                }
+
+                                                ColorOverlay {
+                                                    anchors.fill: parent
+                                                    source: wifiIcon
+                                                    color: Appearance.colors.colOnLayer0
+                                                }
+
+                                                MouseArea {
+                                                    anchors.fill: parent
+                                                    hoverEnabled: true
+                                                    onEntered: networkTooltip.show()
+                                                    onExited: networkTooltip.hide()
+                                                    onPositionChanged: (mouse) => {
+                                                        var point = wifiIconRect.mapToItem(null, mouse.x, mouse.y)
+                                                        networkTooltip.updatePosition(point.x, point.y)
                                                     }
                                                 }
                                             }

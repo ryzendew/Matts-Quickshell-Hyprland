@@ -63,8 +63,23 @@ Scope {
                 anchors.centerIn: parent
                 width: parent.width - Appearance.sizes.hyprlandGapsOut * 2
                 height: parent.height - Appearance.sizes.hyprlandGapsOut * 2
-                color: Appearance.colors.colLayer0
+                color: Qt.rgba(
+                    Appearance.colors.colLayer0.r,
+                    Appearance.colors.colLayer0.g,
+                    Appearance.colors.colLayer0.b,
+                    1 - AppearanceSettingsState.sidebarTransparency
+                )
                 radius: Appearance.rounding.screenRounding - Appearance.sizes.elevationMargin + 1
+
+                // Add border
+                Rectangle {
+                    id: border
+                    anchors.fill: parent
+                    color: "transparent"
+                    radius: parent.radius
+                    border.width: 2
+                    border.color: Qt.rgba(1, 1, 1, 0.2)
+                }
 
                 layer.enabled: true
                 layer.effect: MultiEffect {
@@ -74,6 +89,13 @@ Scope {
                     shadowColor: Appearance.colors.colShadow
                     shadowVerticalOffset: 1
                     shadowBlur: 0.5
+                }
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                    }
                 }
 
                 Keys.onPressed: (event) => {

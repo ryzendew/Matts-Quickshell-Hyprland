@@ -26,7 +26,7 @@ Scope {
         Appearance.colors.colLayer0.r,
         Appearance.colors.colLayer0.g,
         Appearance.colors.colLayer0.b,
-        0.65
+        AppearanceSettingsState.dockTransparency
     )
     
     // Auto-hide properties
@@ -66,6 +66,27 @@ Scope {
         "org.gnome.nautilus": "nautilus",
         // Add more mappings as needed
     })
+    
+    // Watch for changes in blur settings
+    Connections {
+        target: AppearanceSettingsState
+        function onDockBlurAmountChanged() {
+            // Update Hyprland blur rules for dock
+            Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
+            Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
+            // Reload Quickshell
+            Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+        }
+        function onDockBlurPassesChanged() {
+            Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
+            // Reload Quickshell
+            Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+        }
+        function onDockTransparencyChanged() {
+            // Reload Quickshell
+            Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+        }
+    }
     
     function saveConfig() {
         var config = {
@@ -161,6 +182,10 @@ Scope {
     Component.onCompleted: {
         // Load config when component is ready
         dockConfigView.reload()
+        
+        // Apply initial blur settings
+        Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
+        Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
     }
     
     Variants {
@@ -271,17 +296,27 @@ Scope {
                         height: parent.height
                         anchors.centerIn: parent
                         radius: 30
-                        color: dock.backgroundColor
-                        border.color: "black"
-                        border.width: 3
+                        color: Qt.rgba(
+                            Appearance.colors.colLayer0.r,
+                            Appearance.colors.colLayer0.g,
+                            Appearance.colors.colLayer0.b,
+                            1 - AppearanceSettingsState.dockTransparency
+                        )
 
-                        layer.enabled: true
-                        layer.effect: OpacityMask {
-                            maskSource: Rectangle {
-                                width: dockContent.width
-                                height: dockContent.height
-                                radius: dockContent.radius
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: Appearance.animation.elementMoveFast.duration
+                                easing.type: Appearance.animation.elementMoveFast.type
                             }
+                        }
+
+                        // Border
+                        Rectangle {
+                            anchors.fill: parent
+                            color: "transparent"
+                            border.color: "black"
+                            border.width: 3
+                            radius: parent.radius
                         }
 
                         // Main dock layout
