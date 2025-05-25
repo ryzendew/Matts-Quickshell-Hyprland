@@ -1,6 +1,7 @@
 # Matt's Quickshell Hyprland Configuration Changelog
 
-![image](https://github.com/user-attachments/assets/49bba28f-776e-454d-a351-a42bba898cd6)
+![image](https://github.com/user-attachments/assets/7eb880b8-7e9b-4cbc-bcab-80e7a15d67a4)
+
 
 ---
 
