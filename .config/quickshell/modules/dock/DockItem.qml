@@ -221,14 +221,113 @@ Rectangle {
 
                     MenuButton {
                         Layout.fillWidth: true
-                        buttonText: qsTr("Move to workspace")
-                        enabled: dockItem.appInfo.address !== undefined
+                        buttonText: qsTr("Move to workspace") + " >"
+                        enabled: dockItem.appInfo && (dockItem.appInfo.address || dockItem.appInfo.pid || dockItem.appInfo.class)
                         onClicked: {
-                            if (dockItem.appInfo.address) {
-                                Hyprland.dispatch(`dispatch movetoworkspace +1 address:${dockItem.appInfo.address}`)
-                            }
-                            dockItem.closeMenu()
+                            console.log("=== Move to workspace button clicked ===")
+                            console.log("dockItem.appInfo:", JSON.stringify(dockItem.appInfo, null, 2))
+                            console.log("Button enabled:", enabled)
+                            // Show workspace submenu
+                            workspaceSubmenu.visible = true
                         }
+                    }
+
+                    // Workspace submenu
+                    Rectangle {
+                        id: workspaceSubmenu
+                        visible: false
+                        Layout.fillWidth: true
+                        implicitHeight: Math.min(workspaceLayout.implicitHeight, 300)
+                        color: Appearance.colors.colLayer0
+                        radius: Appearance.rounding.small
+                        clip: true
+
+                        // Get current workspace
+                        readonly property HyprlandMonitor monitor: Hyprland.monitorFor(dock.screen)
+                        readonly property int currentWorkspace: monitor.activeWorkspace?.id ?? 1
+
+                        ScrollView {
+                            id: workspaceScroll
+                            anchors.fill: parent
+                            contentWidth: availableWidth
+                            ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+
+                            ColumnLayout {
+                                id: workspaceLayout
+                                width: workspaceScroll.width - (workspaceScroll.ScrollBar.vertical.visible ? workspaceScroll.ScrollBar.vertical.width + 5 : 0)
+                                spacing: 2
+
+                                Repeater {
+                                    model: 100
+                                    MenuButton {
+                                        Layout.fillWidth: true
+                                        property int wsNumber: modelData + 1
+                                        buttonText: qsTr("Workspace ") + wsNumber + (wsNumber === workspaceSubmenu.currentWorkspace ? " (current)" : "")
+                                        onClicked: {
+                                            console.log("\n=== Workspace button clicked ===")
+                                            console.log("Target workspace:", wsNumber)
+                                            console.log("Current workspace:", workspaceSubmenu.currentWorkspace)
+                                            console.log("Initial appInfo:", JSON.stringify(dockItem.appInfo, null, 2))
+                                            
+                                            // Try to find the actual window in HyprlandData
+                                            var actualWindow = null
+                                            if (dockItem.appInfo.address) {
+                                                actualWindow = HyprlandData.windowByAddress[dockItem.appInfo.address]
+                                                console.log("Looking up by address:", dockItem.appInfo.address)
+                                                console.log("Found window by address:", JSON.stringify(actualWindow, null, 2))
+                                            } else {
+                                                console.log("Looking up by class:", dockItem.appInfo.class)
+                                                actualWindow = HyprlandData.windowList.find(w => {
+                                                    const matches = w.class.toLowerCase() === dockItem.appInfo.class.toLowerCase() ||
+                                                        w.initialClass.toLowerCase() === dockItem.appInfo.class.toLowerCase()
+                                                    console.log("Checking window:", w.class, "matches:", matches)
+                                                    return matches
+                                                })
+                                                console.log("Found window by class:", JSON.stringify(actualWindow, null, 2))
+                                            }
+                                            
+                                            console.log("\nWindow list:", JSON.stringify(HyprlandData.windowList, null, 2))
+                                            console.log("\nWindow by address map:", JSON.stringify(HyprlandData.windowByAddress, null, 2))
+                                            
+                                            var cmd = ""
+                                            if (actualWindow?.address) {
+                                                cmd = `movetoworkspacesilent ${wsNumber},address:${actualWindow.address}`
+                                                console.log("Using address command:", cmd)
+                                            } else if (actualWindow?.class) {
+                                                cmd = `movetoworkspacesilent ${wsNumber},class:${actualWindow.class}`
+                                                console.log("Using class command:", cmd)
+                                            } else if (dockItem.appInfo.pid) {
+                                                cmd = `movetoworkspacesilent ${wsNumber},pid:${dockItem.appInfo.pid}`
+                                                console.log("Using PID command:", cmd)
+                                            } else if (dockItem.appInfo.class) {
+                                                cmd = `movetoworkspacesilent ${wsNumber},class:${dockItem.appInfo.class}`
+                                                console.log("Using fallback class command:", cmd)
+                                            }
+
+                                            if (cmd) {
+                                                console.log("Dispatching command:", cmd)
+                                                Hyprland.dispatch(cmd)
+                                            } else {
+                                                console.log("ERROR: No valid command could be constructed!")
+                                            }
+                                            
+                                            dockItem.closeMenu()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 1
+                        color: Qt.rgba(
+                            Appearance.colors.colOnLayer0.r,
+                            Appearance.colors.colOnLayer0.g,
+                            Appearance.colors.colOnLayer0.b,
+                            0.1
+                        )
                     }
 
                     MenuButton {
