@@ -35,7 +35,7 @@ MouseArea {
 
         menu: root.item.menu
         anchor.window: bar
-        anchor.rect.x: root.x + bar.width
+        anchor.rect.x: root.x + bar.width - 500
         anchor.rect.y: root.y
         anchor.rect.height: root.height
         anchor.edges: Edges.Bottom

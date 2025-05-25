@@ -27,15 +27,13 @@ Scope {
             // Update Hyprland blur rules for bar
             Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.barBlurPasses}`)
             Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.barBlurAmount}`)
+            Hyprland.dispatch(`keyword layerrule blur,^(quickshell:bar:blur)$`)
             // Reload Quickshell
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
         function onBarBlurPassesChanged() {
             Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.barBlurPasses}`)
-            // Reload Quickshell
-            Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
-        }
-        function onBarTransparencyChanged() {
+            Hyprland.dispatch(`keyword layerrule blur,^(quickshell:bar:blur)$`)
             // Reload Quickshell
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
@@ -45,6 +43,7 @@ Scope {
         // Apply initial blur settings
         Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.barBlurPasses}`)
         Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.barBlurAmount}`)
+        Hyprland.dispatch(`keyword layerrule blur,^(quickshell:bar:blur)$`)
     }
 
     Variants { // For each monitor
@@ -74,6 +73,7 @@ Scope {
                 item: barContent
             }
             color: "transparent"
+            WlrLayershell.namespace: "quickshell:bar:blur"
 
             anchors {
                 top: true
@@ -87,35 +87,17 @@ Scope {
                 anchors.left: parent.left
                 anchors.top: parent.top
                 height: barHeight
-
-                // Blur background layer
-                Rectangle {
-                    id: blurLayer
-                    anchors.fill: parent
-                    color: "transparent"
-                    
-                    layer.enabled: true
-                    layer.effect: FastBlur {
-                        radius: AppearanceSettingsState.barBlurAmount
-                        cached: true
-                    }
-                }
-
-                // Content layer
-                Rectangle {
-                    anchors.fill: parent
                     color: showBarBackground ? Qt.rgba(
                         Appearance.colors.colLayer0.r,
                         Appearance.colors.colLayer0.g,
                         Appearance.colors.colLayer0.b,
-                        1 - AppearanceSettingsState.barTransparency
+                    0.35
                     ) : "transparent"
                     
                     Behavior on color {
                         ColorAnimation {
                             duration: Appearance.animation.elementMoveFast.duration
                             easing.type: Appearance.animation.elementMoveFast.type
-                        }
                     }
                 }
 
@@ -126,6 +108,7 @@ Scope {
                     anchors.bottom: parent.bottom
                     height: 3
                     color: "black"
+                    opacity: 0.35
                 }
                 
                 MouseArea { // Left side | scroll to change brightness
@@ -447,10 +430,12 @@ Scope {
                                                     id: wifiIcon
                                                     anchors.fill: parent
                                                     source: Network.wifiEnabled ? (
-                                                        Network.networkStrength > 80 ? "root:/logo/wifi-4.svg" :
-                                                        Network.networkStrength > 60 ? "root:/logo/wifi-3.svg" :
-                                                        Network.networkStrength > 40 ? "root:/logo/wifi-2.svg" :
-                                                        Network.networkStrength > 20 ? "root:/logo/wifi-1.svg" :
+                                                        Network.networkStrength >= 90 ? "root:/logo/wifi-6.svg" :
+                                                        Network.networkStrength >= 80 ? "root:/logo/wifi-5.svg" :
+                                                        Network.networkStrength >= 65 ? "root:/logo/wifi-4.svg" :
+                                                        Network.networkStrength >= 45 ? "root:/logo/wifi-3.svg" :
+                                                        Network.networkStrength >= 25 ? "root:/logo/wifi-2.svg" :
+                                                        Network.networkStrength >= 10 ? "root:/logo/wifi-1.svg" :
                                                         "root:/logo/wifi-0.svg"
                                                     ) : "root:/logo/wifi-0.svg"
                                                     fillMode: Image.PreserveAspectFit

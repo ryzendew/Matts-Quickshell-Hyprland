@@ -7,9 +7,8 @@ QtObject {
     id: root
 
     // Bar settings
-    property real barTransparency: 0.2
-    property int barBlurAmount: 20
-    property int barBlurPasses: 2
+    property int barBlurAmount: 8
+    property int barBlurPasses: 4
     property bool barXray: false
 
     // Dock settings
@@ -23,9 +22,6 @@ QtObject {
     property bool sidebarXray: false
 
     // Save settings when they change
-    onBarTransparencyChanged: {
-        Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
-    }
     onBarBlurAmountChanged: Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     onBarBlurPassesChanged: Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     onBarXrayChanged: Hyprland.dispatch("exec killall -SIGUSR2 quickshell")

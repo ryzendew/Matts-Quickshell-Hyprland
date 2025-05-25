@@ -368,7 +368,7 @@ Scope {
                                            "transparent"
                                     
                                     Behavior on color {
-                                        ColorAnimation {
+                                        ColorAnimation { 
                                             duration: Appearance.animation.elementMoveFast.duration
                                             easing.type: Appearance.animation.elementMoveFast.type
                                         }
@@ -381,15 +381,15 @@ Scope {
                                         width: parent.width * 0.65
                                         height: parent.height * 0.65
                                         fillMode: Image.PreserveAspectFit
-                                    }
+                                }
+                                
+                                MouseArea {
+                                    id: archMouseArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
                                     
-                                    MouseArea {
-                                        id: archMouseArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        
-                                        onClicked: {
-                                            Hyprland.dispatch("exec hyprmenu")
+                                    onClicked: {
+                                        Hyprland.dispatch("exec hyprmenu")
                                         }
                                     }
                                 }

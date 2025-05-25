@@ -34,10 +34,12 @@ Rectangle {
 
                 MaterialSymbol {
                     text: Network.wifiEnabled ? (
-                        Network.networkStrength > 80 ? "signal_wifi_4_bar" :
-                        Network.networkStrength > 60 ? "network_wifi_3_bar" :
-                        Network.networkStrength > 40 ? "network_wifi_2_bar" :
-                        Network.networkStrength > 20 ? "network_wifi_1_bar" :
+                        Network.networkStrength >= 90 ? "signal_wifi_6_bar" :
+                        Network.networkStrength >= 80 ? "signal_wifi_5_bar" :
+                        Network.networkStrength >= 65 ? "signal_wifi_4_bar" :
+                        Network.networkStrength >= 45 ? "signal_wifi_3_bar" :
+                        Network.networkStrength >= 25 ? "signal_wifi_2_bar" :
+                        Network.networkStrength >= 10 ? "signal_wifi_1_bar" :
                         "signal_wifi_0_bar"
                     ) : "signal_wifi_off"
                     iconSize: Appearance.font.pixelSize.huge
