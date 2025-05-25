@@ -2,10 +2,309 @@
 
 ![image](https://github.com/user-attachments/assets/49bba28f-776e-454d-a351-a42bba898cd6)
 
-
 ---
 
 A comprehensive documentation of all changes made in converting end-4's AGS-based Hyprland configuration (https://github.com/end-4/dots-hyprland) to Quickshell, with dock implementation based on Pharmaracist's work.
+
+0. Recent Implementation Changes
+-----------------------------
+File: ~/.config/quickshell/modules/dock/DockItem.qml
+
+A. Right-Click Menu System Overhaul:
+```qml
+// Previous implementation using standalone Menu
+Menu {
+    id: contextMenu
+    x: parent.width / 2
+    y: parent.height
+    // Static positioning and basic styling
+}
+
+// New implementation using Loader and PanelWindow
+Loader {
+    id: menuLoader
+    active: dockItem.showMenu
+    sourceComponent: PanelWindow {
+        id: menuPanel
+        visible: dockItem.showMenu
+        color: Qt.rgba(0, 0, 0, 0)
+        implicitWidth: 200
+        implicitHeight: menuContent.implicitHeight
+
+        // Enhanced popup window configuration
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "quickshell:dockmenu"
+
+        // Dynamic positioning based on mouse click
+        margins {
+            left: dockItem.x + lastClickPos.x + 500
+            bottom: 2
+        }
+
+        // Improved focus handling
+        HyprlandFocusGrab {
+            windows: [menuPanel]
+            active: menuPanel.visible
+            onCleared: () => {
+                if (!active) {
+                    dockItem.closeMenu()
+                }
+            }
+        }
+
+        // Enhanced menu styling and animations
+        Rectangle {
+            id: menuContent
+            anchors.fill: parent
+            radius: Appearance.rounding.small
+            color: Appearance.colors.colLayer0
+            implicitHeight: menuLayout.implicitHeight + radius * 2
+
+            // Optimized shadow implementation
+            layer.enabled: true
+            layer.effect: DropShadow {
+                horizontalOffset: 0
+                verticalOffset: 1
+                radius: 8.0
+                samples: 17
+                color: Appearance.colors.colShadow
+                source: parent
+            }
+        }
+    }
+}
+```
+
+B. Performance Optimizations:
+File: ~/.config/quickshell/modules/dock/DockItem.qml
+```qml
+// Previous shadow implementation
+MultiEffect {
+    source: menuContent
+    anchors.fill: menuContent
+    shadowEnabled: true
+    shadowColor: Appearance.colors.colShadow
+    shadowVerticalOffset: 1
+    shadowBlur: 0.5
+}
+
+// New optimized shadow using DropShadow
+layer.enabled: true
+layer.effect: DropShadow {
+    horizontalOffset: 0
+    verticalOffset: 1
+    radius: 8.0
+    samples: 17
+    color: Appearance.colors.colShadow
+    source: parent
+}
+```
+
+C. Window Management Improvements:
+File: ~/.config/quickshell/modules/dock/DockItem.qml
+```qml
+// Enhanced window management logic
+MenuButton {
+    Layout.fillWidth: true
+    buttonText: qsTr("Move to workspace") + " >"
+    enabled: {
+        // Improved window detection
+        var hasActiveWindow = false
+        if (dockItem.appInfo.address) {
+            hasActiveWindow = HyprlandData.windowByAddress[dockItem.appInfo.address] !== undefined
+        } else if (dockItem.appInfo.class) {
+            hasActiveWindow = HyprlandData.windowList.some(w => 
+                w.class.toLowerCase() === dockItem.appInfo.class.toLowerCase() ||
+                w.initialClass.toLowerCase() === dockItem.appInfo.class.toLowerCase()
+            )
+        }
+        return hasActiveWindow
+    }
+}
+```
+
+D. Focus Management:
+File: ~/.config/quickshell/modules/dock/DockItem.qml
+```qml
+// Previous focus handling
+MouseArea {
+    anchors.fill: parent
+    onClicked: menu.popup()
+}
+
+// New focus management system
+HyprlandFocusGrab {
+    windows: [menuPanel]
+    active: menuPanel.visible
+    onCleared: () => {
+        if (!active) {
+            dockItem.closeMenu()
+        }
+    }
+}
+
+// Enhanced click handling
+MouseArea {
+    id: mouseArea
+    anchors.fill: parent
+    hoverEnabled: true
+    acceptedButtons: Qt.LeftButton | Qt.RightButton
+    
+    onPositionChanged: (mouse) => {
+        lastHoverPos = dockItem.mapToItem(null, mouse.x, mouse.y)
+    }
+    
+    onClicked: (mouse) => {
+        if (mouse.button === Qt.RightButton) {
+            // Close other menus first
+            var items = parent.children
+            for (var i = 0; i < items.length; i++) {
+                var item = items[i]
+                if (item !== dockItem && item.closeMenu) {
+                    item.closeMenu()
+                }
+            }
+            
+            lastClickPos = Qt.point(mouse.x, mouse.y)
+            dockItem.showMenu = true
+            dockItem.isActiveMenu = true
+        }
+    }
+}
+```
+
+E. Visual Improvements:
+File: ~/.config/quickshell/style/Theme.qml
+```qml
+// Enhanced menu styling
+Rectangle {
+    id: menuContent
+    anchors.fill: parent
+    radius: Appearance.rounding.small
+    color: Appearance.colors.colLayer0
+    
+    // Improved separator styling
+    Rectangle {
+        Layout.fillWidth: true
+        Layout.preferredHeight: 1
+        color: Qt.rgba(
+            Appearance.colors.colOnLayer0.r,
+            Appearance.colors.colOnLayer0.g,
+            Appearance.colors.colOnLayer0.b,
+            0.1
+        )
+    }
+}
+
+// Enhanced button interactions
+MenuButton {
+    background: Rectangle {
+        color: button.down ? Qt.rgba(
+            Appearance.colors.colPrimary.r,
+            Appearance.colors.colPrimary.g,
+            Appearance.colors.colPrimary.b,
+            0.2
+        ) : button.hovered ? Qt.rgba(
+            Appearance.colors.colPrimary.r,
+            Appearance.colors.colPrimary.g,
+            Appearance.colors.colPrimary.b,
+            0.1
+        ) : "transparent"
+        radius: Appearance.rounding.small
+        
+        Behavior on color {
+            ColorAnimation {
+                duration: Appearance.animation.elementMoveFast.duration
+                easing.type: Appearance.animation.elementMoveFast.type
+            }
+        }
+    }
+}
+```
+
+F. Hyprland Integration Updates:
+File: ~/.config/hypr/hyprland.conf
+```conf
+# Enhanced window rules
+windowrulev2 = float,class:^(quickshell)$
+windowrulev2 = noanim,class:^(quickshell)$
+windowrulev2 = noblur,class:^(quickshell)$
+windowrulev2 = rounding 30,class:^(quickshell)$
+
+# Improved layer rules
+layerrule = blur,quickshell:dock:blur
+layerrule = ignorezero,quickshell:dock:blur
+
+# Performance optimizations
+misc {
+    force_default_wallpaper = 0
+    disable_splash_rendering = true
+    disable_hyprland_logo = true
+    no_direct_scanout = false
+    disable_autoreload = true
+}
+```
+
+G. System Service Improvements:
+File: ~/.config/quickshell/services/NotificationManager.qml
+```qml
+// Enhanced notification handling
+NotificationManager {
+    id: notificationManager
+    popupTimeout: 5000
+    popupLocation: Qt.TopRight
+    
+    property var activeNotifications: []
+    
+    function showNotification(notification) {
+        // Improved stacking and positioning
+        const yOffset = activeNotifications.length * (notificationHeight + spacing)
+        notification.y = baseY + yOffset
+        
+        // Enhanced animation handling
+        notification.opacity = 0
+        notification.visible = true
+        notification.opacity = 1
+        
+        activeNotifications.push(notification)
+    }
+    
+    function removeNotification(notification) {
+        // Smooth removal animation
+        notification.opacity = 0
+        activeNotifications = activeNotifications.filter(n => n !== notification)
+        repositionNotifications()
+    }
+}
+```
+
+Recent Changes & Improvements
+---------------------------
+1. **Right-Click Menu System Overhaul**
+   - Completely redesigned using a Loader-based approach
+   - Custom menu styling with proper borders and transparency
+   - Fixed positioning relative to mouse cursor
+   - Improved memory management and cleanup
+   - Dynamic menu creation and destruction
+
+2. **Performance Optimizations**
+   - Removed dependency on MultiEffect for shadow rendering
+   - Better error handling and logging
+   - Improved component loading efficiency
+   - Enhanced focus management
+   - Better window tracking and state management
+
+3. **System Integration Enhancements**
+   - Improved Hyprland window management
+   - Enhanced notification system
+   - Better media controls integration
+   - Weather module improvements
+
+4. **Visual and UX Improvements**
+   - Enhanced dock item styling
+   - Improved hover effects and animations
+   - Better blur effects and transparency
+   - More responsive UI interactions
 
 File Locations Overview
 ----------------------
@@ -399,50 +698,3 @@ MediaController {
     // Media control implementation
 }
 ```
-
-File Locations Reference
-----------------------
-Key configuration files and their purposes:
-- ~/.config/quickshell/shell.qml: Main shell configuration
-- ~/.config/quickshell/modules/: UI components and widgets
-- ~/.config/quickshell/services/: System services and utilities
-- ~/.config/quickshell/style/: Theme and appearance
-- ~/.config/hypr/: Hyprland configuration files
-
-How to Apply Changes
-------------------
-1. Install required packages:
-```bash
-yay -S quickshell matugen-bin grimblast wtype qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt6-5compat qt6-base qt6-declarative qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-svg qt6-tools qt6-translations qt6-virtualkeyboard qt6-wayland syntax-highlighting
-```
-
-2. Copy configuration files:
-```bash
-cp -r .config/* ~/.config/
-```
-
-3. Start Quickshell:
-```bash
-qs
-```
-
-Notes
------
-- Complete rewrite from AGS JavaScript to Quickshell QML
-- Maintains functionality while improving performance
-- Weather module implementation by lysec
-- Based on end-4's Hyprland dotfiles
-- Extensive use of Qt Quick and Material Design
-
-Remember to backup your configuration files before applying changes.
-
-## Credits
-
-- Original dotfiles by [end-4](https://github.com/end-4/dots-hyprland)
-- Dock implementation based on [Pharmaracist's work](https://github.com/Pharmaracist/dots-hyprland)
-- Weather module by lysec
-- Quickshell implementation and customizations by Matt
-
-## License
-
-GPL-3.0 License - See LICENSE file for details 
