@@ -23,9 +23,6 @@ Item {
     property int notificationListSpacing: 5
     property bool ready: false
     property int defaultTimeoutValue: 5000
-    property string groupName: ""
-    property int groupCount: 1
-    property bool isGrouped: groupCount > 1
 
     property var notificationXAnimation: Appearance.animation.elementMoveEnter
 
@@ -107,50 +104,44 @@ Item {
     }
 
     MouseArea {
-        id: mouseArea
+        // Middle click to close
         anchors.fill: parent
-        hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-        
+        onClicked: (mouse) => {
+            if (mouse.button == Qt.MiddleButton) 
+                Notifications.discardNotification(notificationObject.id);
+            else if (mouse.button == Qt.RightButton) 
+                root.toggleExpanded()
+        }
+
         // Flick right to dismiss/discard
         property real startX: 0
         property real dragStartThreshold: 10
         property real dragConfirmThreshold: 70
         property bool dragStarted: false
-        
-        onClicked: (mouse) => {
-            if (mouse.button === Qt.MiddleButton) {
-                Notifications.discardNotification(notificationObject.id)
-            } else if (mouse.button === Qt.RightButton) {
-                root.toggleExpanded()
-            }
-        }
-        
+
         onPressed: (mouse) => {
             if (mouse.button === Qt.LeftButton) {
                 startX = mouse.x
             }
         }
-
         onPressAndHold: (mouse) => {
             if (mouse.button === Qt.LeftButton) {
                 Hyprland.dispatch(`exec wl-copy '${StringUtils.shellSingleQuoteEscape(notificationObject.body)}'`)
                 notificationSummaryText.text = String.format(qsTr("{0} (copied)"), notificationObject.summary)
             }
         }
-
         onDragStartedChanged: () => {
             // Prevent drag focus being shifted to parent flickable
             if (root.parent.parent.parent.interactive !== undefined) root.parent.parent.parent.interactive = !dragStarted
             root.enableAnimation = !dragStarted
         }
-
         onReleased: (mouse) => {
             dragStarted = false
             if (mouse.button === Qt.LeftButton) {
                 if (notificationRowWrapper.x > dragConfirmThreshold) {
                     root.notificationXAnimation = Appearance.animation.elementMoveEnter
-                    Notifications.discardNotification(notificationObject.id)
+                    Notifications.discardNotification(notificationObject.id);
                 } else {
                     // Animate back if not far enough
                     root.notificationXAnimation = Appearance.animation.elementMoveFast
@@ -159,7 +150,6 @@ Item {
                 }
             }
         }
-
         onPositionChanged: (mouse) => {
             if (mouse.buttons & Qt.LeftButton) {
                 let dx = mouse.x - startX
@@ -231,26 +221,6 @@ Item {
         }
     }
 
-    // Add group indicator if part of a group
-    Rectangle {
-        visible: isGrouped
-        anchors.right: parent.right
-        anchors.top: parent.top
-        anchors.topMargin: 8
-        anchors.rightMargin: 8
-        width: groupCountText.width + 12
-        height: groupCountText.height + 4
-        radius: height / 2
-        color: Qt.rgba(Appearance.colors.colLayer1.r, Appearance.colors.colLayer1.g, Appearance.colors.colLayer1.b, 0.8)
-
-        StyledText {
-            id: groupCountText
-            anchors.centerIn: parent
-            text: groupCount.toString()
-            font.pixelSize: Appearance.font.pixelSize.small
-            color: Appearance.colors.colOnLayer1
-        }
-    }
 
     Item {
         id: notificationRowWrapper

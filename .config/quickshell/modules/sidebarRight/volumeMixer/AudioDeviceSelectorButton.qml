@@ -12,32 +12,13 @@ Button {
     id: button
     required property bool input
 
-    transform: Scale {
-        id: buttonScale
-        origin.x: button.width / 2
-        origin.y: button.height / 2
-        xScale: button.down ? 0.95 : button.hovered ? 1.02 : 1.0
-        yScale: xScale
-
-        Behavior on xScale {
-            NumberAnimation {
-                duration: Appearance.animation.elementMoveFast.duration
-                easing.type: Easing.OutBack
-                easing.overshoot: 2.0
-            }
-        }
-    }
-
     background: Rectangle {
         anchors.fill: parent
         radius: Appearance.rounding.small
         color: (button.down) ? Appearance.colors.colLayer2Active : (button.hovered ? Appearance.colors.colLayer2Hover : Appearance.colors.colLayer2)
 
         Behavior on color {
-            ColorAnimation {
-                duration: Appearance.animation.elementMoveFast.duration
-                easing.type: Easing.OutCubic
-            }
+            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
         }
     }
 
@@ -55,13 +36,6 @@ Button {
             color: Appearance.colors.colOnLayer2
             iconSize: Appearance.font.pixelSize.hugeass
             text: input ? "mic_external_on" : "media_output"
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: Appearance.animation.elementMoveFast.duration
-                    easing.type: Easing.OutCubic
-                }
-            }
         }
 
         ColumnLayout {

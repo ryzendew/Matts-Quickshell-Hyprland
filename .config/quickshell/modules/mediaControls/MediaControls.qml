@@ -69,43 +69,26 @@ Scope {
                 left: true
             }
             mask: Region {
-                item: contentRect
+                item: playerColumnLayout
             }
 
-            Rectangle {
-                id: contentRect
-                anchors.fill: parent
-                color: Qt.rgba(Appearance.colors.colLayer1.r, Appearance.colors.colLayer1.g, Appearance.colors.colLayer1.b, 0.95)
-                radius: Appearance.rounding.medium
+            ColumnLayout {
+                id: playerColumnLayout
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                x: (mediaControlsRoot.screen.width / 2)  // Middle of screen
+                    - (osdWidth / 2)                     // Dodge OSD
+                    - (widgetWidth)                      // Account for widget width
+                    + (Appearance.sizes.elevationMargin) // It's fine for shadows to overlap
+                spacing: -Appearance.sizes.elevationMargin // Shadow overlap okay
 
-                layer.enabled: true
-                layer.effect: DropShadow {
-                    transparentBorder: true
-                    horizontalOffset: 0
-                    verticalOffset: 2
-                    radius: 8.0
-                    samples: 17
-                    color: Qt.rgba(0, 0, 0, 0.25)
-                }
-
-                ColumnLayout {
-                    id: playerColumnLayout
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    x: (mediaControlsRoot.screen.width / 2)  // Middle of screen
-                        - (osdWidth / 2)                     // Dodge OSD
-                        - (widgetWidth)                      // Account for widget width
-                        + (Appearance.sizes.elevationMargin) // It's fine for shadows to overlap
-                    spacing: -Appearance.sizes.elevationMargin // Shadow overlap okay
-
-                    Repeater {
-                        model: ScriptModel {
-                            values: root.realPlayers
-                        }
-                        delegate: PlayerControl {
-                            required property MprisPlayer modelData
-                            player: modelData
-                        }
+                Repeater {
+                    model: ScriptModel {
+                        values: root.realPlayers
+                    }
+                    delegate: PlayerControl {
+                        required property MprisPlayer modelData
+                        player: modelData
                     }
                 }
             }

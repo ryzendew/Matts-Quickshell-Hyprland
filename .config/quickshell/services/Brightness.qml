@@ -6,9 +6,6 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import QtQuick
 
-// Credit: This brightness service is based on the work from end-4/dots-hyprland
-// Original implementation: https://github.com/end-4/dots-hyprland
-
 Singleton {
     id: root
 

@@ -16,11 +16,10 @@ Scope {
         loading: true
         PanelWindow {
             id: root
-            visible: (columnLayout.children.length > 0 || notificationGroups.length > 0)
+            visible: (columnLayout.children.length > 0 || notificationWidgetList.length > 0)
             screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
 
             property Component notifComponent: NotificationWidget {}
-            property var notificationGroups: ({})  // Group notifications by app name
             property list<NotificationWidget> notificationWidgetList: []
 
             WlrLayershell.namespace: "quickshell:notificationPopup"
@@ -47,36 +46,45 @@ Scope {
                     if (GlobalStates.sidebarRightOpen) {
                         return
                     }
-
-                    const appName = notification.appName || "unknown"
-                    if (!root.notificationGroups[appName]) {
-                        root.notificationGroups[appName] = []
-                    }
-
-                    // Create new notification widget
+                    // notificationRepeater.model = [notification, ...notificationRepeater.model]
                     const notif = root.notifComponent.createObject(columnLayout, { 
                         notificationObject: notification,
-                        popup: true,
-                        groupName: appName,
-                        groupCount: root.notificationGroups[appName].length + 1
+                        popup: true
                     });
-
-                    // Add to group and widget list
-                    root.notificationGroups[appName].unshift(notif)
                     notificationWidgetList.unshift(notif)
 
-                    // Update layout without shuffling
-                    updateLayout()
-                }
+                    // Remove stuff from t he column, add back
+                    for (let i = 0; i < notificationWidgetList.length; i++) {
+                        if (notificationWidgetList[i].parent === columnLayout) {
+                            notificationWidgetList[i].parent = null;
+                        }
+                    }
 
+                    // Add notification widgets to the column
+                    for (let i = 0; i < notificationWidgetList.length; i++) {
+                        if (notificationWidgetList[i].parent === null) {
+                            notificationWidgetList[i].parent = columnLayout;
+                        }
+                    }
+                }
                 function onDiscard(id) {
-                    removeNotification(id, true)
+                    for (let i = notificationWidgetList.length - 1; i >= 0; i--) {
+                        const widget = notificationWidgetList[i];
+                        if (widget && widget.notificationObject && widget.notificationObject.id === id) {
+                            widget.destroyWithAnimation();
+                            notificationWidgetList.splice(i, 1);
+                        }
+                    }
                 }
-
                 function onTimeout(id) {
-                    removeNotification(id, true)
+                    for (let i = notificationWidgetList.length - 1; i >= 0; i--) {
+                        const widget = notificationWidgetList[i];
+                        if (widget && widget.notificationObject && widget.notificationObject.id === id) {
+                            widget.destroyWithAnimation();
+                            notificationWidgetList.splice(i, 1);
+                        }
+                    }
                 }
-
                 function onDiscardAll() {
                     for (let i = notificationWidgetList.length - 1; i >= 0; i--) {
                         const widget = notificationWidgetList[i];
@@ -84,69 +92,20 @@ Scope {
                             widget.destroyWithAnimation();
                         }
                     }
-                    notificationWidgetList = []
-                    root.notificationGroups = {}
+                    notificationWidgetList = [];
                 }
             }
 
-            function removeNotification(id, animate) {
-                for (let i = notificationWidgetList.length - 1; i >= 0; i--) {
-                    const widget = notificationWidgetList[i];
-                    if (widget && widget.notificationObject && widget.notificationObject.id === id) {
-                        // Remove from group
-                        const group = root.notificationGroups[widget.groupName]
-                        if (group) {
-                            const index = group.indexOf(widget)
-                            if (index !== -1) {
-                                group.splice(index, 1)
-                                if (group.length === 0) {
-                                    delete root.notificationGroups[widget.groupName]
-                                } else {
-                                    // Update group counts
-                                    for (let j = 0; j < group.length; j++) {
-                                        group[j].groupCount = group.length
-                                    }
-                                }
-                            }
-                        }
-
-                        // Remove widget
-                        if (animate) {
-                            widget.destroyWithAnimation()
-                        } else {
-                            widget.destroy()
-                        }
-                        notificationWidgetList.splice(i, 1)
-                        break
-                    }
-                }
-                updateLayout()
-            }
-
-            function updateLayout() {
-                // Remove all from column
-                for (let i = 0; i < notificationWidgetList.length; i++) {
-                    if (notificationWidgetList[i].parent === columnLayout) {
-                        notificationWidgetList[i].parent = null
-                    }
-                }
-
-                // Add back in correct order
-                for (let i = 0; i < notificationWidgetList.length; i++) {
-                    if (notificationWidgetList[i].parent === null) {
-                        notificationWidgetList[i].parent = columnLayout
-                    }
-                }
-            }
-
-            ColumnLayout {
+            ColumnLayout { // Scrollable window content
                 id: columnLayout
                 anchors.horizontalCenter: parent.horizontalCenter
                 width: parent.width - Appearance.sizes.elevationMargin * 2
-                spacing: 0
+                spacing: 0 // The widgets themselves have margins for spacing
 
-                // Notifications are added by the signal handlers
+                // Notifications are added by the above signal handlers
             }
+
         }
     }
+
 }

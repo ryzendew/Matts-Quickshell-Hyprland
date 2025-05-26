@@ -45,7 +45,7 @@ check_and_prompt_upscale() {
         img_width=$(identify -format "%w" "$img" 2>/dev/null)
         img_height=$(identify -format "%h" "$img" 2>/dev/null)
         if [[ "$img_width" -lt "$min_width_desired" || "$img_height" -lt "$min_height_desired" ]]; then
-            action=$(notify-send "Wallpaper Upscale" \
+            action=$(notify-send "Upscale?" \
                 "Image resolution (${img_width}x${img_height}) is lower than screen resolution (${min_width_desired}x${min_height_desired})" \
                 -A "open_upscayl=Open Upscayl")
             if [[ "$action" == "open_upscayl" ]]; then
@@ -53,7 +53,7 @@ check_and_prompt_upscale() {
                     nohup upscayl > /dev/null 2>&1 &
                 else
                     action2=$(notify-send \
-                        -a "Wallpaper" \
+                        -a "Wallpaper switcher" \
                         -c "im.error" \
                         -A "install_upscayl=Install Upscayl (Arch)" \
                         "Install Upscayl?" \

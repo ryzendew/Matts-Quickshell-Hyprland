@@ -17,7 +17,6 @@ Slider {
     property real handleHeight: 44 * scale
     property real handleLimit: slider.backgroundDotMargins * scale
     property real trackHeight: 15 * scale
-    property real trackRadius: trackHeight / 2
     property color highlightColor: Appearance.m3colors.m3primary
     property color trackColor: Appearance.m3colors.m3secondaryContainer
     property color handleColor: Appearance.m3colors.m3onSecondaryContainer
@@ -59,7 +58,10 @@ Slider {
             width: slider.handleLimit + slider.visualPosition * slider.limitedHandleRangeWidth - (slider.handleMargins + slider.handleWidth / 2)
             height: trackHeight
             color: slider.highlightColor
-            radius: trackRadius
+            topLeftRadius: Appearance.rounding.full
+            bottomLeftRadius: Appearance.rounding.full
+            topRightRadius: Appearance.rounding.unsharpen
+            bottomRightRadius: Appearance.rounding.unsharpen
         }
 
         // Fill right
@@ -69,7 +71,10 @@ Slider {
             width: slider.handleLimit + (1 - slider.visualPosition) * slider.limitedHandleRangeWidth - (slider.handleMargins + slider.handleWidth / 2)
             height: trackHeight
             color: slider.trackColor
-            radius: trackRadius
+            topLeftRadius: Appearance.rounding.unsharpen
+            bottomLeftRadius: Appearance.rounding.unsharpen
+            topRightRadius: Appearance.rounding.full
+            bottomRightRadius: Appearance.rounding.full
         }
 
         // Dot at the end
@@ -79,7 +84,7 @@ Slider {
             anchors.rightMargin: slider.backgroundDotMargins
             width: slider.backgroundDotSize
             height: slider.backgroundDotSize
-            radius: slider.backgroundDotSize / 2
+            radius: Appearance.rounding.full
             color: slider.handleColor
         }
     }
@@ -90,7 +95,7 @@ Slider {
         y: slider.topPadding + slider.availableHeight / 2 - height / 2
         implicitWidth: slider.handleWidth
         implicitHeight: slider.handleHeight
-        radius: handleWidth / 2
+        radius: Appearance.rounding.full
         color: slider.handleColor
 
         Behavior on implicitWidth {

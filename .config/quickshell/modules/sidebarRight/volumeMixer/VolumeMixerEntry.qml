@@ -24,25 +24,12 @@ Item {
 
         Image {
             Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
+            visible: source != ""
             sourceSize.width: 38
             sourceSize.height: 38
             source: {
                 const icon = Icons.noKnowledgeIconGuess(root.node.properties["application.icon-name"]);
                 return Quickshell.iconPath(icon, "image-missing");
-            }
-            opacity: 0
-            visible: opacity > 0
-
-            Behavior on opacity {
-                NumberAnimation {
-                    duration: Appearance.animation.elementMoveFast.duration
-                    easing.type: Appearance.animation.elementMoveFast.type
-                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-                }
-            }
-
-            Component.onCompleted: {
-                opacity = 1
             }
         }
 
@@ -59,20 +46,6 @@ Item {
                         const media = root.node.properties["media.name"];
                         return media != undefined ? `${app} • ${media}` : app;
                     }
-                    opacity: 0
-                    visible: opacity > 0
-
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: Appearance.animation.elementMoveFast.duration
-                            easing.type: Appearance.animation.elementMoveFast.type
-                            easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-                        }
-                    }
-
-                    Component.onCompleted: {
-                        opacity = 1
-                    }
                 }
             }
 
@@ -81,20 +54,6 @@ Item {
                     id: slider
                     value: root.node.audio.volume
                     onValueChanged: root.node.audio.volume = value
-                    opacity: 0
-                    visible: opacity > 0
-
-                    Behavior on opacity {
-                        NumberAnimation {
-                            duration: Appearance.animation.elementMoveFast.duration
-                            easing.type: Appearance.animation.elementMoveFast.type
-                            easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
-                        }
-                    }
-
-                    Component.onCompleted: {
-                        opacity = 1
-                    }
                 }
             }
         }
