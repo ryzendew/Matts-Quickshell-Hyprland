@@ -20,7 +20,8 @@ import Qt.labs.platform
 Singleton {
     id: root
     
-    readonly property var renderPadding: 4 // This is to prevent cutoff in the rendered images
+    readonly property var renderPadding: 8 // Increased padding for better readability
+    readonly property var textSizeMultiplier: 1.2 // Increase text size for better readability
 
     property list<string> processedHashes: []
     property var processedExpressions: ({})
@@ -63,7 +64,7 @@ Singleton {
                 command: [ "${microtexBinaryPath}", "-headless", 
                     "-input=${StringUtils.escapeBackslashes(expression)}", 
                     "-output=${imagePath}", 
-                    "-textsize=${Appearance.font.pixelSize.normal}", 
+                    "-textsize=${Appearance.font.pixelSize.normal * textSizeMultiplier}", 
                     "-padding=${renderPadding}", 
                     "-foreground=${Appearance.colors.colOnLayer1}",
                     "-maxwidth=0.85" ]

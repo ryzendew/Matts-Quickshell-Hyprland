@@ -286,10 +286,16 @@ Item { // Player instance
                                 (playPauseButton.pressed ? blendedColors.colSecondaryContainerActive : 
                                     playPauseButton.hovered ? blendedColors.colSecondaryContainerHover : 
                                     blendedColors.colSecondaryContainer)
-                            radius: Appearance.rounding.full
+                            radius: playerController.player?.isPlaying ? Appearance.rounding.medium : Appearance.rounding.full
 
                             Behavior on color {
                                 animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                            }
+                            Behavior on radius {
+                                NumberAnimation {
+                                    duration: Appearance.animation.elementMoveFast.duration
+                                    easing.type: Appearance.animation.elementMoveFast.type
+                                }
                             }
                         }
 

@@ -22,10 +22,18 @@ Switch {
         border.color: root.checked ? Appearance.m3colors.m3primary : Appearance.m3colors.m3outline
 
         Behavior on color {
-            animation: Appearance.animation.elementMove.colorAnimation.createObject(this)
+            ColorAnimation {
+                duration: Appearance.animation.elementMoveFast.duration
+                easing.type: Appearance.animation.elementMoveFast.type
+                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+            }
         }
         Behavior on border.color {
-            animation: Appearance.animation.elementMove.colorAnimation.createObject(this)
+            ColorAnimation {
+                duration: Appearance.animation.elementMoveFast.duration
+                easing.type: Appearance.animation.elementMoveFast.type
+                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+            }
         }
     }
 
@@ -40,16 +48,32 @@ Switch {
         anchors.leftMargin: root.checked ? (root.pressed ? (22 * root.scale) : 24 * root.scale) : (root.pressed ? (2 * root.scale) : 8 * root.scale)
 
         Behavior on anchors.leftMargin {
-            animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
+            NumberAnimation {
+                duration: Appearance.animation.elementMoveFast.duration
+                easing.type: Appearance.animation.elementMoveFast.type
+                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+            }
         }
         Behavior on width {
-            animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
+            NumberAnimation {
+                duration: Appearance.animation.elementMoveFast.duration
+                easing.type: Appearance.animation.elementMoveFast.type
+                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+            }
         }
         Behavior on height {
-            animation: Appearance.animation.elementMove.numberAnimation.createObject(this)
+            NumberAnimation {
+                duration: Appearance.animation.elementMoveFast.duration
+                easing.type: Appearance.animation.elementMoveFast.type
+                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+            }
         }
         Behavior on color {
-            animation: Appearance.animation.elementMove.colorAnimation.createObject(this)
+            ColorAnimation {
+                duration: Appearance.animation.elementMoveFast.duration
+                easing.type: Appearance.animation.elementMoveFast.type
+                easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+            }
         }
     }
 }

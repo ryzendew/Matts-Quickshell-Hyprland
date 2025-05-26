@@ -73,6 +73,20 @@ Item {
                             required property PwLinkGroup modelData
                             // Consider sources that output to the default sink
                             node: modelData.source
+                            opacity: 0
+                            visible: opacity > 0
+
+                            Behavior on opacity {
+                                NumberAnimation {
+                                    duration: Appearance.animation.elementMoveFast.duration
+                                    easing.type: Appearance.animation.elementMoveFast.type
+                                    easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                }
+                            }
+
+                            Component.onCompleted: {
+                                opacity = 1
+                            }
                         }
                     }
                 }
@@ -168,6 +182,21 @@ Item {
             anchors.margins: 30
             implicitHeight: dialogColumnLayout.implicitHeight
             
+            transform: Scale {
+                origin.x: dialog.width / 2
+                origin.y: dialog.height / 2
+                xScale: root.showDeviceSelector ? 1 : 0.9
+                yScale: xScale
+
+                Behavior on xScale {
+                    NumberAnimation {
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
+                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                    }
+                }
+            }
+            
             ColumnLayout {
                 id: dialogColumnLayout
                 anchors.fill: parent
@@ -219,6 +248,20 @@ Item {
                                 Layout.fillWidth: true
                                 implicitHeight: 40
                                 checked: modelData.id === Pipewire.defaultAudioSink?.id
+                                opacity: 0
+                                visible: opacity > 0
+
+                                Behavior on opacity {
+                                    NumberAnimation {
+                                        duration: Appearance.animation.elementMoveFast.duration
+                                        easing.type: Appearance.animation.elementMoveFast.type
+                                        easing.bezierCurve: Appearance.animation.elementMoveFast.bezierCurve
+                                    }
+                                }
+
+                                Component.onCompleted: {
+                                    opacity = 1
+                                }
 
                                 Connections {
                                     target: root
@@ -371,5 +414,4 @@ Item {
             }
         }
     }
-
 }
