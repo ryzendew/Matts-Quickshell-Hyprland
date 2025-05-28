@@ -21,6 +21,12 @@ QtObject {
     property real sidebarTransparency: 0.2
     property bool sidebarXray: false
 
+    // Weather widget settings
+    property real weatherTransparency: 0.8
+    property int weatherBlurAmount: 8
+    property int weatherBlurPasses: 4
+    property bool weatherXray: false
+
     // Save settings when they change
     onBarBlurAmountChanged: Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     onBarBlurPassesChanged: Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
@@ -62,6 +68,28 @@ QtObject {
         Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     }
 
+    onWeatherTransparencyChanged: {
+        Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+    }
+    onWeatherBlurAmountChanged: {
+        Hyprland.dispatch("keyword decoration:blur:enabled 1")
+        Hyprland.dispatch("keyword decoration:blur:size " + weatherBlurAmount)
+        Hyprland.dispatch("keyword layerrule blur,^(quickshell:weather:blur)$")
+        Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+    }
+    onWeatherBlurPassesChanged: {
+        Hyprland.dispatch("keyword decoration:blur:passes " + weatherBlurPasses)
+        Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+    }
+    onWeatherXrayChanged: {
+        if (weatherXray) {
+            Hyprland.dispatch("keyword layerrule xray on,^(quickshell:weather:blur)$")
+        } else {
+            Hyprland.dispatch("keyword layerrule xray off,^(quickshell:weather:blur)$")
+        }
+        Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+    }
+
     Component.onCompleted: {
         // Apply initial settings
         Hyprland.dispatch("keyword decoration:blur:enabled 1")
@@ -72,6 +100,13 @@ QtObject {
         if (sidebarXray) {
             Hyprland.dispatch("keyword layerrule xray on,^(quickshell:sidebarLeft)$")
             Hyprland.dispatch("keyword layerrule xray on,^(quickshell:sidebarRight)$")
+        }
+        // Apply weather widget settings
+        Hyprland.dispatch("keyword decoration:blur:size " + weatherBlurAmount)
+        Hyprland.dispatch("keyword decoration:blur:passes " + weatherBlurPasses)
+        Hyprland.dispatch("keyword layerrule blur,^(quickshell:weather:blur)$")
+        if (weatherXray) {
+            Hyprland.dispatch("keyword layerrule xray on,^(quickshell:weather:blur)$")
         }
     }
 } 

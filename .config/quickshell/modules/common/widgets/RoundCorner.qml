@@ -6,6 +6,9 @@ Item {
     property int size: 25
     property color color: "#000000"
 
+    // Ensure minimum size to prevent zero width/height warnings
+    readonly property int actualSize: Math.max(size, 1)
+
     onColorChanged: {
         canvas.requestPaint();
     }
@@ -19,8 +22,8 @@ Item {
 
     property int corner: cornerEnum.topLeft // Default to TopLeft
 
-    width: size
-    height: size
+    width: actualSize
+    height: actualSize
 
     Canvas {
         id: canvas
@@ -30,7 +33,7 @@ Item {
         
         onPaint: {
             var ctx = getContext("2d");
-            var r = root.size;
+            var r = root.actualSize;
 
             ctx.beginPath();
             switch (root.corner) {

@@ -6,7 +6,7 @@ import Quickshell
 
 QuickToggleButton {
     id: nightLightButton
-    property bool enabled: false
+    property bool enabled: false // default off
     toggled: enabled
     buttonIcon: "nightlight"
     onClicked: {

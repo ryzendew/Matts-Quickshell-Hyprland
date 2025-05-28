@@ -7,6 +7,7 @@ import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
@@ -72,21 +73,24 @@ Scope {
                 item: contentRect
             }
 
+            Item {
+                width: contentRect.implicitWidth
+                height: contentRect.implicitHeight
+
+                MultiEffect {
+                    anchors.fill: contentRect
+                    source: contentRect
+                    shadowEnabled: true
+                    shadowColor: Appearance.colors.colShadow
+                    shadowVerticalOffset: 1
+                    shadowBlur: 0.5
+            }
+
             Rectangle {
                 id: contentRect
                 anchors.fill: parent
                 color: Qt.rgba(Appearance.colors.colLayer1.r, Appearance.colors.colLayer1.g, Appearance.colors.colLayer1.b, 0.95)
                 radius: Appearance.rounding.medium
-
-                layer.enabled: true
-                layer.effect: DropShadow {
-                    transparentBorder: true
-                    horizontalOffset: 0
-                    verticalOffset: 2
-                    radius: 8.0
-                    samples: 17
-                    color: Qt.rgba(0, 0, 0, 0.25)
-                }
 
                 ColumnLayout {
                     id: playerColumnLayout
@@ -105,6 +109,7 @@ Scope {
                         delegate: PlayerControl {
                             required property MprisPlayer modelData
                             player: modelData
+                            }
                         }
                     }
                 }

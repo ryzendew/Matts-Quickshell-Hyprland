@@ -152,6 +152,7 @@ Singleton {
             property string reading: "Readex Pro"
         }
         property QtObject pixelSize: QtObject {
+            property int tiny: 9
             property int smallest: 10
             property int smaller: 13
             property int small: 15
@@ -251,6 +252,10 @@ Singleton {
     sizes: QtObject {
         property real barHeight: 40
         property real barCenterSideModuleWidth: 360
+        property real barCenterSideModuleWidthShortened: 280
+        property real barCenterSideModuleWidthHellaShortened: 200
+        property real barShortenScreenWidthThreshold: 1200
+        property real barHellaShortenScreenWidthThreshold: 800
         property real barPreferredSideSectionWidth: 400
         property real sidebarWidth: 460
         property real sidebarWidthExtended: 750

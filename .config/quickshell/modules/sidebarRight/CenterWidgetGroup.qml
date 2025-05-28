@@ -48,7 +48,7 @@ Rectangle {
     property var tabButtonList: [
         {"icon": "notifications", "name": qsTr("Notifications")},
         {"icon": "volume_up", "name": qsTr("Volume mixer")},
-        {"icon": "palette", "name": qsTr("Appearance")}
+        {"icon": "cloud", "name": qsTr("Weather")}
     ]
 
     // Intercept the close signal
@@ -95,22 +95,17 @@ Rectangle {
             }
         }
 
-        SwipeView {
-            id: swipeView
+        // Isolate each tab using a Loader
+        Loader {
+            id: tabLoader
             Layout.topMargin: 5
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 10
-            currentIndex: root.selectedTab
-            onCurrentIndexChanged: {
-                tabBar.enableIndicatorAnimation = true
-                root.selectedTab = currentIndex
-            }
-            clip: true
-
-            NotificationList {}
-            VolumeMixer {}
-            AppearanceSettings {}
+            sourceComponent: root.selectedTab === 0 ? notificationComponent : root.selectedTab === 1 ? volumeMixerComponent : weatherComponent
         }
+
+        Component { id: notificationComponent; NotificationList {} }
+        Component { id: volumeMixerComponent; VolumeMixer {} }
+        Component { id: weatherComponent; WeatherSidebarPage {} }
     }
 }

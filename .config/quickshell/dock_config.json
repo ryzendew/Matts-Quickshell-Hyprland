@@ -9,7 +9,7 @@
     "obs.desktop",
     "com.blackmagicdesign.resolve.desktop",
     "AffinityPhoto.desktop",
-    "ptyxis"
+    "org.gnome.Ptyxis.desktop"
   ],
   "autoHide": false
 } 

@@ -20,7 +20,6 @@ MouseArea {
     signal dragCancelled()
 
     hoverEnabled: interactive
-    preventStealing: interactive && preventStealing
 
     onPressed: (mouse) => {
         if (!interactive) {
@@ -41,7 +40,7 @@ MouseArea {
         let dy = mouse.y - startY
         
         if (horizontalOnly) dy = 0
-        if (verticalOnly) dx = 0
+        if (verticalOnly) dy = 0
 
         if (dragStarted || Math.abs(dx) > dragStartThreshold || Math.abs(dy) > dragStartThreshold) {
             if (!dragStarted) {
@@ -62,7 +61,7 @@ MouseArea {
         let dy = mouse.y - startY
         
         if (horizontalOnly) dy = 0
-        if (verticalOnly) dx = 0
+        if (verticalOnly) dy = 0
 
         if (dragStarted) {
             if (Math.abs(dx) > dragConfirmThreshold || Math.abs(dy) > dragConfirmThreshold) {

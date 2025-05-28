@@ -5,7 +5,7 @@ import Quickshell.Io
 import Quickshell
 
 QuickToggleButton {
-    toggled: idleInhibitor.running
+    toggled: true
     buttonIcon: "coffee"
     onClicked: {
         idleInhibitor.running = !idleInhibitor.running

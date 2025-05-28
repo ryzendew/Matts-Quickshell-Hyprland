@@ -61,10 +61,10 @@ Scope {
                 (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened : 
                     Appearance.sizes.barCenterSideModuleWidth
 
-            NetworkTooltip {
-                id: networkTooltip
-                screen: modelData
-            }
+            // NetworkTooltip {
+            //     id: networkTooltip
+            //     screen: modelData
+            // }
 
             screen: modelData
             implicitHeight: barHeight
@@ -91,7 +91,7 @@ Scope {
                         Appearance.colors.colLayer0.r,
                         Appearance.colors.colLayer0.g,
                         Appearance.colors.colLayer0.b,
-                    0.35
+                    0.55
                     ) : "transparent"
                     
                     Behavior on color {
@@ -120,21 +120,10 @@ Scope {
                     property real lastScrollX: 0
                     property real lastScrollY: 1
                     property bool trackingScroll: false
-                    acceptedButtons: Qt.LeftButton
-                    hoverEnabled: true
+                    acceptedButtons: Qt.NoButton  // Disable click handling for the large area
+                    hoverEnabled: false
                     propagateComposedEvents: true
-                    onEntered: (event) => {
-                        barLeftSideMouseArea.hovered = true
-                    }
-                    onExited: (event) => {
-                        barLeftSideMouseArea.hovered = false
-                        barLeftSideMouseArea.trackingScroll = false
-                    }
-                    onPressed: (event) => {
-                        if (event.button === Qt.LeftButton) {
-                            Hyprland.dispatch('global quickshell:sidebarLeftOpen')
-                        }
-                    }
+                    
                     // Scroll to change brightness
                     WheelHandler {
                         onWheel: (event) => {
@@ -163,16 +152,6 @@ Scope {
                         anchors.fill: parent
                         implicitHeight: leftSectionRowLayout.implicitHeight
                         implicitWidth: leftSectionRowLayout.implicitWidth
-
-                        ScrollHint {
-                            reveal: barLeftSideMouseArea.hovered
-                            icon: "light_mode"
-                            tooltipText: qsTr("Scroll to change brightness")
-                            side: "left"
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            
-                        }
                         
                         RowLayout { // Content
                             id: leftSectionRowLayout
@@ -180,6 +159,7 @@ Scope {
                             spacing: 10
 
                             Rectangle {
+                                id: archLogoContainer
                                 Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                                 Layout.leftMargin: 2
                                 Layout.fillWidth: false
@@ -200,13 +180,21 @@ Scope {
                                     fillMode: Image.PreserveAspectFit
                                 }
                                 
+                                // Mouse area only for the Arch logo
                                 MouseArea {
                                     id: archMouseArea
                                     anchors.fill: parent
                                     hoverEnabled: true
+                                    acceptedButtons: Qt.LeftButton
                                     
                                     onClicked: {
-                                        Hyprland.dispatch("exec hyprmenu")
+                                        GlobalStates.hyprMenuOpen = !GlobalStates.hyprMenuOpen
+                                    }
+                                    
+                                    onPressed: (event) => {
+                                        if (event.button === Qt.LeftButton) {
+                                            Hyprland.dispatch('global quickshell:sidebarLeftOpen')
+                                        }
                                     }
                                 }
                             }
@@ -270,24 +258,10 @@ Scope {
                     property real lastScrollY: 0
                     property bool trackingScroll: false
                     
-                    acceptedButtons: Qt.LeftButton
-                    hoverEnabled: true
+                    acceptedButtons: Qt.NoButton  // Disable click handling for the large area
+                    hoverEnabled: false
                     propagateComposedEvents: true
-                    onEntered: (event) => {
-                        barRightSideMouseArea.hovered = true
-                    }
-                    onExited: (event) => {
-                        barRightSideMouseArea.hovered = false
-                        barRightSideMouseArea.trackingScroll = false
-                    }
-                    onPressed: (event) => {
-                        if (event.button === Qt.LeftButton) {
-                            Hyprland.dispatch('global quickshell:sidebarRightOpen')
-                        }
-                        else if (event.button === Qt.RightButton) {
-                            MprisController.activePlayer.next()
-                        }
-                    }
+
                     // Scroll to change volume
                     WheelHandler {
                         onWheel: (event) => {
@@ -319,33 +293,41 @@ Scope {
                         anchors.fill: parent
                         implicitHeight: rightSectionRowLayout.implicitHeight
                         implicitWidth: rightSectionRowLayout.implicitWidth
-                        
-                        ScrollHint {
-                            reveal: barRightSideMouseArea.hovered
-                            icon: "volume_up"
-                            tooltipText: qsTr("Scroll to change volume")
-                            side: "right"
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
 
                         RowLayout {
                             id: rightSectionRowLayout
                             anchors.fill: parent
-                            spacing: 5
+                            spacing: 8
                             layoutDirection: Qt.RightToLeft
                     
+                            // System indicators with its own mouse area
                             Rectangle {
+                                id: indicatorsContainer
                                 Layout.margins: 4
                                 Layout.rightMargin: 2
                                 Layout.fillHeight: true
-                                implicitWidth: indicatorsRowLayout.implicitWidth + 10*2
+                                implicitWidth: indicatorsRowLayout.implicitWidth + 20
                                 radius: Appearance.rounding.full
-                                color: (barRightSideMouseArea.pressed || GlobalStates.sidebarRightOpen) ? 
+                                color: (indicatorsMouseArea.pressed || GlobalStates.sidebarRightOpen) ? 
                                     Qt.rgba(Appearance.colors.colLayer1Active.r, Appearance.colors.colLayer1Active.g, Appearance.colors.colLayer1Active.b, 0.8) : 
-                                    barRightSideMouseArea.hovered ? 
+                                    indicatorsMouseArea.hovered ? 
                                     Qt.rgba(Appearance.colors.colLayer1Hover.r, Appearance.colors.colLayer1Hover.g, Appearance.colors.colLayer1Hover.b, 0.8) : 
                                     "transparent"
+                                
+                                // Mouse area only for the indicators section
+                                MouseArea {
+                                    id: indicatorsMouseArea
+                                    anchors.fill: parent
+                                    acceptedButtons: Qt.LeftButton
+                                    hoverEnabled: true
+                                    
+                                    onPressed: (event) => {
+                                        if (event.button === Qt.LeftButton) {
+                                            Hyprland.dispatch('global quickshell:sidebarRightOpen')
+                                        }
+                                    }
+                                }
+                                
                                 RowLayout {
                                     id: indicatorsRowLayout
                                     anchors.centerIn: parent
@@ -403,18 +385,10 @@ Scope {
                                                 color: "transparent"
                                                 visible: Network.networkType === "ethernet"
 
-                                                Image {
-                                                    id: ethernetIcon
+                                                AnimatedEthernetIcon {
                                                     anchors.fill: parent
-                                                    source: "root:/logo/ethernet.svg"
-                                                    fillMode: Image.PreserveAspectFit
-                                                    visible: true
-                                                }
-
-                                                ColorOverlay {
-                                                    anchors.fill: parent
-                                                    source: ethernetIcon
-                                                    color: Appearance.colors.colOnLayer0
+                                                    iconSize: parent.width
+                                                    iconColor: Appearance.colors.colOnLayer0
                                                 }
                                             }
 
@@ -426,23 +400,24 @@ Scope {
                                                 color: "transparent"
                                                 visible: Network.networkType === "wifi"
 
-                                                Image {
+                                                SystemIcon {
                                                     id: wifiIcon
                                                     anchors.fill: parent
-                                                    source: Network.wifiEnabled ? (
-                                                        Network.networkStrength >= 90 ? "root:/logo/wifi-6.svg" :
-                                                        Network.networkStrength >= 80 ? "root:/logo/wifi-5.svg" :
-                                                        Network.networkStrength >= 65 ? "root:/logo/wifi-4.svg" :
-                                                        Network.networkStrength >= 45 ? "root:/logo/wifi-3.svg" :
-                                                        Network.networkStrength >= 25 ? "root:/logo/wifi-2.svg" :
-                                                        Network.networkStrength >= 10 ? "root:/logo/wifi-1.svg" :
-                                                        "root:/logo/wifi-0.svg"
-                                                    ) : "root:/logo/wifi-0.svg"
-                                                    fillMode: Image.PreserveAspectFit
-                                                    visible: true
+                                                    iconName: Network.wifiEnabled ? (
+                                                        Network.networkStrength >= 90 ? "network-wireless-signal-excellent" :
+                                                        Network.networkStrength >= 80 ? "network-wireless-signal-good" :
+                                                        Network.networkStrength >= 65 ? "network-wireless-signal-ok" :
+                                                        Network.networkStrength >= 45 ? "network-wireless-signal-weak" :
+                                                        Network.networkStrength >= 25 ? "network-wireless-signal-none" :
+                                                        Network.networkStrength >= 10 ? "network-wireless-signal-none" :
+                                                        "network-wireless-signal-none"
+                                                    ) : "network-wireless-offline"
+                                                    iconSize: parent.width
+                                                    iconColor: Appearance.colors.colOnLayer0
+                                                    fallbackIcon: "network-wireless"
                                                     opacity: Network.wifiEnabled ? 1.0 : 0.5
                                                 
-                                                    Behavior on source {
+                                                    Behavior on iconName {
                                                         PropertyAnimation {
                                                         duration: Appearance.animation.elementMoveFast.duration
                                                         easing.type: Appearance.animation.elementMoveFast.type
@@ -450,21 +425,16 @@ Scope {
                                                 }
                                                 }
 
-                                                ColorOverlay {
-                                                    anchors.fill: parent
-                                                    source: wifiIcon
-                                                    color: Appearance.colors.colOnLayer0
-                                                }
-
                                                 MouseArea {
                                                     anchors.fill: parent
-                                                    hoverEnabled: true
-                                                    onEntered: networkTooltip.show()
-                                                    onExited: networkTooltip.hide()
-                                                    onPositionChanged: (mouse) => {
-                                                        var point = wifiIconRect.mapToItem(null, mouse.x, mouse.y)
-                                                        networkTooltip.updatePosition(point.x, point.y)
-                                                    }
+                                                    hoverEnabled: false
+                                                    // Tooltip disabled to prevent crashes
+                                                    // onEntered: networkTooltip.show()
+                                                    // onExited: networkTooltip.hide()
+                                                    // onPositionChanged: (mouse) => {
+                                                    //     var point = wifiIconRect.mapToItem(null, mouse.x, mouse.y)
+                                                    //     networkTooltip.updatePosition(point.x, point.y)
+                                                    // }
                                                 }
                                             }
                                         }
@@ -479,13 +449,14 @@ Scope {
 
                             ClockWidget {
                                 Layout.alignment: Qt.AlignVCenter
-                                Layout.rightMargin: 2
+                                Layout.rightMargin: 4
+                                Layout.leftMargin: 4
                             }
 
                             Weather {
                                 Layout.alignment: Qt.AlignVCenter
-                                Layout.rightMargin: 2
-                                Layout.leftMargin: 2
+                                Layout.rightMargin: 4
+                                Layout.leftMargin: 4
                                 Layout.minimumWidth: 100
                                 weatherLocation: "Halifax, Nova Scotia, Canada"
                             }
@@ -494,6 +465,8 @@ Scope {
                                 bar: barRoot
                                 Layout.fillWidth: false
                                 Layout.fillHeight: true
+                                Layout.rightMargin: 4
+                                Layout.leftMargin: 4
                             }
 
                             Item {
@@ -515,16 +488,18 @@ Scope {
                 RoundCorner {
                     anchors.top: parent.top
                     anchors.left: parent.left
-                    size: 0
+                    size: showBarBackground ? Appearance.rounding.small : 1
                     corner: cornerEnum.topLeft
                     color: showBarBackground ? Appearance.colors.colLayer0 : "transparent"
+                    visible: showBarBackground
                 }
                 RoundCorner {
                     anchors.top: parent.top
                     anchors.right: parent.right
-                    size: 0
+                    size: showBarBackground ? Appearance.rounding.small : 1
                     corner: cornerEnum.topRight
                     color: showBarBackground ? Appearance.colors.colLayer0 : "transparent"
+                    visible: showBarBackground
                 }
             }
 

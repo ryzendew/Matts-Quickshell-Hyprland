@@ -10,7 +10,13 @@ import "root:/modules/common/widgets"
 
 PanelWindow {
     id: menuRoot
-    
+    color: "#000000"
+    visible: true
+    x: clickPos.x // Position at the global mouse x
+    y: clickPos.y // Position at the global mouse y
+    width: menuWidth
+    height: menuContent.implicitHeight
+    radius: Appearance.rounding.small
     property var appInfo: ({})
     property bool isPinned: false
     property point clickPos: Qt.point(0, 0)
@@ -33,52 +39,17 @@ PanelWindow {
         destroy()
     }
     
-    color: "transparent"
-    visible: false
     implicitWidth: menuWidth
     implicitHeight: menuContent.implicitHeight
-    
-    // Set up as a popup window
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboard_mode: WlrKeyboardMode.None
-    WlrLayershell.namespace: "quickshell:dockmenu"
-    WlrLayershell.exclusive_zone: -1  // Don't reserve space
-    
-    // Click outside to close
-    HyprlandFocusGrab {
-        id: grab
-        windows: [menuRoot]
-        active: menuRoot.visible
-        onCleared: () => {
-            if (!active) menuRoot.hide()
-        }
-    }
     
     // Menu content
     Rectangle {
         id: menuContent
         anchors.fill: parent
-        color: Qt.rgba(
-            Appearance.colors.colLayer0.r,
-            Appearance.colors.colLayer0.g,
-            Appearance.colors.colLayer0.b,
-            1.0
-        )
-        radius: Appearance.rounding.small
-        
-        // Add padding for content
+        color: "#000000" // Solid black background
+        radius: Appearance.rounding.small // Keep rounded corners
         property int padding: 4
-        
-        // Add shadow
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            source: menuContent
-            anchors.fill: menuContent
-            shadowEnabled: true
-            shadowColor: Appearance.colors.colShadow
-            shadowVerticalOffset: 1
-            shadowBlur: 0.5
-        }
+        // No effects, no shadows
         
         ColumnLayout {
             anchors.fill: parent
@@ -88,6 +59,14 @@ PanelWindow {
             MenuButton {
                 Layout.fillWidth: true
                 buttonText: isPinned ? qsTr("Unpin from dock") : qsTr("Pin to dock")
+                // Force white text
+                contentItem: Text {
+                    text: isPinned ? qsTr("Unpin from dock") : qsTr("Pin to dock")
+                    color: "#ffffff"
+                    font: button.font
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
+                }
                 onClicked: {
                     if (isPinned) {
                         menuRoot.unpinApp()
@@ -101,6 +80,13 @@ PanelWindow {
             MenuButton {
                 Layout.fillWidth: true
                 buttonText: qsTr("Launch new instance")
+                contentItem: Text {
+                    text: qsTr("Launch new instance")
+                    color: "#ffffff"
+                    font: button.font
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
+                }
                 onClicked: {
                     var command = appInfo.command || appInfo.class.toLowerCase()
                     Hyprland.dispatch(`exec ${command}`)
@@ -111,18 +97,20 @@ PanelWindow {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
-                color: Qt.rgba(
-                    Appearance.colors.colOnLayer0.r,
-                    Appearance.colors.colOnLayer0.g,
-                    Appearance.colors.colOnLayer0.b,
-                    0.1
-                )
+                color: "#444444" // Solid dark gray separator
             }
             
             MenuButton {
                 Layout.fillWidth: true
                 buttonText: qsTr("Move to workspace")
                 enabled: appInfo.address !== undefined
+                contentItem: Text {
+                    text: qsTr("Move to workspace")
+                    color: "#ffffff"
+                    font: button.font
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
+                }
                 onClicked: {
                     if (appInfo.address) {
                         Hyprland.dispatch(`dispatch movetoworkspace +1 address:${appInfo.address}`)
@@ -135,6 +123,13 @@ PanelWindow {
                 Layout.fillWidth: true
                 buttonText: qsTr("Toggle floating")
                 enabled: appInfo.address !== undefined
+                contentItem: Text {
+                    text: qsTr("Toggle floating")
+                    color: "#ffffff"
+                    font: button.font
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
+                }
                 onClicked: {
                     if (appInfo.address) {
                         Hyprland.dispatch(`dispatch togglefloating address:${appInfo.address}`)
@@ -146,17 +141,19 @@ PanelWindow {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 1
-                color: Qt.rgba(
-                    Appearance.colors.colOnLayer0.r,
-                    Appearance.colors.colOnLayer0.g,
-                    Appearance.colors.colOnLayer0.b,
-                    0.1
-                )
+                color: "#444444" // Solid dark gray separator
             }
             
             MenuButton {
                 Layout.fillWidth: true
                 buttonText: qsTr("Close")
+                contentItem: Text {
+                    text: qsTr("Close")
+                    color: "#ffffff"
+                    font: button.font
+                    horizontalAlignment: Text.AlignLeft
+                    verticalAlignment: Text.AlignVCenter
+                }
                 onClicked: {
                     if (appInfo.address) {
                         Hyprland.dispatch(`dispatch closewindow address:${appInfo.address}`)
@@ -173,29 +170,23 @@ PanelWindow {
     }
     
     Component.onCompleted: {
-        // Force layout update before positioning
-        menuContent.implicitHeight = menuContent.childrenRect.height + menuContent.padding * 2
-        
-        // Position the menu above the click position
-        var yPos = clickPos.y - height - 5
-        if (yPos < 0) {
-            // If it would go off the top, show below instead
-            yPos = clickPos.y + 5
-        }
-        
-        // Center horizontally on click position
-        var xPos = clickPos.x - (width / 2)
-        
-        // Keep within screen bounds
-        var screen = Qt.application.screens[0]
-        if (xPos + width > screen.width) {
-            xPos = screen.width - width - 5
-        }
-        if (xPos < 0) {
-            xPos = 5
-        }
-        
-        x = xPos
-        y = yPos
+        // Calculate menu position
+        var screen = Qt.application.screens[0];
+        var menuW = width;
+        var menuH = height;
+        var xPos = clickPos.x;
+        var yPos = clickPos.y;
+
+        // If menu would go off right edge, shift left
+        if (xPos + menuW > screen.width) xPos = screen.width - menuW - 5;
+        // If menu would go off bottom edge, shift up
+        if (yPos + menuH > screen.height) yPos = screen.height - menuH - 5;
+        // If menu would go off left edge, shift right
+        if (xPos < 0) xPos = 5;
+        // If menu would go off top edge, shift down
+        if (yPos < 0) yPos = 5;
+
+        x = xPos;
+        y = yPos;
     }
 } 

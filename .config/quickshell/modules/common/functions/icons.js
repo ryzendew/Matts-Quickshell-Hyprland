@@ -12,7 +12,7 @@ const substitutions = {
     "footclient": "foot",
     "zen": "zen-browser",
      "ptyxis": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/org.gnome.Ptyxis.svg",
-      "AffinityPhoto.desktop": "/home/matt/.config/quickshell/assets/icons/AffinityPhoto.png",
+      "AffinityPhoto.desktop": "/home/matt/.local/share/icons/AffinityPhoto.png",
       "steam-native": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/steam.svg",
       "lutris": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/lutris.svg",
       "com.blackmagicdesign.resolve.desktop": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/resolve.svg",

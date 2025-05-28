@@ -14,7 +14,7 @@ Item {
     property bool borderless: ConfigOptions.bar.borderless
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     readonly property string cleanedTitle: StringUtils.cleanMusicTitle(activePlayer?.trackTitle) || qsTr("No media")
-    readonly property string formattedText: cleanedTitle + (activePlayer?.trackArtist ? " - " + activePlayer.trackArtist : "")
+    readonly property string formattedText: cleanedTitle + (activePlayer?.trackArtist ? (" - " + String(activePlayer.trackArtist)) : "")
     
     // Track position and length separately for better accuracy
     property real currentPosition: activePlayer ? activePlayer.position : 0
@@ -85,9 +85,9 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             width: textMetrics.width
             color: Appearance.colors.colOnLayer1
-            text: formattedText
+            text: String(formattedText)
             font.pixelSize: Appearance.font.pixelSize.normal
-            font.family: Appearance.font.family
+            font.family: Appearance.font.family.main
             textFormat: Text.PlainText
             renderType: Text.NativeRendering
             elide: Text.ElideNone
@@ -98,9 +98,9 @@ Item {
     // Use TextMetrics to calculate the exact width needed
     TextMetrics {
         id: textMetrics
-        text: formattedText
+        text: String(formattedText)
         font.pixelSize: Appearance.font.pixelSize.normal
-        font.family: Appearance.font.family
+        font.family: Appearance.font.family.main
     }
 
     MouseArea {

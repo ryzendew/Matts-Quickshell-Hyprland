@@ -6,34 +6,30 @@ import QtQuick.Layouts
 
 Rectangle {
     property bool borderless: ConfigOptions.bar.borderless
-    implicitWidth: rowLayout.implicitWidth + rowLayout.spacing * 6
+    implicitWidth: colLayout.implicitWidth + 8
     implicitHeight: 32
     color: "transparent"
 
-    RowLayout {
-        id: rowLayout
-
-        spacing: 4
+    ColumnLayout {
+        id: colLayout
         anchors.centerIn: parent
+        spacing: 1
 
         StyledText {
-            font.pixelSize: Appearance.font.pixelSize.large
+            font.pixelSize: Appearance.font.pixelSize.normal
             color: Appearance.colors.colOnLayer0
             text: DateTime.time
+            horizontalAlignment: Text.AlignHCenter
+            Layout.alignment: Qt.AlignHCenter
         }
 
         StyledText {
-            font.pixelSize: Appearance.font.pixelSize.small
-            color: Appearance.colors.colOnLayer0
-            text: "•"
-        }
-
-        StyledText {
-            font.pixelSize: Appearance.font.pixelSize.small
+            font.pixelSize: Appearance.font.pixelSize.smaller
             color: Appearance.colors.colOnLayer0
             text: DateTime.date
+            horizontalAlignment: Text.AlignHCenter
+            Layout.alignment: Qt.AlignHCenter
         }
-
     }
 
 }

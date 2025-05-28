@@ -4,7 +4,8 @@
 
 import "./modules/bar/"
 import "./modules/cheatsheet/"
-import "modules/dock"
+import "./modules/dock/"
+import "./modules/hyprmenu/"
 import "./modules/mediaControls/"
 import "./modules/notificationPopup/"
 import "./modules/onScreenDisplay/"
@@ -13,6 +14,7 @@ import "./modules/screenCorners/"
 import "./modules/session/"
 import "./modules/sidebarLeft/"
 import "./modules/sidebarRight/"
+import "./modules/weather/"
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -30,6 +32,7 @@ ShellRoot {
     Bar {}
     Cheatsheet {}
     Dock {}
+    HyprMenu {}
     MediaControls {}
     NotificationPopup {}
     OnScreenDisplayBrightness {}
@@ -40,5 +43,6 @@ ShellRoot {
     Session {}
     SidebarLeft {}
     SidebarRight {}
+    WeatherSidebarPage {}
 }
 

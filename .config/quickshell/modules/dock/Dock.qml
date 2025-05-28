@@ -6,10 +6,10 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
 import Qt5Compat.GraphicalEffects
+import "root:/"
 import "root:/modules/common"
 import "root:/modules/common/widgets"
 import "root:/services"
-import "root:/modules/common/functions/icons.js" as Icons
 import Qt.labs.platform
 import "root:/modules/bar"
 
@@ -159,6 +159,26 @@ Scope {
             pinnedApps = newPinnedApps
             savePinnedApps()
         }
+    }
+    
+    // Reorder pinned apps (for drag and drop)
+    function reorderPinnedApp(fromIndex, toIndex) {
+        console.log("reorderPinnedApp called with fromIndex:", fromIndex, "toIndex:", toIndex)
+        console.log("Current pinnedApps:", JSON.stringify(pinnedApps))
+        
+        if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || 
+            fromIndex >= pinnedApps.length || toIndex >= pinnedApps.length) {
+            console.log("Invalid indices, aborting reorder")
+            return
+        }
+        
+        var newPinnedApps = pinnedApps.slice()
+        var item = newPinnedApps.splice(fromIndex, 1)[0]
+        newPinnedApps.splice(toIndex, 0, item)
+        pinnedApps = newPinnedApps
+        
+        console.log("New pinnedApps:", JSON.stringify(pinnedApps))
+        savePinnedApps()
     }
     
     // FileView for persistence
@@ -339,7 +359,7 @@ Scope {
                             anchors.fill: parent
                             color: "transparent"
                             border.color: "black"
-                            border.width: 3
+                            border.width: 2.5
                             radius: parent.radius
                         }
 
@@ -389,7 +409,7 @@ Scope {
                                     hoverEnabled: true
                                     
                                     onClicked: {
-                                        Hyprland.dispatch("exec hyprmenu")
+                                        GlobalStates.hyprMenuOpen = !GlobalStates.hyprMenuOpen
                                         }
                                     }
                                 }
@@ -397,10 +417,12 @@ Scope {
                             
                             // Pinned apps
                             Repeater {
+                                id: pinnedAppsRepeater
                                 model: dock.pinnedApps
                                 
                                 DockItem {
-                                    icon: Icons.noKnowledgeIconGuess(modelData) || modelData.toLowerCase()
+                                    property var parentRepeater: pinnedAppsRepeater  // Add reference to the repeater
+                                    icon: modelData  // Pass raw class name to SystemIcon
                                     tooltip: modelData  // Use the app class name for pinned apps
                                     isActive: dockRoot.isWindowActive(modelData)
                                     isPinned: true
@@ -409,10 +431,27 @@ Scope {
                                         command: modelData.toLowerCase()
                                     })
                                     onClicked: {
-                                        let cmd = dock.desktopIdToCommand[modelData] || modelData.toLowerCase();
-                                        if (dockRoot.isWindowActive(modelData)) {
-                                            Hyprland.dispatch(`dispatch focuswindow class:${modelData}`)
+                                        // Find the window for this pinned app
+                                        var targetWindow = HyprlandData.windowList.find(w => 
+                                            w.class.toLowerCase() === modelData.toLowerCase() ||
+                                            w.initialClass.toLowerCase() === modelData.toLowerCase()
+                                        )
+                                        
+                                        if (targetWindow) {
+                                            // If window exists, focus it and switch to its workspace
+                                            if (targetWindow.address) {
+                                                Hyprland.dispatch(`focuswindow address:${targetWindow.address}`)
+                                                
+                                                // Also switch to the workspace on the current monitor
+                                                if (targetWindow.workspace && targetWindow.workspace.id) {
+                                                    Hyprland.dispatch(`workspace ${targetWindow.workspace.id}`)
+                                                }
+                                            } else {
+                                                Hyprland.dispatch(`focuswindow class:${modelData}`)
+                                            }
                                         } else {
+                                            // If no window exists, launch the app
+                                            let cmd = dock.desktopIdToCommand[modelData] || modelData.toLowerCase();
                                             Hyprland.dispatch(`exec ${cmd}`)
                                         }
                                     }
@@ -457,17 +496,23 @@ Scope {
                                 }
                                 
                                 DockItem {
-                                    icon: Icons.noKnowledgeIconGuess(modelData.class) || modelData.class.toLowerCase()
+                                    icon: modelData.class  // Pass raw class name to SystemIcon
                                     tooltip: modelData.title || modelData.class
                                     isActive: true
                                     isPinned: false
                                     appInfo: modelData
+                                    
                                     onClicked: {
-                                        // Use address for more precise window focusing when available
+                                        // For unpinned apps, we already have the specific window
                                         if (modelData.address) {
-                                            Hyprland.dispatch(`dispatch focuswindow address:${modelData.address}`)
+                                            Hyprland.dispatch(`focuswindow address:${modelData.address}`)
+                                            
+                                            // Also switch to the workspace on the current monitor
+                                            if (modelData.workspace && modelData.workspace.id) {
+                                                Hyprland.dispatch(`workspace ${modelData.workspace.id}`)
+                                            }
                                         } else {
-                                            Hyprland.dispatch(`dispatch focuswindow class:${modelData.class}`)
+                                            Hyprland.dispatch(`focuswindow class:${modelData.class}`)
                                         }
                                     }
                                     onPinApp: {

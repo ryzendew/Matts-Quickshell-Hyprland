@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "root:/modules/common"
+import Qt.labs.settings 1.1
 
 Item {
     id: weatherWidget
@@ -14,6 +15,13 @@ Item {
         feelsLike: "",
         currentEmoji: "❓"
     })
+    property int cacheDurationMs: 15 * 60 * 1000 // 15 minutes
+    Settings {
+        id: weatherCache
+        property string lastWeatherJson: ""
+        property double lastWeatherTimestamp: 0
+        property string lastLocation: ""
+    }
 
     Timer {
         interval: 600000  // Update every 10 minutes
@@ -23,7 +31,10 @@ Item {
     }
 
     Component.onCompleted: {
-        loadWeather()
+        Qt.application.organizationName = "Quickshell";
+        Qt.application.organizationDomain = "quickshell.org";
+        Qt.application.name = "Quickshell";
+        loadWeather();
     }
 
     RowLayout {
@@ -130,78 +141,53 @@ Item {
     }
 
     function loadWeather() {
-        var geocodeXhr = new XMLHttpRequest();
-        var geocodeUrl = "https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(weatherLocation);
-
-        geocodeXhr.onreadystatechange = function() {
-            if (geocodeXhr.readyState === XMLHttpRequest.DONE) {
-                if (geocodeXhr.status === 200) {
-                    try {
-                        var geoData = JSON.parse(geocodeXhr.responseText);
-                        if (geoData.length > 0) {
-                            var latitude = parseFloat(geoData[0].lat);
-                            var longitude = parseFloat(geoData[0].lon);
-                            fetchWeather(latitude, longitude);
-                        } else {
-                            fallbackWeatherData("City not found");
-                        }
-                    } catch (e) {
-                        console.error("Geocoding error:", e);
-                        fallbackWeatherData("Error");
-                    }
-                } else {
-                    console.error("Geocoding request failed:", geocodeXhr.status);
-                    fallbackWeatherData("Error");
-                }
-            }
-        };
-
-        geocodeXhr.open("GET", geocodeUrl);
-        geocodeXhr.setRequestHeader("User-Agent", "StatusBar_Ly-sec/1.0");
-        geocodeXhr.send();
-    }
-
-    function fetchWeather(latitude, longitude) {
+        var now = Date.now();
+        var locationKey = weatherLocation.trim().toLowerCase();
+        if (weatherCache.lastWeatherJson && weatherCache.lastLocation === locationKey && (now - weatherCache.lastWeatherTimestamp) < cacheDurationMs) {
+            // Use cached data
+            parseWeather(JSON.parse(weatherCache.lastWeatherJson));
+            return;
+        }
         var xhr = new XMLHttpRequest();
-        var url = "https://api.open-meteo.com/v1/forecast?" +
-                "latitude=" + latitude +
-                "&longitude=" + longitude +
-                "&current=temperature_2m,apparent_temperature,weather_code" +
-                "&timezone=auto";
-
+        var url = "https://wttr.in/" + encodeURIComponent(weatherLocation) + "?format=j1";
         xhr.onreadystatechange = function() {
             if (xhr.readyState === XMLHttpRequest.DONE) {
                 if (xhr.status === 200) {
                     try {
                         var data = JSON.parse(xhr.responseText);
-                        console.log("Weather data:", JSON.stringify(data));
-
-                        var currentTemp = Math.round(parseFloat(data.current.temperature_2m));
-                        var feelsLikeTemp = Math.round(parseFloat(data.current.apparent_temperature));
-                        var weatherCode = data.current.weather_code;
-
-                        weatherData = {
-                            currentTemp: currentTemp + "°C",
-                            feelsLike: feelsLikeTemp + "°C",
-                            currentEmoji: getWeatherEmoji(mapWeatherCode(weatherCode)),
-                            currentCondition: mapWeatherCode(weatherCode)
-                        };
-
-                        console.log("Processed weather data:", JSON.stringify(weatherData));
+                        weatherCache.lastWeatherJson = xhr.responseText;
+                        weatherCache.lastWeatherTimestamp = now;
+                        weatherCache.lastLocation = locationKey;
+                        parseWeather(data);
                     } catch (e) {
-                        console.error("Weather parsing error:", e);
-                        fallbackWeatherData("Error");
+                        fallbackWeatherData("Parse error");
                     }
                 } else {
-                    console.error("Weather request failed:", xhr.status);
-                    fallbackWeatherData("Error");
+                    fallbackWeatherData("Request error");
                 }
             }
         };
-
         xhr.open("GET", url);
-        xhr.setRequestHeader("User-Agent", "StatusBar_Ly-sec/1.0");
+        xhr.setRequestHeader("User-Agent", "Mozilla/5.0 (compatible; quickshell-weather/1.0)");
         xhr.send();
+    }
+
+    function parseWeather(data) {
+        // Parse wttr.in JSON for current conditions
+        if (data.current_condition && data.current_condition[0]) {
+            var current = data.current_condition[0];
+            var tempC = current.temp_C;
+            var feelsLikeC = current.FeelsLikeC;
+            var condition = current.weatherDesc[0]?.value || "";
+            weatherData = {
+                currentTemp: tempC + "°C",
+                feelsLike: feelsLikeC + "°C",
+                currentEmoji: getWeatherEmoji(condition),
+                currentCondition: condition
+            };
+        } else {
+            fallbackWeatherData("No data");
+        }
     }
 
     function fallbackWeatherData(message) {

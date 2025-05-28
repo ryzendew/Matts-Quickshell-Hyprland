@@ -2,7 +2,9 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
+import QtQuick.Effects
 import Quickshell
+import "root:/modules/common"
 import "root:/services"
 
 PanelWindow {
@@ -26,14 +28,17 @@ PanelWindow {
         }
 
         // Add a subtle shadow
-        layer.enabled: true
-        layer.effect: DropShadow {
-            transparentBorder: true
-            horizontalOffset: 0
-            verticalOffset: 2
-            radius: 8.0
-            samples: 17
-            color: "#80000000"
+        Item {
+            anchors.fill: parent
+            z: -1
+            MultiEffect {
+                anchors.fill: parent
+                source: networkTooltip
+                shadowEnabled: true
+                shadowColor: Appearance.colors.colShadow
+                shadowVerticalOffset: 1
+                shadowBlur: 0.5
+            }
         }
 
         ColumnLayout {
@@ -63,10 +68,14 @@ PanelWindow {
         width = tooltipLayout.implicitWidth + 20
         height = tooltipLayout.implicitHeight + 16
         
-        // Position relative to the screen
-        var pos = screen.mapFromGlobal(mouseX, mouseY)
-        x = pos.x
-        y = pos.y + 20
+        // Position directly using the provided coordinates
+        x = mouseX - width / 2
+        y = mouseY + 20
+        
+        // Keep tooltip on screen
+        if (x < 0) x = 0
+        if (x + width > screen.width) x = screen.width - width
+        if (y + height > screen.height) y = mouseY - height - 5
     }
 
     function show() {

@@ -146,6 +146,16 @@ Scope {
 
                         QuickToggleButton {
                             toggled: false
+                            buttonIcon: "refresh"
+                            onClicked: {
+                                Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+                            }
+                            StyledToolTip {
+                                content: qsTr("Reload Quickshell")
+                            }
+                        }
+                        QuickToggleButton {
+                            toggled: false
                             buttonIcon: "power_settings_new"
                             onClicked: {
                                 Hyprland.dispatch("global quickshell:sessionOpen")
