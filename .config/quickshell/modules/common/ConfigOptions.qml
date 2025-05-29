@@ -35,6 +35,22 @@ Singleton {
             property bool alwaysShowNumbers: false
             property int showNumberDelay: 150 // milliseconds
         }
+        
+        // Module configuration for drag-and-drop reordering
+        property QtObject modules: QtObject {
+            property var leftModules: ["arch_logo"]
+            property var rightModules: ["indicators", "clock", "weather", "systray"]
+            property var centerModules: ["workspaces"]
+            
+            // Module settings
+            property bool enableDragAndDrop: true
+            property int dragThreshold: 10
+            
+            // Default module order (can be overridden by saved state)
+            property var defaultLeftOrder: ["arch_logo"]
+            property var defaultRightOrder: ["indicators", "clock", "weather", "systray"] 
+            property var defaultCenterOrder: ["workspaces"]
+        }
     }
 
     property QtObject networking: QtObject {

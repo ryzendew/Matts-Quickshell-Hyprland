@@ -103,19 +103,32 @@ Scope {
                 width: 800
                 height: 600
                 radius: 12
-                color: Appearance.colors.colLayer0
-                border.color: Appearance.colors.colOnLayer0
+                
+                // Black theme with transparency and blur
+                color: Qt.rgba(0.0, 0.0, 0.0, 0.55)  // Black with transparency
+                border.color: Qt.rgba(0.3, 0.3, 0.3, 0.9)  // Dark gray border
                 border.width: 1
                 
-                // Drop shadow
+                // Enhanced drop shadow with blur
                 layer.enabled: true
                 layer.effect: MultiEffect {
                     source: menuContainer
                     shadowEnabled: true
-                    shadowColor: Qt.rgba(0, 0, 0, 0.5)
+                    shadowColor: Qt.rgba(0, 0, 0, 0.7)  // Black shadow
                     shadowVerticalOffset: 8
                     shadowHorizontalOffset: 0
-                    shadowBlur: 24
+                    shadowBlur: 32
+                }
+                
+                // Dark gradient overlay for depth
+                Rectangle {
+                    anchors.fill: parent
+                    radius: parent.radius
+                    gradient: Gradient {
+                        GradientStop { position: 0.0; color: Qt.rgba(0.1, 0.1, 0.1, 0.3) }
+                        GradientStop { position: 0.5; color: Qt.rgba(0.05, 0.05, 0.05, 0.2) }
+                        GradientStop { position: 1.0; color: Qt.rgba(0.0, 0.0, 0.0, 0.4) }
+                    }
                 }
                 
                 ColumnLayout {
@@ -133,8 +146,8 @@ Scope {
                             Layout.fillWidth: true
                             height: 40
                             radius: 8
-                            color: Appearance.colors.colLayer1
-                            border.color: Appearance.colors.colOnLayer0
+                            color: Qt.rgba(0.1, 0.1, 0.1, 0.55)  // Black with transparency
+                            border.color: Qt.rgba(0.3, 0.3, 0.3, 0.8)  // Dark gray border
                             border.width: 1
                             
                             RowLayout {
@@ -145,16 +158,16 @@ Scope {
                                 MaterialSymbol {
                                     text: "search"
                                     iconSize: 20
-                                    color: Appearance.colors.colOnLayer1
-                                    opacity: 0.7
+                                    color: Qt.rgba(0.9, 0.9, 0.9, 0.9)  // Light gray icon
+                                    opacity: 0.8
                                 }
                                 
                                 TextField {
                                     id: searchField
                                     Layout.fillWidth: true
                                     placeholderText: qsTr("Search applications...")
-                                    placeholderTextColor: Qt.rgba(Appearance.colors.colOnLayer1.r, Appearance.colors.colOnLayer1.g, Appearance.colors.colOnLayer1.b, 0.5)
-                                    color: Appearance.colors.colOnLayer1
+                                    placeholderTextColor: Qt.rgba(0.6, 0.6, 0.6, 0.6)  // Gray placeholder
+                                    color: Qt.rgba(0.95, 0.95, 0.95, 0.95)  // Light gray text
                                     background: null
                                     focus: menuWindow.visible
                                     
@@ -181,15 +194,15 @@ Scope {
                             width: 40
                             height: 40
                             radius: 8
-                            color: viewToggleArea.containsMouse ? Appearance.colors.colLayer1 : "transparent"
-                            border.color: Appearance.colors.colOnLayer0
+                            color: viewToggleArea.containsMouse ? Qt.rgba(0.2, 0.2, 0.2, 0.6) : Qt.rgba(0.1, 0.1, 0.1, 0.4)
+                            border.color: Qt.rgba(0.3, 0.3, 0.3, 0.8)
                             border.width: 1
                             
                             MaterialSymbol {
                                 anchors.centerIn: parent
                                 text: menuWindow.isGridView ? "view_list" : "grid_view"
                                 iconSize: 20
-                                color: Appearance.colors.colOnLayer1
+                                color: Qt.rgba(0.9, 0.9, 0.9, 0.9)  // Light gray icon
                             }
                             
                             MouseArea {
@@ -217,15 +230,17 @@ Scope {
                                     Layout.preferredHeight: 32
                                     Layout.preferredWidth: categoryText.implicitWidth + 24
                                     radius: 6
-                                    color: menuWindow.selectedCategory === modelData ? Appearance.m3colors.m3primary : (categoryArea.containsMouse ? Appearance.colors.colLayer1 : "transparent")
-                                    border.color: Appearance.colors.colOnLayer0
+                                    color: menuWindow.selectedCategory === modelData ? Qt.rgba(0.3, 0.3, 0.3, 0.8) : (categoryArea.containsMouse ? Qt.rgba(0.2, 0.2, 0.2, 0.5) : Qt.rgba(0.1, 0.1, 0.1, 0.3))
+                                    border.color: Qt.rgba(0.3, 0.3, 0.3, 0.7)
                                     border.width: menuWindow.selectedCategory === modelData ? 0 : 1
                                     
                                     Text {
                                         id: categoryText
                                         anchors.centerIn: parent
                                         text: modelData
-                                        color: menuWindow.selectedCategory === modelData ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer1
+                                        color: menuWindow.selectedCategory === modelData ? 
+                                               Qt.rgba(1.0, 1.0, 1.0, 0.95) : 
+                                               Qt.rgba(0.9, 0.9, 0.9, 0.9)
                                         font.pixelSize: Appearance.font.pixelSize.small
                                         font.weight: menuWindow.selectedCategory === modelData ? Font.Medium : Font.Normal
                                     }
@@ -249,8 +264,8 @@ Scope {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         radius: 8
-                        color: Appearance.colors.colLayer1
-                        border.color: Appearance.colors.colOnLayer0
+                        color: Qt.rgba(0.1, 0.1, 0.1, 0.6)  // Black with transparency
+                        border.color: Qt.rgba(0.3, 0.3, 0.3, 0.8)  // Dark gray border
                         border.width: 1
                         
                         // Grid view

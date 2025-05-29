@@ -1,560 +1,131 @@
-# Matt's Quickshell Hyprland Configuration Changelog
+# Matt's Quickshell Hyprland Configuration - Changelog
 
-![image](https://github.com/user-attachments/assets/49bba28f-776e-454d-a351-a42bba898cd6)
+<div align="center">
+    <img src="assets/preview.png" alt="Matt's Quickshell Hyprland Desktop">
+    <br>
+    <em>My Enhanced Quickshell-powered Hyprland Desktop Environment</em>
+</div>
 
 ---
 
-A comprehensive documentation of all changes made in converting end-4's AGS-based Hyprland configuration (https://github.com/end-4/dots-hyprland) to Quickshell, with dock implementation based on Pharmaracist's work.
+A comprehensive changelog documenting all modifications made to convert end-4's AGS-based Hyprland configuration to Quickshell, with dock implementation based on Pharmaracist's work and extensive custom enhancements.
 
-0. Recent Implementation Changes
------------------------------
-File: ~/.config/quickshell/modules/dock/DockItem.qml
+## Version 2.0 - Complete Dock Overhaul (Latest)
 
-A. Right-Click Menu System Overhaul:
+### Major Features Added
+
+#### 1. Drag & Drop Functionality (`DockItem.qml`)
 ```qml
-// Previous implementation using standalone Menu
-Menu {
-    id: contextMenu
-    x: parent.width / 2
-    y: parent.height
-    // Static positioning and basic styling
-}
+// NEW: Drag and drop properties for reordering pinned apps
+property bool isDragging: false
+property bool isDropTarget: false
+property real dragStartX: 0
+property real dragStartY: 0
+property int dragThreshold: 10
 
-// New implementation using Loader and PanelWindow
-Loader {
-    id: menuLoader
-    active: dockItem.showMenu
-    sourceComponent: PanelWindow {
-        id: menuPanel
-        visible: dockItem.showMenu
-        color: Qt.rgba(0, 0, 0, 0)
-        implicitWidth: 200
-        implicitHeight: menuContent.implicitHeight
-
-        // Enhanced popup window configuration
-        WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.namespace: "quickshell:dockmenu"
-
-        // Dynamic positioning based on mouse click
-        margins {
-            left: dockItem.x + lastClickPos.x + 500
-            bottom: 2
-        }
-
-        // Improved focus handling
-        HyprlandFocusGrab {
-            windows: [menuPanel]
-            active: menuPanel.visible
-            onCleared: () => {
-                if (!active) {
-                    dockItem.closeMenu()
-                }
-            }
-        }
-
-        // Enhanced menu styling and animations
-        Rectangle {
-            id: menuContent
-            anchors.fill: parent
-            radius: Appearance.rounding.small
-            color: Appearance.colors.colLayer0
-            implicitHeight: menuLayout.implicitHeight + radius * 2
-
-            // Optimized shadow implementation
-            layer.enabled: true
-            layer.effect: DropShadow {
-                horizontalOffset: 0
-                verticalOffset: 1
-                radius: 8.0
-                samples: 17
-                color: Appearance.colors.colShadow
-                source: parent
-            }
+// NEW: Enhanced mouse interaction with drag detection
+onPositionChanged: (mouse) => {
+    if (dragActive && dockItem.isPinned && (mouse.buttons & Qt.LeftButton)) {
+        var distance = Math.sqrt(Math.pow(mouse.x - dragStartX, 2) + Math.pow(mouse.y - dragStartY, 2))
+        if (!dragStarted && distance > dragThreshold) {
+            dragStarted = true
+            dockItem.isDragging = true
         }
     }
 }
 ```
 
-B. Performance Optimizations:
-File: ~/.config/quickshell/modules/dock/DockItem.qml
-```qml
-// Previous shadow implementation
-MultiEffect {
-    source: menuContent
-    anchors.fill: menuContent
-    shadowEnabled: true
-    shadowColor: Appearance.colors.colShadow
-    shadowVerticalOffset: 1
-    shadowBlur: 0.5
-}
+**What it does:**
+- Drag pinned apps to reorder them in the dock
+- Visual feedback during drag operations (opacity and scale changes)
+- Drop indicators when hovering over valid drop targets
+- Smooth animations for all drag/drop interactions
 
-// New optimized shadow using DropShadow
-layer.enabled: true
-layer.effect: DropShadow {
-    horizontalOffset: 0
-    verticalOffset: 1
-    radius: 8.0
-    samples: 17
-    color: Appearance.colors.colShadow
-    source: parent
+#### 2. Enhanced Icon System
+```qml
+// CHANGED: From Image to SystemIcon for better icon handling
+SystemIcon {
+    id: iconItem
+    anchors.centerIn: parent
+    iconSize: parent.width * 0.65
+    iconName: dockItem.icon
+    iconColor: "transparent" // Let icons use natural colors
 }
 ```
 
-C. Window Management Improvements:
-File: ~/.config/quickshell/modules/dock/DockItem.qml
+**Improvements:**
+- Better icon resolution and scaling
+- Support for system theme icons
+- Improved performance with icon caching
+- Natural color preservation for application icons
+
+#### 3. Advanced Menu System
 ```qml
-// Enhanced window management logic
+// NEW: Comprehensive right-click menu with all functionality
 MenuButton {
-    Layout.fillWidth: true
     buttonText: qsTr("Move to workspace") + " >"
     enabled: {
-        // Improved window detection
         var hasActiveWindow = false
         if (dockItem.appInfo.address) {
             hasActiveWindow = HyprlandData.windowByAddress[dockItem.appInfo.address] !== undefined
-        } else if (dockItem.appInfo.class) {
-            hasActiveWindow = HyprlandData.windowList.some(w => 
-                w.class.toLowerCase() === dockItem.appInfo.class.toLowerCase() ||
-                w.initialClass.toLowerCase() === dockItem.appInfo.class.toLowerCase()
-            )
         }
         return hasActiveWindow
     }
 }
-```
 
-D. Focus Management:
-File: ~/.config/quickshell/modules/dock/DockItem.qml
-```qml
-// Previous focus handling
-MouseArea {
-    anchors.fill: parent
-    onClicked: menu.popup()
-}
-
-// New focus management system
-HyprlandFocusGrab {
-    windows: [menuPanel]
-    active: menuPanel.visible
-    onCleared: () => {
-        if (!active) {
-            dockItem.closeMenu()
-        }
-    }
-}
-
-// Enhanced click handling
-MouseArea {
-    id: mouseArea
-    anchors.fill: parent
-    hoverEnabled: true
-    acceptedButtons: Qt.LeftButton | Qt.RightButton
-    
-    onPositionChanged: (mouse) => {
-        lastHoverPos = dockItem.mapToItem(null, mouse.x, mouse.y)
-    }
-    
-    onClicked: (mouse) => {
-        if (mouse.button === Qt.RightButton) {
-            // Close other menus first
-            var items = parent.children
-            for (var i = 0; i < items.length; i++) {
-                var item = items[i]
-                if (item !== dockItem && item.closeMenu) {
-                    item.closeMenu()
-                }
-            }
-            
-            lastClickPos = Qt.point(mouse.x, mouse.y)
-            dockItem.showMenu = true
-            dockItem.isActiveMenu = true
-        }
-    }
-}
-```
-
-E. Visual Improvements:
-File: ~/.config/quickshell/style/Theme.qml
-```qml
-// Enhanced menu styling
-Rectangle {
-    id: menuContent
-    anchors.fill: parent
-    radius: Appearance.rounding.small
-    color: Appearance.colors.colLayer0
-    
-    // Improved separator styling
-    Rectangle {
-        Layout.fillWidth: true
-        Layout.preferredHeight: 1
-        color: Qt.rgba(
-            Appearance.colors.colOnLayer0.r,
-            Appearance.colors.colOnLayer0.g,
-            Appearance.colors.colOnLayer0.b,
-            0.1
-        )
-    }
-}
-
-// Enhanced button interactions
-MenuButton {
-    background: Rectangle {
-        color: button.down ? Qt.rgba(
-            Appearance.colors.colPrimary.r,
-            Appearance.colors.colPrimary.g,
-            Appearance.colors.colPrimary.b,
-            0.2
-        ) : button.hovered ? Qt.rgba(
-            Appearance.colors.colPrimary.r,
-            Appearance.colors.colPrimary.g,
-            Appearance.colors.colPrimary.b,
-            0.1
-        ) : "transparent"
-        radius: Appearance.rounding.small
-        
-        Behavior on color {
-            ColorAnimation {
-                duration: Appearance.animation.elementMoveFast.duration
-                easing.type: Appearance.animation.elementMoveFast.type
+// NEW: Workspace submenu with scrollable workspace list
+ScrollView {
+    Repeater {
+        model: 100
+        MenuButton {
+            buttonText: qsTr("Workspace ") + (modelData + 1)
+            onClicked: {
+                Hyprland.dispatch(`movetoworkspacesilent ${modelData + 1},address:${actualWindow.address}`)
             }
         }
     }
 }
 ```
 
-F. Hyprland Integration Updates:
-File: ~/.config/hypr/hyprland.conf
-```conf
-# Enhanced window rules
-windowrulev2 = float,class:^(quickshell)$
-windowrulev2 = noanim,class:^(quickshell)$
-windowrulev2 = noblur,class:^(quickshell)$
-windowrulev2 = rounding 30,class:^(quickshell)$
+**Menu Features:**
+- Pin/Unpin apps to dock
+- Launch new instances
+- Move windows to specific workspaces (1-100)
+- Toggle floating mode
+- Close windows
+- Smart window detection and command generation
 
-# Improved layer rules
-layerrule = blur,quickshell:dock:blur
-layerrule = ignorezero,quickshell:dock:blur
-
-# Performance optimizations
-misc {
-    force_default_wallpaper = 0
-    disable_splash_rendering = true
-    disable_hyprland_logo = true
-    no_direct_scanout = false
-    disable_autoreload = true
-}
-```
-
-G. System Service Improvements:
-File: ~/.config/quickshell/services/NotificationManager.qml
+#### 4. Advanced Window Management
 ```qml
-// Enhanced notification handling
-NotificationManager {
-    id: notificationManager
-    popupTimeout: 5000
-    popupLocation: Qt.TopRight
-    
-    property var activeNotifications: []
-    
-    function showNotification(notification) {
-        // Improved stacking and positioning
-        const yOffset = activeNotifications.length * (notificationHeight + spacing)
-        notification.y = baseY + yOffset
-        
-        // Enhanced animation handling
-        notification.opacity = 0
-        notification.visible = true
-        notification.opacity = 1
-        
-        activeNotifications.push(notification)
-    }
-    
-    function removeNotification(notification) {
-        // Smooth removal animation
-        notification.opacity = 0
-        activeNotifications = activeNotifications.filter(n => n !== notification)
-        repositionNotifications()
-    }
-}
-```
-
-Recent Changes & Improvements
----------------------------
-1. **Right-Click Menu System Overhaul**
-   - Completely redesigned using a Loader-based approach
-   - Custom menu styling with proper borders and transparency
-   - Fixed positioning relative to mouse cursor
-   - Improved memory management and cleanup
-   - Dynamic menu creation and destruction
-
-2. **Performance Optimizations**
-   - Removed dependency on MultiEffect for shadow rendering
-   - Better error handling and logging
-   - Improved component loading efficiency
-   - Enhanced focus management
-   - Better window tracking and state management
-
-3. **System Integration Enhancements**
-   - Improved Hyprland window management
-   - Enhanced notification system
-   - Better media controls integration
-   - Weather module improvements
-
-4. **Visual and UX Improvements**
-   - Enhanced dock item styling
-   - Improved hover effects and animations
-   - Better blur effects and transparency
-   - More responsive UI interactions
-
-File Locations Overview
-----------------------
-Main configuration files changed from AGS to Quickshell:
-- ~/.config/quickshell/shell.qml (Replaces ~/.config/ags/main.js)
-- ~/.config/quickshell/modules/bar/ (Replaces ~/.config/ags/modules/bar/)
-- ~/.config/quickshell/modules/dock/ (Replaces ~/.config/ags/modules/dock/)
-- ~/.config/quickshell/style/ (Replaces ~/.config/ags/scss/)
-- ~/.config/quickshell/services/ (Replaces ~/.config/ags/services/)
-- ~/.config/hypr/hyprland.conf (Modified for Quickshell compatibility)
-
-1. Core Shell Implementation
---------------------------
-File: ~/.config/quickshell/shell.qml (Replaces ~/.config/ags/main.js)
-
-Original (AGS):
-```javascript
-import App from 'resource:///com/github/Aylur/ags/app.js';
-import * as Utils from 'resource:///com/github/Aylur/ags/utils.js';
-
-export default {
-    style: App.configDir + '/style.css',
-    windows: [
-        // window definitions
-    ]
-};
-```
-
-New (Quickshell):
-```qml
-import "./modules/bar/"
-import "./modules/cheatsheet/"
-import "modules/dock"
-import "./modules/mediaControls/"
-import "./modules/notificationPopup/"
-import "./modules/onScreenDisplay/"
-import "./modules/overview/"
-import "./modules/screenCorners/"
-import "./modules/session/"
-import "./modules/sidebarLeft/"
-import "./modules/sidebarRight/"
-import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
-import QtQuick.Window
-import Quickshell
-import "./services/"
-
-ShellRoot {
-    Component.onCompleted: {
-        MaterialThemeLoader.reapplyTheme()
-        ConfigLoader.loadConfig()
-        PersistentStateManager.loadStates()
-    }
-
-    Bar {}
-    Cheatsheet {}
-    Dock {}
-    MediaControls {}
-    NotificationPopup {}
-    OnScreenDisplayBrightness {}
-    OnScreenDisplayVolume {}
-    Overview {}
-    ReloadPopup {}
-    ScreenCorners {}
-    Session {}
-    SidebarLeft {}
-    SidebarRight {}
-}
-```
-
-2. Bar Module Conversion
------------------------
-File: ~/.config/quickshell/modules/bar/Bar.qml (Replaces ~/.config/ags/modules/bar/bar.js)
-
-Original (AGS):
-```javascript
-const Bar = () => Widget.Window({
-    name: 'bar',
-    anchor: ['top', 'left', 'right'],
-    exclusive: true,
-    child: Widget.CenterBox({
-        startWidget: leftModules,
-        centerWidget: centerModules,
-        endWidget: rightModules,
-    }),
-});
-```
-
-New (Quickshell):
-```qml
-Scope {
-    id: bar
-
-    readonly property int barHeight: Appearance.sizes.barHeight
-    readonly property int barCenterSideModuleWidth: Appearance.sizes.barCenterSideModuleWidth
-    readonly property int osdHideMouseMoveThreshold: 20
-    property bool showBarBackground: ConfigOptions.bar.showBackground
-
-    Variants {
-        model: Quickshell.screens
-
-        PanelWindow {
-            id: barRoot
-            screen: modelData
-            WlrLayershell.namespace: "quickshell:bar:blur"
-            implicitHeight: barHeight
-            exclusiveZone: showBarBackground ? barHeight : (barHeight - 4)
-            mask: Region {
-                item: barContent
-            }
-            
-            // Detailed bar implementation...
+// NEW: Workspace switching when clicking dock icons
+onClicked: {
+    let win = dockRoot.activeWindows.find(w => w.class.toLowerCase() === modelData.toLowerCase());
+    if (win) {
+        // Switch to workspace if window is on different workspace
+        if (win.workspace && Hyprland.active.workspace.id !== win.workspace) {
+            Hyprland.dispatch(`dispatch workspace ${win.workspace}`);
+        }
+        // Focus the window
+        if (win.address) {
+            Hyprland.dispatch(`dispatch focuswindow address:${win.address}`);
         }
     }
 }
 ```
 
-3. Dock Implementation (Based on Pharmaracist's Work)
---------------------------------------------------
-File: ~/.config/quickshell/modules/dock/Dock.qml
+**What it does:**
+- Clicking a dock icon for an app on another workspace switches to that workspace
+- Focuses the window after workspace switch
+- Works for both pinned and non-pinned applications
 
-Original Source: Adapted from [Pharmaracist's Quickshell implementation](https://github.com/Pharmaracist/dots-hyprland/tree/ii-qs/.config/quickshell)
+### Configuration Changes
 
-Key Modifications:
-```qml
-// Added custom dock dimensions
-readonly property int dockHeight: Appearance.sizes.barHeight * 1.5
-readonly property int dockWidth: Appearance.sizes.barHeight * 1.5
-readonly property int dockSpacing: Appearance.sizes.elevationMargin
-
-// Modified background transparency
-readonly property color backgroundColor: Qt.rgba(
-    Appearance.colors.colLayer0.r,
-    Appearance.colors.colLayer0.g,
-    Appearance.colors.colLayer0.b,
-    0.65  // Adjusted transparency
-)
-
-// Added custom pinned apps configuration
-readonly property var defaultPinnedApps: [
-    "microsoft-edge-dev",
-    "org.gnome.Nautilus",
-    "vesktop",
-    "cider",
-    "steam-native",
-    "lutris",
-    "heroic",
-    "obs",
-    "com.blackmagicdesign.resolve.desktop",
-    "AffinityPhoto.desktop",
-    "ptyxis"
-]
-
-// Added custom Arch menu button
-Rectangle {
-    id: archButton
-    anchors.fill: parent
-    anchors.margins: 4
-    radius: Appearance.rounding.full
-    color: archMouseArea.containsMouse ? Appearance.colors.colPrimary : "transparent"
-    opacity: archMouseArea.containsMouse ? 0.8 : 0.5
-    
-    Image {
-        anchors.centerIn: parent
-        source: "/home/matt/.config/quickshell/logo/Arch-linux-logo.png"
-        width: parent.width * 0.9
-        height: parent.height * 0.9
-        fillMode: Image.PreserveAspectFit
-    }
-}
-```
-
-A. Dock Item Modifications (DockItem.qml):
-```qml
-// Enhanced dock item styling
-Rectangle {
-    implicitWidth: dock.dockWidth - 10
-    implicitHeight: dock.dockWidth - 10
-    radius: Appearance.rounding.full
-    
-    // Modified hover effects
-    color: mouseArea.pressed ? Appearance.colors.colLayer1Active : 
-           mouseArea.containsMouse ? Appearance.colors.colLayer1Hover : 
-           "transparent"
-    
-    // Added custom icon sizing
-    Image {
-        width: parent.width * 0.65
-        height: parent.height * 0.65
-        anchors.bottomMargin: 10
-    }
-}
-```
-
-B. Context Menu Enhancements (DockItemMenu.qml):
-```qml
-// Added custom menu styling
-background: Rectangle {
-    implicitWidth: 200
-    color: Qt.rgba(
-        Appearance.colors.colLayer0.r,
-        Appearance.colors.colLayer0.g,
-        Appearance.colors.colLayer0.b,
-        1.0
-    )
-    radius: Appearance.rounding.small
-    border.width: 1
-    border.color: Qt.rgba(
-        Appearance.colors.colOnLayer0.r,
-        Appearance.colors.colOnLayer0.g,
-        Appearance.colors.colOnLayer0.b,
-        0.1
-    )
-}
-
-// Fixed right-click menu positioning
-onRightClicked: (mouse) => {
-    var component = Qt.createComponent("DockItemMenu.qml")
-    if (component.status === Component.Ready) {
-        var menu = component.createObject(parent, {
-            "appInfo": modelData,
-            "isPinned": false
-        })
-        
-        // Position menu at mouse cursor location instead of default position
-        menu.popup(Qt.point(mouse.x, mouse.y))
-    }
-}
-
-// Added new menu items
-MenuItem {
-    id: floatMenuItem
-    text: qsTr("Toggle floating")
-    icon.name: "window-float"
-    // ... custom styling
-}
-```
-
-Key Fixes:
-1. **Menu Positioning**: Fixed the context menu to appear directly under the mouse cursor instead of at a fixed position relative to the dock item
-2. **Mouse Coordinates**: Properly passing mouse event coordinates to ensure accurate menu placement
-3. **Dynamic Creation**: Improved menu object creation to ensure proper cleanup and prevent memory leaks
-
-C. Configuration Changes (dock_config.json):
+#### Enhanced Dock Configuration (`dock_config.json`)
 ```json
 {
   "pinnedApps": [
     "org.gnome.Nautilus",
-    "vesktop",
+    "vesktop", 
     "cider",
     "steam-native",
     "lutris",
@@ -568,36 +139,174 @@ C. Configuration Changes (dock_config.json):
 }
 ```
 
-D. Hyprland Integration (hyprland-rules.conf):
-```conf
-# Added custom window rules for dock
-windowrulev2 = blur,class:^(quickshell)$
-windowrulev2 = rounding 30,class:^(quickshell)$
-windowrulev2 = nofocus,class:^(quickshell)$
-
-# Added layer rules for proper blur
-layerrule = blur,quickshell:dock:blur
-layerrule = ignorezero,quickshell:dock:blur
+#### Advanced Command Mapping (`Dock.qml`)
+```qml
+readonly property var desktopIdToCommand: ({
+    "org.gnome.Nautilus": "nautilus --new-window",
+    "vesktop": "vesktop --new-window", 
+    "microsoft-edge-dev": "microsoft-edge-dev --new-window",
+    "steam-native": "steam-native -newbigpicture",
+    "com.blackmagicdesign.resolve": "resolve",
+    "AffinityPhoto": "AffinityPhoto",
+    "ptyxis": "ptyxis"
+})
 ```
 
-4. Theme System Migration
-------------------------
-Directory: ~/.config/quickshell/style/ (Replaces ~/.config/ags/scss/)
+### Visual Enhancements
 
-Original (AGS SCSS):
-```scss
-$bg: #1e1e2e;
-$fg: #cdd6f4;
+#### 1. Improved Animations
+```qml
+// NEW: Drag feedback animations
+Behavior on opacity {
+    NumberAnimation {
+        duration: Appearance.animation.elementMoveFast.duration
+        easing.type: Appearance.animation.elementMoveFast.type
+    }
+}
 
-.bar {
-    background-color: $bg;
-    color: $fg;
+Behavior on scale {
+    NumberAnimation {
+        duration: Appearance.animation.elementMoveFast.duration
+        easing.type: Appearance.animation.elementMoveFast.type
+    }
 }
 ```
 
-New (Quickshell QML):
+#### 2. Drop Target Indicators
 ```qml
-// style/Theme.qml
+// NEW: Visual drop indicator
+Rectangle {
+    id: dropIndicator
+    visible: isDropTarget
+    border.color: Appearance.m3colors.m3primary
+    border.width: 2
+    
+    Rectangle {
+        anchors.centerIn: parent
+        color: Qt.rgba(Appearance.m3colors.m3primary.r, 
+                      Appearance.m3colors.m3primary.g, 
+                      Appearance.m3colors.m3primary.b, 0.2)
+    }
+}
+```
+
+## Version 1.5 - Menu and Icon Improvements
+
+### Fixed Right-Click Menu Positioning
+```qml
+// FIXED: Menu positioning to appear above clicked icon
+margins {
+    left: {
+        var clickGlobal = dockItem.mapToItem(null, lastClickPos.x, lastClickPos.y)
+        return clickGlobal.x + 655
+    }
+    bottom: 2
+}
+```
+
+### Enhanced Icon Handling
+```javascript
+// NEW: Icon utility function for better path resolution
+function resolveIconPath(icon) {
+    if (!icon) return "";
+    if (icon.includes("?path=")) {
+        const [name, path] = icon.split("?path=");
+        const fileName = name.substring(name.lastIndexOf("/") + 1);
+        return `file://${path}/${fileName}`;
+    }
+    return icon;
+}
+```
+
+**Applied to components:**
+- `DockItem.qml`
+- `CustomIcon.qml`
+- `SysTrayItem.qml`
+- `SearchItem.qml`
+- `OverviewWindow.qml`
+
+### Tooltip Management
+```qml
+// DISABLED: Tooltips system-wide for cleaner experience
+Loader {
+    id: tooltipLoader
+    active: false  // Disabled tooltips
+}
+```
+
+## Version 1.0 - Initial Quickshell Conversion
+
+### Core Shell Implementation
+**File:** `shell.qml` (Replaced `main.js`)
+```qml
+// NEW: Qt-based shell implementation
+ShellRoot {
+    Component.onCompleted: {
+        MaterialThemeLoader.reapplyTheme()
+        ConfigLoader.loadConfig()
+        PersistentStateManager.loadStates()
+    }
+
+    Bar {}
+    Dock {}
+    MediaControls {}
+    NotificationPopup {}
+    // ... all other modules
+}
+```
+
+### Dock Implementation (Based on Pharmaracist's Work)
+**Source:** [Pharmaracist's Quickshell implementation](https://github.com/Pharmaracist/dots-hyprland)
+
+#### Key Modifications:
+```qml
+// ADDED: Custom dock dimensions
+readonly property int dockHeight: Appearance.sizes.barHeight * 1.5
+readonly property int dockWidth: Appearance.sizes.barHeight * 1.5
+
+// ADDED: Custom Arch menu button
+Rectangle {
+    id: archButton
+    Image {
+        source: "/home/matt/.config/quickshell/logo/Arch-linux-logo.png"
+        width: parent.width * 0.65
+        height: parent.height * 0.65
+    }
+}
+```
+
+### Bar Module Conversion
+**File:** `modules/bar/Bar.qml` (Replaced `modules/bar/bar.js`)
+```qml
+// NEW: Qt Quick Controls based bar
+PanelWindow {
+    WlrLayershell.namespace: "quickshell:bar:blur"
+    implicitHeight: barHeight
+    exclusiveZone: showBarBackground ? barHeight : (barHeight - 4)
+    // Custom brightness control on scroll
+    WheelHandler {
+        onWheel: {
+            barRoot.brightnessMonitor.setBrightness(
+                barRoot.brightnessMonitor.brightness + (event.angleDelta.y > 0 ? 0.05 : -0.05)
+            )
+        }
+    }
+}
+```
+
+### Weather Module Integration (by lysec)
+```qml
+// INTEGRATED: Weather widget by lysec
+WeatherWidget {
+    id: weatherWidget
+    // Weather implementation and display logic
+}
+```
+
+### Theme System Migration
+**Directory:** `style/` (Replaced `scss/`)
+```qml
+// NEW: Qt Quick Controls theming
 QtObject {
     readonly property color background: "#1e1e2e"
     readonly property color foreground: "#cdd6f4"
@@ -609,66 +318,34 @@ QtObject {
 }
 ```
 
-5. Weather Module Integration (by lysec)
---------------------------------------
-File: ~/.config/quickshell/modules/bar/Weather.qml
-
-Implementation:
+### System Services Rewrite
+**Directory:** `services/`
 ```qml
-// Weather module by lysec
-import QtQuick
-import QtQuick.Controls
-import QtQuick.Layouts
-import Quickshell.Services.Weather
-
-WeatherWidget {
-    id: weatherWidget
-    
-    // Weather implementation details...
-    // Configuration and display logic
-}
-```
-
-6. System Services
------------------
-Directory: ~/.config/quickshell/services/
-
-Original (AGS):
-```javascript
-// services/brightness.js
-const Brightness = {
-    // AGS implementation
-};
-```
-
-New (Quickshell):
-```qml
-// services/Brightness.qml
+// NEW: Qt-based services
 QtObject {
     id: brightnessService
-    
     property var monitors: []
     property real globalBrightness: 1.0
-    
     // Quickshell implementation
 }
 ```
 
-7. Hyprland Integration
-----------------------
-File: ~/.config/hypr/hyprland.conf
-
-Added:
+### Hyprland Integration
+**File:** `hypr/hyprland.conf`
 ```conf
-# Quickshell Integration
+# ADDED: Quickshell Integration
 exec-once = qs
 
-# Window Rules
+# ADDED: Window rules for dock
 windowrulev2 = float,class:^(quickshell)$
 windowrulev2 = noanim,class:^(quickshell)$
 windowrulev2 = noblur,class:^(quickshell)$
 
-# Performance Optimizations
+# ADDED: Layer rules for proper blur
+layerrule = blur,quickshell:dock:blur
+layerrule = ignorezero,quickshell:dock:blur
+
+# ADDED: Performance optimizations
 misc {
     force_default_wallpaper = 0
     disable_splash_rendering = true
@@ -676,96 +353,60 @@ misc {
 }
 ```
 
-8. Additional Components
-----------------------
-A. Notification System:
-```qml
-// modules/notificationPopup/NotificationPopup.qml
-NotificationManager {
-    popupTimeout: 5000
-    popupLocation: Qt.TopRight
-    
-    // Notification handling logic
-}
+## Installation Instructions
+
+### Automated Installation (Recommended)
+
+**One-command installer for fresh Arch systems:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ryzendew/Matts-Quickshell-Hyprland/main/install.sh | bash
 ```
 
-B. Media Controls:
-```qml
-// modules/mediaControls/MediaControls.qml
-MediaController {
-    players: MprisService.players
-    
-    // Media control implementation
-}
+Or download and run manually:
+```bash
+wget https://raw.githubusercontent.com/ryzendew/Matts-Quickshell-Hyprland/main/install.sh
+chmod +x install.sh
+./install.sh
 ```
 
-A. Media Controls Cover Art Consistency:
-File: ~/.config/quickshell/modules/mediaControls/PlayerControl.qml
-```qml
-// Previous art URL handling
-property var artUrl: player?.metadata["xesam:url"] || player?.metadata["mpris:artUrl"] || player?.trackArtUrl
+### Manual Installation
 
-// New robust art URL handling with fallback mechanism
-property var artUrl: {
-    // Try different metadata sources in order of preference
-    const sources = [
-        player?.metadata["mpris:artUrl"],
-        player?.metadata["xesam:artUrl"],
-        player?.trackArtUrl,
-        "" // Fallback empty string if no art found
-    ];
-    // Return first non-empty valid URL
-    return sources.find(url => url && url.length > 0) || "";
-}
-
-// Enhanced error handling for art loading
-Image {
-    id: mediaArt
-    // ... existing properties ...
-    
-    onStatusChanged: {
-        if (status === Image.Error) {
-            playerController.artLoadError = true;
-            playerController.artDominantColor = Appearance.m3colors.m3secondaryContainer;
-        } else if (status === Image.Ready) {
-            playerController.artLoadError = false;
-        }
-    }
-}
-```
-
-B. Idle/Suspend Steam Compatibility:
-File: ~/.config/quickshell/scripts/wayland-idle-inhibitor.py
-```python
-# Added Steam process detection
-def is_steam_running() -> bool:
-    try:
-        # Check if steam process is running
-        subprocess.run(["pidof", "steam"], check=True, capture_output=True)
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
-# Modified inhibitor destruction logic
-def main() -> None:
-    # ... existing setup code ...
-    
-    print("Inhibiting idle...")
-    done.wait()
-    print("Shutting down...")
-
-    # Only destroy inhibitor if Steam is not running
-    if not is_steam_running():
-        inhibitor.destroy()
-
-    shutdown()
-```
-
-How to Apply Changes
-------------------
-1. Install required packages:
+### Prerequisites
 ```bash
 yay -S quickshell matugen-bin grimblast wtype qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt6-5compat qt6-base qt6-declarative qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-svg qt6-tools qt6-translations qt6-virtualkeyboard qt6-wayland syntax-highlighting
+```
+
+### Essential Dependencies for Arch Linux
+
+#### Required Packages
+```bash
+# Core Hyprland and Wayland
+sudo pacman -S hyprland wayland wayland-protocols
+
+# Qt framework (required for Quickshell)
+sudo pacman -S qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations
+
+# System utilities used by the config
+sudo pacman -S grim slurp wl-clipboard wtype brightnessctl pamixer mako syntax-highlighting
+
+# Fonts (prevents missing font errors)
+sudo pacman -S ttf-dejavu noto-fonts
+
+# AUR packages
+yay -S quickshell-git matugen-bin grimblast hyprswitch nwg-displays nwg-look
+```
+
+#### One-Command Install
+```bash
+# Install everything at once
+sudo pacman -S hyprland wayland wayland-protocols qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations grim slurp wl-clipboard wtype brightnessctl pamixer mako syntax-highlighting ttf-dejavu noto-fonts && yay -S quickshell-git matugen-bin grimblast hyprswitch nwg-displays nwg-look
+```
+
+### Setup
+1. Clone this repository:
+```bash
+git clone https://github.com/ryzendew/Matts-Quickshell-Hyprland.git
 ```
 
 2. Copy configuration files:
@@ -778,23 +419,274 @@ cp -r .config/* ~/.config/
 qs
 ```
 
-Notes
------
-- Complete rewrite from AGS JavaScript to Quickshell QML
-- Maintains functionality while improving performance
-- Weather module implementation by lysec
-- Based on end-4's Hyprland dotfiles
-- Extensive use of Qt Quick and Material Design
+## Features Summary
 
-Remember to backup your configuration files before applying changes.
+### Current Features
+- ✅ Drag & drop reordering of pinned apps
+- ✅ Workspace switching when clicking dock icons
+- ✅ Advanced right-click menu system
+- ✅ Enhanced icon handling and display
+- ✅ Smooth animations and visual feedback
+- ✅ Window management (move to workspace, toggle floating, close)
+- ✅ Auto-reload disabled (stability improvement)
+- ✅ Tooltips disabled (cleaner UI)
+- ✅ Weather integration (by lysec)
+- ✅ Material Design theming
+- ✅ HiDPI support
+
+### Customization Options
+- **Dock Apps:** Edit `dock_config.json` to modify pinned applications
+- **Commands:** Adjust `desktopIdToCommand` mapping in `Dock.qml`
+- **Appearance:** Modify theme files in `style/` directory
+- **Workspace Rules:** Edit `hypr/hyprland-rules.conf`
+
+## Performance Optimizations
+
+1. **Memory Usage**
+   - Efficient QML component loading
+   - Optimized image caching
+   - Reduced redundant calculations
+
+2. **CPU Usage**
+   - Minimized property bindings
+   - Optimized animation timings
+   - Efficient event handling
+
+3. **Graphics**
+   - Hardware acceleration for animations
+   - Efficient compositor integration
+   - Optimized blur effects
+
+## Troubleshooting
+
+### Common Issues
+
+#### Quickshell won't start
+```bash
+# Check if all Qt dependencies are installed
+pacman -Qs qt6
+
+# Verify Quickshell installation
+yay -Qs quickshell
+
+# Check logs
+journalctl --user -u quickshell
+```
+
+#### Icons not displaying
+```bash
+# Install additional icon themes
+sudo pacman -S papirus-icon-theme hicolor-icon-theme
+
+# Clear icon cache
+rm -rf ~/.cache/icon-theme.cache
+```
+
+#### Weather module not working
+```bash
+# Check network connectivity
+ping api.openweathermap.org
+
+# Verify weather API dependencies
+pacman -Qs curl jq
+```
 
 ## Credits
 
-- Original dotfiles by [end-4](https://github.com/end-4/dots-hyprland)
-- Dock implementation based on [Pharmaracist's work](https://github.com/Pharmaracist/dots-hyprland)
-- Weather module by lysec
-- Quickshell implementation and customizations by Matt
+- **Original dotfiles:** [end-4](https://github.com/end-4/dots-hyprland)
+- **Dock base implementation:** [Pharmaracist](https://github.com/Pharmaracist/dots-hyprland)
+- **Weather module:** lysec
+- **Quickshell implementation and enhancements:** Matt
+- **Special thanks:** Pharmaracist (@Pharmaracist) for the foundational dock work
 
 ## License
 
-GPL-3.0 License - See LICENSE file for details 
+GPL-3.0 License - See LICENSE file for details
+
+## 🚀 Supported Distributions
+
+### Arch Linux
+- Full support with automatic yay installation
+- AUR packages for extended functionality
+- SDDM display manager setup
+
+### PikaOS 4
+The installer will:
+- Utilize pre-installed Quickshell and Hyprland
+- Install minimal additional dependencies
+- Use pikman for AUR-like packages when available
+- Work with existing gaming optimizations
+
+## ✨ Features
+
+- **Dynamic Weather Widget** - Real-time weather with location customization
+- **System Monitoring** - CPU, memory, disk usage
+- **Audio Controls** - PipeWire integration with volume controls
+- **Window Management** - Intelligent Hyprland window controls
+- **Customizable Themes** - Multiple color schemes and layouts
+- **Gaming Ready** - Optimized for gaming performance (especially on PikaOS)
+
+## 📦 Quick Installation
+
+> **⚠️ ALPHA WARNING**: The automated installer script is currently in alpha stage and may be untested on some systems. Please review the script before running and report any issues you encounter.
+
+### One-Line Install
+```bash
+curl -fsSL https://raw.githubusercontent.com/ryzendew/Matts-Quickshell-Hyprland/main/install.sh | bash
+```
+
+### Manual Installation
+```bash
+git clone https://github.com/ryzendew/Matts-Quickshell-Hyprland.git
+cd Matts-Quickshell-Hyprland
+chmod +x install.sh
+./install.sh
+```
+
+## 🖥️ Distribution-Specific Notes
+
+### Arch Linux
+The installer will:
+- Install yay AUR helper automatically
+- Install all dependencies from official and AUR repositories
+- Set up SDDM display manager
+- Enable essential system services
+
+### PikaOS 4
+The installer will:
+- Utilize pre-installed Quickshell and Hyprland
+- Install minimal additional dependencies
+- Use pikman for AUR-like packages when available
+- Work with existing gaming optimizations
+
+## 🛠️ System Requirements
+
+### Arch Linux
+- Fresh Arch Linux installation
+- Internet connection
+- At least 2GB free disk space
+- Base system with sudo configured
+
+### PikaOS 4
+- PikaOS 4 Hyprland Edition (recommended)
+- Internet connection
+- At least 1GB free disk space
+- Quickshell pre-installed (automatic on Hyprland edition)
+
+## 📋 What Gets Installed
+
+### Core Dependencies
+- **Hyprland** - Wayland compositor
+- **Quickshell** - Qt-based shell framework
+- **PipeWire** - Audio system
+- **NetworkManager** - Network management
+
+### Additional Tools
+- **Display Manager** - SDDM (Arch) or existing (PikaOS)
+- **Screen Capture** - grim, slurp, grimblast
+- **Clipboard** - wl-clipboard
+- **Brightness Control** - brightnessctl
+- **Notifications** - mako (Arch)
+
+### Optional Applications
+- **Terminal Emulators** - Alacritty, Ptyxis, Kitty, etc.
+- **Web Browsers** - Firefox, Chrome, Edge, Brave, etc.
+- **File Manager** - Nautilus (optional)
+
+## ⚙️ Interactive Configuration
+
+The installer provides interactive menus for:
+
+1. **Config Backup** - Backup existing ~/.config
+2. **Weather Location** - Set your location for weather widget
+3. **Terminal Selection** - Choose from 8 terminal emulators
+4. **Browser Selection** - Choose from 8 web browsers
+5. **Additional Packages** - File manager and extras
+
+## 🎨 Customization
+
+### Weather Configuration
+During installation, you'll be prompted to set your location:
+```
+Examples: 
+- New York, NY, USA
+- London, England  
+- Tokyo, Japan
+```
+
+### Theme Customization
+Configuration files are located in:
+- `~/.config/quickshell/` - Main Quickshell configuration
+- `~/.config/hypr/` - Hyprland window manager settings
+
+## 🔧 Post-Installation
+
+### Starting the Environment
+1. Reboot your system
+2. Select Hyprland from display manager
+3. Start Quickshell: `qs`
+
+### Key Bindings (Default Hyprland)
+- `SUPER + Enter` - Terminal
+- `SUPER + D` - Application launcher  
+- `SUPER + Q` - Close window
+- `SUPER + Shift + Q` - Exit Hyprland
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+**Quickshell not starting:**
+```bash
+# Check if quickshell is installed
+command -v qs || command -v quickshell
+
+# Check configuration
+ls ~/.config/quickshell/
+```
+
+**Distribution Detection Issues:**
+The script automatically detects your distribution. If detection fails:
+- Ensure `/etc/os-release` exists and is readable
+- For PikaOS: Verify you're using PikaOS 4
+- For Arch: Verify pacman is available
+
+**PikaOS Specific:**
+- Use PikaOS Hyprland Edition for best compatibility
+- Some packages may need manual installation via `pikman`
+- Gaming optimizations are pre-configured
+
+### Error Recovery
+The installer includes automatic cleanup on failure:
+- Temporary files are removed
+- Partial installations are cleaned up
+- Error messages provide specific guidance
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit:
+- Bug reports
+- Feature requests  
+- Pull requests
+- Distribution-specific improvements
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Credits
+
+- **Original Design**: Based on end-4's dots-hyprland AGS configuration
+- **Weather Module**: Inspired by lysec's implementation  
+- **Dock Implementation**: Thanks to Pharmaracist's dock design
+- **PikaOS Support**: Added for the amazing gaming-focused distribution
+
+## 📞 Support
+
+- **Issues**: GitHub Issues page
+- **Discussions**: GitHub Discussions
+- **PikaOS Community**: Join the PikaOS Discord for distribution-specific help
+
+---
+
+**Enjoy your beautiful new Hyprland setup! 🎉**
