@@ -3,6 +3,7 @@ import "root:/modules/common/widgets"
 import "root:/services"
 import "root:/modules/common/functions/string_utils.js" as StringUtils
 import "root:/modules/common/functions/color_utils.js" as ColorUtils
+import "root:/modules/common/functions/file_utils.js" as FileUtils
 import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Effects
@@ -18,42 +19,24 @@ import Quickshell.Hyprland
 Item { // Player instance
     id: playerController
     required property MprisPlayer player
-    // property var artUrl: player?.metadata["xesam:url"] || player?.metadata["mpris:artUrl"] || player?.trackArtUrl
-    property var artUrl: {
-        // Try different metadata sources in order of preference
-        const sources = [
-            player?.metadata["mpris:artUrl"],
-            player?.metadata["xesam:artUrl"],
-            player?.trackArtUrl,
-            "" // Fallback empty string if no art found
-        ];
-        // Return first non-empty valid URL
-        return sources.find(url => url && url.length > 0) || "";
-    }
-    property color artDominantColor: Appearance.m3colors.m3secondaryContainer
-    property bool artLoadError: false
+    property var artUrl: player?.trackArtUrl
+    property string artDownloadLocation: Directories.coverArt
+    property string artFileName: Qt.md5(artUrl) + ".jpg"
+    property string artFilePath: `${artDownloadLocation}/${artFileName}`
+    property color artDominantColor: colorQuantizer?.colors[0] || Appearance.m3colors.m3secondaryContainer
+    property bool downloaded: false
 
     implicitWidth: widgetWidth
     implicitHeight: widgetHeight
 
-    component TrackChangeButton: Button {
-        id: playPauseButton
+    component TrackChangeButton: RippleButton {
         implicitWidth: 24
         implicitHeight: 24
 
         property var iconName
-        PointingHandInteraction {}
-
-        background: Rectangle {
-            color: playPauseButton.pressed ? blendedColors.colSecondaryContainerActive : 
-                playPauseButton.hovered ? blendedColors.colSecondaryContainerHover : 
-                ColorUtils.transparentize(blendedColors.colSecondaryContainer, 1)
-            radius: Appearance.rounding.full
-
-            Behavior on color {
-                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-            }
-        }
+        colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 1)
+        colBackgroundHover: blendedColors.colSecondaryContainerHover
+        colRipple: blendedColors.colSecondaryContainerActive
 
         contentItem: MaterialSymbol {
             iconSize: Appearance.font.pixelSize.huge
@@ -82,20 +65,26 @@ Item { // Player instance
             playerController.artDominantColor = Appearance.m3colors.m3secondaryContainer
             return;
         }
-        colorQuantizer.targetFile = playerController.artUrl // Yes this binding break is intentional
-        colorQuantizer.running = true
+        // console.log("PlayerControl: Art URL changed to", playerController.artUrl)
+        // console.log("Download cmd:", coverArtDownloader.command.join(" "))
+        playerController.downloaded = false
+        coverArtDownloader.running = true
     }
 
-    Process { // Average Color Runner
-        id: colorQuantizer
+    Process { // Cover art downloader
+        id: coverArtDownloader
         property string targetFile: playerController.artUrl
-        command: [ "sh", "-c", `magick '${targetFile}' -scale 1x1\\! -format '%[fx:int(255*r+.5)],%[fx:int(255*g+.5)],%[fx:int(255*b+.5)]' info: | sed 's/,/\\n/g' | xargs -L 1 printf '%02x' ; echo` ]
-        stdout: SplitParser {
-            onRead: data => {
-                // console.log("Color quantizer output:", data)
-                playerController.artDominantColor = "#" + data
-            }
+        command: [ "bash", "-c", `[ -f ${artFilePath} ] || curl -sSL '${targetFile}' -o '${artFilePath}'` ]
+        onExited: (exitCode, exitStatus) => {
+            playerController.downloaded = true
         }
+    }
+
+    ColorQuantizer {
+        id: colorQuantizer
+        source: playerController.downloaded ? Qt.resolvedUrl(artFilePath) : ""
+        depth: 0 // 2^0 = 1 color
+        rescaleSize: 1 // Rescale to 1x1 pixel for faster processing
     }
 
     property QtObject blendedColors: QtObject {
@@ -109,12 +98,20 @@ Item { // Player instance
         property color colPrimaryActive: ColorUtils.mix(ColorUtils.adaptToAccent(Appearance.colors.colPrimaryActive, artDominantColor), artDominantColor, 0.3)
         property color colSecondaryContainer: ColorUtils.mix(Appearance.m3colors.m3secondaryContainer, artDominantColor, 0.3)
         property color colSecondaryContainerHover: ColorUtils.mix(Appearance.colors.colSecondaryContainerHover, artDominantColor, 0.3)
-        property color colSecondaryContainerActive: ColorUtils.mix(Appearance.colors.colSecondaryContainerActive, artDominantColor, 0.3)
+        property color colSecondaryContainerActive: ColorUtils.mix(Appearance.colors.colSecondaryContainerActive, artDominantColor, 0.5)
         property color colOnPrimary: ColorUtils.mix(ColorUtils.adaptToAccent(Appearance.m3colors.m3onPrimary, artDominantColor), artDominantColor, 0.5)
         property color colOnSecondaryContainer: ColorUtils.mix(Appearance.m3colors.m3onSecondaryContainer, artDominantColor, 0.2)
 
     }
 
+    RectangularShadow {
+        anchors.fill: background
+        radius: background.radius
+        blur: 1.2 * Appearance.sizes.elevationMargin
+        spread: 1
+        color: Appearance.colors.colShadow
+        cached: true
+    }
     Rectangle { // Background
         id: background
         anchors.fill: parent
@@ -134,8 +131,7 @@ Item { // Player instance
         Image {
             id: blurredArt
             anchors.fill: parent
-            visible: true
-            source: playerController.artUrl
+            source: playerController.downloaded ? Qt.resolvedUrl(artFilePath) : ""
             sourceSize.width: background.width
             sourceSize.height: background.height
             fillMode: Image.PreserveAspectCrop
@@ -146,7 +142,6 @@ Item { // Player instance
             layer.enabled: true
             layer.effect: MultiEffect {
                 source: blurredArt
-                anchors.fill: blurredArt
                 saturation: 0.2
                 blurEnabled: true
                 blurMax: 100
@@ -155,7 +150,7 @@ Item { // Player instance
 
             Rectangle {
                 anchors.fill: parent
-                color: ColorUtils.transparentize(blendedColors.colLayer0, 0.8)
+                color: ColorUtils.transparentize(blendedColors.colLayer0, 0.25)
                 radius: root.popupRounding
             }
         }
@@ -186,20 +181,11 @@ Item { // Player instance
                     property int size: parent.height
                     anchors.fill: parent
 
-                    source: playerController.artUrl
+                    source: playerController.downloaded ? Qt.resolvedUrl(artFilePath) : ""
                     fillMode: Image.PreserveAspectCrop
                     cache: false
                     antialiasing: true
                     asynchronous: true
-
-                    onStatusChanged: {
-                        if (status === Image.Error) {
-                            playerController.artLoadError = true;
-                            playerController.artDominantColor = Appearance.m3colors.m3secondaryContainer;
-                        } else if (status === Image.Ready) {
-                            playerController.artLoadError = false;
-                        }
-                    }
 
                     width: size
                     height: size
@@ -267,37 +253,20 @@ Item { // Player instance
                         }
                     }
 
-                    Button {
+                    RippleButton {
                         id: playPauseButton
                         anchors.right: parent.right
                         anchors.bottom: sliderRow.top
                         anchors.bottomMargin: 5
-                        implicitWidth: 44
-                        implicitHeight: 44
+                        property real size: 44
+                        implicitWidth: size
+                        implicitHeight: size
                         onClicked: playerController.player.togglePlaying();
 
-                        PointingHandInteraction {}
-
-                        background: Rectangle {
-                            color: playerController.player?.isPlaying ? 
-                                (playPauseButton.pressed ? blendedColors.colPrimaryActive : 
-                                    playPauseButton.hovered ? blendedColors.colPrimaryHover : 
-                                    blendedColors.colPrimary) : 
-                                (playPauseButton.pressed ? blendedColors.colSecondaryContainerActive : 
-                                    playPauseButton.hovered ? blendedColors.colSecondaryContainerHover : 
-                                    blendedColors.colSecondaryContainer)
-                            radius: playerController.player?.isPlaying ? Appearance.rounding.medium : Appearance.rounding.full
-
-                            Behavior on color {
-                                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-                            }
-                            Behavior on radius {
-                                NumberAnimation {
-                                    duration: Appearance.animation.elementMoveFast.duration
-                                    easing.type: Appearance.animation.elementMoveFast.type
-                                }
-                            }
-                        }
+                        buttonRadius: playerController.player?.isPlaying ? Appearance?.rounding.normal : size / 2
+                        colBackground: playerController.player?.isPlaying ? blendedColors.colPrimary : blendedColors.colSecondaryContainer
+                        colBackgroundHover: playerController.player?.isPlaying ? blendedColors.colPrimaryHover : blendedColors.colSecondaryContainerHover
+                        colRipple: playerController.player?.isPlaying ? blendedColors.colPrimaryActive : blendedColors.colSecondaryContainerActive
 
                         contentItem: MaterialSymbol {
                             iconSize: Appearance.font.pixelSize.huge

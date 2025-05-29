@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Latest Updates] - Applied from end-4/dots-hyprland PR #1276
+
+### 🏠 Shell Improvements
+- **Enhanced `shell.qml`** with helpful comments and memory-efficient Loader pattern
+- Added enable/disable flags for all modules to save memory when not needed
+- Components now only load when enabled
+
+### 🎵 Media Controls Enhancements  
+- **Improved media player filtering** - removes duplicate players and handles track titles better
+- **Better positioning control** - media controls now positioned to the right with adjustable spacing
+- **Single active player display** - shows only the currently active player instead of all players
+- **Enhanced `PlayerControl`** with RippleButton components and better theming
+- **Added `Directories` service** for centralized directory management
+
+### 🔍 Search & Icon Improvements
+- **Enhanced `AppSearch.qml`** with comprehensive improvements:
+  - Better icon guessing for window classes and applications
+  - Extended app name substitutions for better icon detection
+  - Regex-based substitutions for special cases (Steam games, etc.)
+  - Desktop entry search fallback for icon guessing
+  - Optional fuzzy search with Levenshtein distance support
+
+### 🎛️ Dock Improvements  
+- **Updated `DockApps.qml`** with better window grouping and focus cycling
+- Improved app detection and window management
+
+### 📁 New Components Added
+- **`Directories.qml`** - Centralized directory management singleton
+- **`RippleButton.qml`** - Modern button component with ripple effects
+- **`levendist.js`** - Levenshtein distance function for fuzzy search algorithms
+
+### 🎯 Performance & UX
+- **Memory optimization** through conditional module loading
+- **Better responsiveness** with improved component architecture  
+- **Enhanced user experience** with smarter icon detection and media controls
+
+---
+
 ## [2.0] - Complete Dock Overhaul (Latest)
 
 ### Major Features Added

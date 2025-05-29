@@ -23,26 +23,45 @@ import Quickshell
 import "./services/"
 
 ShellRoot {
+    // Enable/disable modules here. False = not loaded at all, so rest assured
+    // no unnecessary stuff will take up memory if you decide to only use, say, the overview.
+    property bool enableBar: true
+    property bool enableCheatsheet: true
+    property bool enableDock: true
+    property bool enableHyprMenu: true
+    property bool enableMediaControls: true
+    property bool enableNotificationPopup: true
+    property bool enableOnScreenDisplayBrightness: true
+    property bool enableOnScreenDisplayVolume: true
+    property bool enableOverview: true
+    property bool enableReloadPopup: true
+    property bool enableScreenCorners: true
+    property bool enableSession: true
+    property bool enableSidebarLeft: true
+    property bool enableSidebarRight: true
+    property bool enableWeather: true
+
+    // Force initialization of some singletons
     Component.onCompleted: {
         MaterialThemeLoader.reapplyTheme()
         ConfigLoader.loadConfig()
         PersistentStateManager.loadStates()
     }
 
-    Bar {}
-    Cheatsheet {}
-    Dock {}
-    HyprMenu {}
-    MediaControls {}
-    NotificationPopup {}
-    OnScreenDisplayBrightness {}
-    OnScreenDisplayVolume {}
-    Overview {}
-    ReloadPopup {}
-    ScreenCorners {}
-    Session {}
-    SidebarLeft {}
-    SidebarRight {}
-    WeatherSidebarPage {}
+    Loader { active: enableBar; sourceComponent: Bar {} }
+    Loader { active: enableCheatsheet; sourceComponent: Cheatsheet {} }
+    Loader { active: enableDock; sourceComponent: Dock {} }
+    Loader { active: enableHyprMenu; sourceComponent: HyprMenu {} }
+    Loader { active: enableMediaControls; sourceComponent: MediaControls {} }
+    Loader { active: enableNotificationPopup; sourceComponent: NotificationPopup {} }
+    Loader { active: enableOnScreenDisplayBrightness; sourceComponent: OnScreenDisplayBrightness {} }
+    Loader { active: enableOnScreenDisplayVolume; sourceComponent: OnScreenDisplayVolume {} }
+    Loader { active: enableOverview; sourceComponent: Overview {} }
+    Loader { active: enableReloadPopup; sourceComponent: ReloadPopup {} }
+    Loader { active: enableScreenCorners; sourceComponent: ScreenCorners {} }
+    Loader { active: enableSession; sourceComponent: Session {} }
+    Loader { active: enableSidebarLeft; sourceComponent: SidebarLeft {} }
+    Loader { active: enableSidebarRight; sourceComponent: SidebarRight {} }
+    Loader { active: enableWeather; sourceComponent: WeatherSidebarPage {} }
 }
 

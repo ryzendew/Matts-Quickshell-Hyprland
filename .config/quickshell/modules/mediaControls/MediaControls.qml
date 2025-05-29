@@ -7,7 +7,6 @@ import Qt5Compat.GraphicalEffects
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
@@ -17,17 +16,16 @@ import Quickshell.Hyprland
 
 Scope {
     id: root
-    required property var bar
     property bool visible: false
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     readonly property var realPlayers: Mpris.players.values.filter(player => isRealPlayer(player))
+    readonly property var meaningfulPlayers: filterDuplicatePlayers(realPlayers)
     readonly property real osdWidth: Appearance.sizes.osdWidth
     readonly property real widgetWidth: Appearance.sizes.mediaControlsWidth
     readonly property real widgetHeight: Appearance.sizes.mediaControlsHeight
     property real contentPadding: 13
     property real popupRounding: Appearance.rounding.screenRounding - Appearance.sizes.elevationMargin + 1
     property real artRounding: Appearance.rounding.verysmall
-    property string baseCoverArtDir: FileUtils.trimFileProtocol(`${XdgDirectories.cache}/media/coverart`)
 
     property bool hasPlasmaIntegration: false
     function isRealPlayer(player) {
@@ -42,9 +40,32 @@ Scope {
             !(player.dbusName?.endsWith('.mpd') && !player.dbusName.endsWith('MediaPlayer2.mpd'))
         );
     }
+    function filterDuplicatePlayers(players) {
+        let filtered = [];
+        let used = new Set();
 
-    Component.onCompleted: {
-        Hyprland.dispatch(`exec rm -rf ${baseCoverArtDir} && mkdir -p ${baseCoverArtDir}`)
+        for (let i = 0; i < players.length; ++i) {
+            if (used.has(i)) continue;
+            let p1 = players[i];
+            let group = [i];
+
+            // Find duplicates by trackTitle prefix
+            for (let j = i + 1; j < players.length; ++j) {
+                let p2 = players[j];
+                if (p1.trackTitle && p2.trackTitle &&
+                    (p1.trackTitle.startsWith(p2.trackTitle) || p2.trackTitle.startsWith(p1.trackTitle))) {
+                    group.push(j);
+                }
+            }
+
+            // Pick the one with non-empty trackArtUrl, or fallback to the first
+            let chosenIdx = group.find(idx => players[idx].trackArtUrl && players[idx].trackArtUrl.length > 0);
+            if (chosenIdx === undefined) chosenIdx = group[0];
+
+            filtered.push(players[chosenIdx]);
+            group.forEach(idx => used.add(idx));
+        }
+        return filtered;
     }
 
     Loader {
@@ -58,8 +79,8 @@ Scope {
             exclusiveZone: 0
             implicitWidth: (
                 (mediaControlsRoot.screen.width / 2) // Middle of screen
-                    - (osdWidth / 2)                 // Dodge OSD
-                    - (widgetWidth / 2)              // Account for widget width
+                    + (osdWidth / 2)                 // Move to right side of OSD
+                    + (widgetWidth / 2)              // Account for widget width
             ) * 2
             implicitHeight: playerColumnLayout.implicitHeight
             color: "transparent"
@@ -70,47 +91,27 @@ Scope {
                 left: true
             }
             mask: Region {
-                item: contentRect
+                item: playerColumnLayout
             }
 
-            Item {
-                width: contentRect.implicitWidth
-                height: contentRect.implicitHeight
+            ColumnLayout {
+                id: playerColumnLayout
+                anchors.top: parent.top
+                anchors.bottom: parent.bottom
+                x: (mediaControlsRoot.screen.width / 2)  // Middle of screen
+                    + (osdWidth / 2)                     // Move to right side of OSD
+                    + (widgetWidth)                      // Add widget width for more spacing
+                    + (Appearance.sizes.elevationMargin) // Add some margin
+                    + 120                                // Extra spacing to move it more right
+                spacing: -Appearance.sizes.elevationMargin // Shadow overlap okay
 
-                MultiEffect {
-                    anchors.fill: contentRect
-                    source: contentRect
-                    shadowEnabled: true
-                    shadowColor: Appearance.colors.colShadow
-                    shadowVerticalOffset: 1
-                    shadowBlur: 0.5
-            }
-
-            Rectangle {
-                id: contentRect
-                anchors.fill: parent
-                color: Qt.rgba(Appearance.colors.colLayer1.r, Appearance.colors.colLayer1.g, Appearance.colors.colLayer1.b, 0.95)
-                radius: Appearance.rounding.medium
-
-                ColumnLayout {
-                    id: playerColumnLayout
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    x: (mediaControlsRoot.screen.width / 2)  // Middle of screen
-                        - (osdWidth / 2)                     // Dodge OSD
-                        - (widgetWidth)                      // Account for widget width
-                        + (Appearance.sizes.elevationMargin) // It's fine for shadows to overlap
-                    spacing: -Appearance.sizes.elevationMargin // Shadow overlap okay
-
-                    Repeater {
-                        model: ScriptModel {
-                            values: root.realPlayers
-                        }
-                        delegate: PlayerControl {
-                            required property MprisPlayer modelData
-                            player: modelData
-                            }
-                        }
+                Repeater {
+                    model: ScriptModel {
+                        values: root.activePlayer ? [root.activePlayer] : []
+                    }
+                    delegate: PlayerControl {
+                        required property MprisPlayer modelData
+                        player: modelData
                     }
                 }
             }
