@@ -331,7 +331,13 @@ Item {
                             sourceComponent: IconImage {
                                 implicitSize: 33
                                 asynchronous: true
-                                source: Quickshell.iconPath(notificationObject.appIcon, "image-missing")
+                                source: {
+                                    const iconPath = Quickshell.iconPath(notificationObject.appIcon, "image-missing")
+                                    if (!iconCache[iconPath]) {
+                                        iconCache[iconPath] = true
+                                    }
+                                    return iconPath
+                                }
                             }
                         }
                         Loader {
@@ -341,39 +347,14 @@ Item {
                             sourceComponent: Item {
                                 anchors.fill: parent
                                 Image {
-                                    id: notifImage
                                     anchors.fill: parent
-                                    readonly property int size: parent.width
-
-                                    source: notificationObject?.image
-                                    fillMode: Image.PreserveAspectCrop
-                                    cache: false
-                                    antialiasing: true
                                     asynchronous: true
-
-                                    width: size
-                                    height: size
-                                    sourceSize.width: size
-                                    sourceSize.height: size
-
-                                    layer.enabled: true
-                                    layer.effect: OpacityMask {
-                                        maskSource: Rectangle {
-                                            width: notifImage.size
-                                            height: notifImage.size
-                                            radius: Appearance.rounding.full
+                                    source: {
+                                        const imagePath = notificationObject.image
+                                        if (!imageCache[imagePath]) {
+                                            imageCache[imagePath] = true
                                         }
-                                    }
-                                }
-                                Loader {
-                                    id: notifImageAppIconLoader
-                                    active: notificationObject.appIcon != ""
-                                    anchors.bottom: parent.bottom
-                                    anchors.right: parent.right
-                                    sourceComponent: IconImage {
-                                        implicitSize: 23
-                                        asynchronous: true
-                                        source: Quickshell.iconPath(notificationObject.appIcon, "image-missing")
+                                        return imagePath
                                     }
                                 }
                             }

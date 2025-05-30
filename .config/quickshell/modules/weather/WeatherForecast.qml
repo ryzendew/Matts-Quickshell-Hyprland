@@ -228,11 +228,11 @@ Item {
                         xhr.open("GET", url);
                         xhr.send();
                     } catch (e) {
-                        console.log("Geo data parse error:", e);
+                        ///console.log("Geo data parse error:", e);
                         fallbackWeatherData("Location error");
                     }
                 } else {
-                    console.log("Geo request error:", geoXhr.status);
+                    ///console.log("Geo request error:", geoXhr.status);
                     fallbackWeatherData("Location error");
                 }
             }
@@ -256,7 +256,9 @@ Item {
         if (data.daily && data.daily.time && data.daily.time.length > 0) {
             for (var i = 0; i < Math.min(7, data.daily.time.length); i++) {
                 var dateStr = data.daily.time[i];
-                var dayName = new Date(dateStr).toLocaleDateString(Qt.locale(), "ddd");
+                var dateParts = dateStr.split('-');
+                var date = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+                var dayName = date.toLocaleDateString(Qt.locale(), "ddd");
                 var maxTemp = Math.round(data.daily.temperature_2m_max[i]);
                 var minTemp = Math.round(data.daily.temperature_2m_min[i]);
                 var weatherCode = data.daily.weather_code[i];
@@ -307,8 +309,11 @@ Item {
         if (data.weather && data.weather.length > 0) {
             for (var i = 0; i < Math.min(3, data.weather.length); i++) {
                 var day = data.weather[i];
-                var date = day.date;
-                var dayName = new Date(date).toLocaleDateString(Qt.locale(), "ddd");
+                var dateStr = day.date;
+                // Fix timezone issue: parse date in local time instead of UTC
+                var dateParts = dateStr.split('-');
+                var date = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+                var dayName = date.toLocaleDateString(Qt.locale(), "ddd");
                 var maxTemp = day.maxtempC;
                 var minTemp = day.mintempC;
                 var condition = day.hourly[4]?.weatherDesc[0]?.value || day.hourly[0]?.weatherDesc[0]?.value || "";

@@ -35,7 +35,7 @@ MouseArea {
 
         menu: root.item.menu
         anchor.window: bar
-        anchor.rect.x: root.x + bar.width - 500
+        anchor.rect.x: root.x + bar.width
         anchor.rect.y: root.y
         anchor.rect.height: root.height
         anchor.edges: Edges.Bottom
@@ -43,22 +43,12 @@ MouseArea {
 
     IconImage {
         id: trayIcon
+        visible: true // There's already color overlay
         source: root.item.icon
         anchors.centerIn: parent
         width: parent.width
         height: parent.height
     }
 
-    Desaturate {
-        id: desaturatedIcon
-        anchors.fill: trayIcon
-        source: trayIcon
-        desaturation: 0 // 1.0 means fully grayscale
-    }
-    ColorOverlay {
-        anchors.fill: desaturatedIcon
-        source: desaturatedIcon
-        color: ColorUtils.transparentize(Appearance.colors.colOnLayer0, 1.0)
-    }
 
 }

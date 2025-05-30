@@ -111,6 +111,12 @@ Rectangle {
         iconSize: parent.width * 0.65
         iconName: dockItem.icon
         iconColor: "transparent" // Let the icon use its natural colors
+
+        Component.onCompleted: {
+            if (!dockItem.isPinned) {
+                console.log("[UNPINNED APP ICON DEBUG] DockItem (unpinned) is setting up SystemIcon for iconName:", dockItem.icon);
+            }
+        }
     }
     
     // --- Tooltip (disabled) ---
@@ -308,7 +314,7 @@ Rectangle {
                     for (var i = 0; i < dockContainer.children.length; i++) {
                         var item = dockContainer.children[i]
                         if (item && item !== dockItem && item.closeMenu && typeof item.closeMenu === "function") {
-                            item.closeMenu()
+                        item.closeMenu()
                         }
                     }
                 }
@@ -316,6 +322,9 @@ Rectangle {
                 if (dockItem.showMenu) {
                     dockItem.closeMenu()
                 } else {
+                    // Hide any active previews when opening menu
+                    dock.hideWindowPreviewsImmediately();
+                    
                     // Store the click position for menu positioning
                     lastClickPos = Qt.point(mouse.x, mouse.y)
                     dockItem.showMenu = true
@@ -325,8 +334,26 @@ Rectangle {
         }
         
         // Track mouse over state for dock hover logic
-        onEntered: dock.mouseOverDockItem = true
-        onExited: dock.mouseOverDockItem = false
+        onEntered: {
+            console.log("[DOCK ITEM DEBUG] Mouse entered dock item for:", appInfo?.class || "unknown");
+            dock.mouseOverDockItem = true
+            
+            // DISABLED: Show window previews if this app has multiple windows
+            // if (appInfo && appInfo.class && !showMenu) {
+            //     console.log("[DOCK ITEM DEBUG] Calling showWindowPreviews for:", appInfo.class);
+            //     const position = dockItem.mapToItem(null, dockItem.width / 2, 0);
+            //     dock.showWindowPreviews(appInfo.class, position, dockItem.width);
+            // } else {
+            //     console.log("[DOCK ITEM DEBUG] Not calling showWindowPreviews - appInfo:", !!appInfo, "class:", appInfo?.class, "showMenu:", showMenu);
+            // }
+        }
+        
+        onExited: {
+            dock.mouseOverDockItem = false
+            
+            // DISABLED: Hide window previews
+            // dock.hideWindowPreviews();
+        }
     }
     
     // --- Active Indicator ---
@@ -450,6 +477,11 @@ Rectangle {
                             // Use the mapped command from desktopIdToCommand if available
                             var command = ""
                             if (dockItem.appInfo.class) {
+                                if (dockItem.appInfo.class.endsWith('.desktop')) {
+                                    // For .desktop files, use gio launch with full path
+                                    // Check user applications first, then system applications  
+                                    command = `gio launch /home/matt/.local/share/applications/${dockItem.appInfo.class} || gio launch /usr/share/applications/${dockItem.appInfo.class}`;
+                                } else {
                                 // Try different variations of the class name
                                 var classLower = dockItem.appInfo.class.toLowerCase()
                                 var classWithDesktop = dockItem.appInfo.class + ".desktop"
@@ -461,6 +493,7 @@ Rectangle {
                                     command = dock.desktopIdToCommand[classWithDesktop]
                                 } else {
                                     command = dockItem.appInfo.command || dockItem.appInfo.class.toLowerCase()
+                                    }
                                 }
                             }
                             console.log("Launching new instance with command:", command)

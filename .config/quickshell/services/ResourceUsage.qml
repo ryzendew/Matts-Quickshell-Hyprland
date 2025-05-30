@@ -18,8 +18,18 @@ Singleton {
     property double cpuUsage: 0
     property var previousCpuStats
 
+    // Helper function for controlled logging
+    function log(level, message) {
+        if (!ConfigOptions.logging.enabled) return
+        if (level === "debug" && !ConfigOptions.logging.debug) return
+        if (level === "info" && !ConfigOptions.logging.info) return
+        if (level === "warning" && !ConfigOptions.logging.warning) return
+        if (level === "error" && !ConfigOptions.logging.error) return
+        console.log(`[ResourceUsage][${level.toUpperCase()}] ${message}`)
+    }
+
 	Timer {
-		interval: 10
+		interval: ConfigOptions?.resources?.updateInterval ?? 1000 // Default to 1 second
         running: true 
         repeat: true
 		onTriggered: {
@@ -50,7 +60,6 @@ Singleton {
 
                 previousCpuStats = { total, idle }
             }
-            interval = ConfigOptions?.resources?.updateInterval ?? 3000
         }
 	}
 

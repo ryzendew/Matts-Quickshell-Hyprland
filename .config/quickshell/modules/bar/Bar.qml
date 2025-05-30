@@ -47,7 +47,7 @@ Scope {
     }
 
     Variants { // For each monitor
-        model: Quickshell.screens
+        model: Quickshell.screens.filter(screen => screen.name === "DP-1")
 
         PanelWindow { // Bar window
             id: barRoot
@@ -68,7 +68,7 @@ Scope {
 
             screen: modelData
             implicitHeight: barHeight
-            exclusiveZone: showBarBackground ? barHeight : (barHeight - 4)
+            exclusiveZone: showBarBackground ? barHeight : (barHeight -4)
             mask: Region {
                 item: barContent
             }
@@ -108,7 +108,7 @@ Scope {
                     anchors.bottom: parent.bottom
                     height: 3
                     color: "black"
-                    opacity: 0.35
+                    opacity: 0.9
                 }
                 
                 MouseArea { // Left side | scroll to change brightness

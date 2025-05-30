@@ -19,18 +19,77 @@ Scope {
     // Position configuration - options: "top-left", "top-center", "top-right", "center", "bottom-left", "bottom-center", "bottom-right"
     property string menuPosition: "bottom-center" // Default fallback
 
+    // Function to refresh desktop database and app list
+    function refreshApps() {
+        console.log("[HYPRMENU] Refreshing desktop application database...")
+        
+        // Find the menuWindow from the Variants
+        var window = null
+        for (var i = 0; i < root.children.length; i++) {
+            if (root.children[i].objectName === "menuWindow") {
+                window = root.children[i]
+                break
+            }
+        }
+        
+        if (window) {
+            window.isRefreshing = true
+        }
+        
+        // Use AppSearch refresh function
+        try {
+            console.log("[HYPRMENU] Calling AppSearch.refresh()...")
+            AppSearch.refresh()
+            
+            // Set a timer to stop the refreshing state
+            Qt.createQmlObject('
+                import QtQuick
+                Timer {
+                    interval: 2000
+                    running: true
+                    onTriggered: {
+                        root.onRefreshCompleted()
+                        destroy()
+                    }
+                }
+            ', root)
+            
+        } catch (error) {
+            console.log("[HYPRMENU] Error calling AppSearch.refresh():", error)
+            if (window) {
+                window.isRefreshing = false
+            }
+        }
+    }
+    
+    function onRefreshCompleted() {
+        // Find the menuWindow and update it
+        for (var i = 0; i < root.children.length; i++) {
+            if (root.children[i].objectName === "menuWindow") {
+                var window = root.children[i]
+                if (window.updateFilteredApps) {
+                    window.updateFilteredApps()
+                }
+                window.isRefreshing = false
+                break
+            }
+        }
+    }
+
     Variants {
-        model: Quickshell.screens
+        model: Quickshell.screens.filter(screen => screen.name === "DP-1")
         
         PanelWindow {
             id: menuWindow
             required property var modelData
+            objectName: "menuWindow"  // Add this so the refresh function can find it
             
             property bool isGridView: true
             property string searchText: ""
             property var filteredApps: []
             property var categories: ["All", "Development", "Games", "Graphics", "Internet", "Multimedia", "Office", "System", "Utilities"]
             property string selectedCategory: "All"
+            property bool isRefreshing: false
             
             screen: modelData
             visible: GlobalStates.hyprMenuOpen || false
@@ -53,6 +112,7 @@ Scope {
             
             onVisibleChanged: {
                 if (visible) {
+                    menuWindow.searchText = "" // Clear search on open
                     focusGrabTimer.start()
                 } else {
                     focusGrabTimer.stop()
@@ -165,7 +225,7 @@ Scope {
                                 TextField {
                                     id: searchField
                                     Layout.fillWidth: true
-                                    placeholderText: qsTr("Search applications...")
+                                    placeholderText: qsTr("Search applications... (F5 to refresh)")
                                     placeholderTextColor: Qt.rgba(0.6, 0.6, 0.6, 0.6)  // Gray placeholder
                                     color: Qt.rgba(0.95, 0.95, 0.95, 0.95)  // Light gray text
                                     background: null
@@ -183,9 +243,64 @@ Scope {
                                             if (menuWindow.filteredApps.length > 0) {
                                                 launchApp(menuWindow.filteredApps[0])
                                             }
+                                        } else if (event.key === Qt.Key_F5) {
+                                            // F5 to refresh apps manually
+                                            root.refreshApps()
                                         }
                                     }
                                 }
+                            }
+                        }
+                        
+                        // Refresh button
+                        Rectangle {
+                            width: 40
+                            height: 40
+                            radius: 8
+                            color: refreshArea.containsMouse ? Qt.rgba(0.2, 0.2, 0.2, 0.6) : Qt.rgba(0.1, 0.1, 0.1, 0.4)
+                            border.color: Qt.rgba(0.3, 0.3, 0.3, 0.8)
+                            border.width: 1
+                            opacity: menuWindow.isRefreshing ? 0.6 : 1.0
+                            
+                            MaterialSymbol {
+                                anchors.centerIn: parent
+                                text: "refresh"
+                                iconSize: 20
+                                color: Qt.rgba(0.9, 0.9, 0.9, 0.9)  // Light gray icon
+                                
+                                // Rotation animation when refreshing
+                                RotationAnimation on rotation {
+                                    running: menuWindow.isRefreshing
+                                    from: 0
+                                    to: 360
+                                    duration: 1000
+                                    loops: Animation.Infinite
+                                }
+                            }
+                            
+                            MouseArea {
+                                id: refreshArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                enabled: !menuWindow.isRefreshing
+                                onClicked: {
+                                    console.log("[HYPRMENU] Manual refresh requested")
+                                    root.refreshApps()
+                                }
+                            }
+                            
+                            // Tooltip for refresh button
+                            ToolTip {
+                                visible: refreshArea.containsMouse && !menuWindow.isRefreshing
+                                text: qsTr("Refresh app list (F5)")
+                                delay: 1000
+                            }
+                            
+                            // Refreshing tooltip
+                            ToolTip {
+                                visible: refreshArea.containsMouse && menuWindow.isRefreshing
+                                text: qsTr("Refreshing...")
+                                delay: 100
                             }
                         }
                         

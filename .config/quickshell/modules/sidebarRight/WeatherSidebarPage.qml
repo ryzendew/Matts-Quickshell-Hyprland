@@ -20,7 +20,6 @@ Item {
                 root.feelsLike = item.feelsLike
                 item.forecastDataChanged.connect(function() { 
                     root.forecastData = item.forecastData
-                    console.log("Weather forecast updated. Days available:", item.forecastData.length)
                 })
                 item.locationDisplayChanged.connect(function() { root.locationDisplay = item.locationDisplay })
                 item.currentTempChanged.connect(function() { root.currentTemp = item.currentTemp })

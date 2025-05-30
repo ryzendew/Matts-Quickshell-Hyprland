@@ -12,6 +12,7 @@ import "root:/modules/common/widgets"
 import "root:/services"
 import Qt.labs.platform
 import "root:/modules/bar"
+import "root:/modules/common/functions/icon_theme.js" as IconTheme
 
 Scope {
     id: dock
@@ -45,6 +46,12 @@ Scope {
     property rect menuTargetRect: Qt.rect(0, 0, 0, 0)  // Store position and size of target item
     property var activeMenuItem: null  // Track which item triggered the menu
     
+    // Preview properties
+    property bool showDockPreviews: false
+    property var previewAppClass: ""
+    property point previewPosition: Qt.point(0, 0)
+    property int previewItemWidth: 0
+    
     // Default pinned apps to use if no saved settings exist
     readonly property var defaultPinnedApps: [
             "microsoft-edge-dev",
@@ -63,6 +70,11 @@ Scope {
     // Pinned apps list - will be loaded from file
     property var pinnedApps: []
     
+    // Debug pinnedApps changes
+    onPinnedAppsChanged: {
+        console.log("[DOCK DEBUG] pinnedApps changed to:", JSON.stringify(pinnedApps))
+    }
+    
     // Settings file path
     property string configFilePath: `${Quickshell.configDir}/dock_config.json`
     
@@ -74,6 +86,11 @@ Scope {
         "nautilus": "nautilus --new-window",
         "Nautilus": "nautilus --new-window",
         
+        // Ptyxis variations
+        "org.gnome.Ptyxis.desktop": "ptyxis",
+        "org.gnome.Ptyxis": "ptyxis",
+        "ptyxis": "ptyxis",
+        
         // Other apps
         "vesktop": "vesktop --new-window",
         "microsoft-edge-dev": "microsoft-edge-dev --new-window",
@@ -83,7 +100,9 @@ Scope {
         "obs": "obs",
         "com.blackmagicdesign.resolve": "resolve",
         "AffinityPhoto": "AffinityPhoto",
-        "ptyxis": "ptyxis"
+        "AffinityPhoto.desktop": "gtk-launch AffinityPhoto.desktop",
+        "AffinityDesigner": "AffinityDesigner",
+        "AffinityDesigner.desktop": "gtk-launch AffinityDesigner.desktop"
     })
     
     // Watch for changes in blur settings
@@ -104,6 +123,82 @@ Scope {
         function onDockTransparencyChanged() {
             // Reload Quickshell
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+        }
+    }
+    
+    // Watch for changes in icon theme
+    Connections {
+        target: IconTheme
+        function onIconThemeChanged() {
+            console.log("[DOCK DEBUG] Icon theme changed, reloading dock");
+            // Force a reload of the dock by toggling visibility
+            dockRoot.visible = false;
+            Qt.callLater(function() {
+                dockRoot.visible = true;
+            });
+        }
+    }
+    
+    // FileView to monitor Qt6 theme settings changes
+    FileView {
+        id: qt6SettingsView
+        path: "/home/matt/.config/qt6ct/qt6ct.conf"
+        
+        property string lastTheme: ""
+        
+        onLoaded: {
+            try {
+                var content = text();
+                var lines = content.split('\n');
+                var currentTheme = "";
+                
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].trim();
+                    if (line.startsWith('icon_theme=')) {
+                        currentTheme = line.substring('icon_theme='.length);
+                        break;
+                    }
+                }
+                
+                if (lastTheme === "") {
+                    lastTheme = currentTheme;
+                    console.log("[DOCK DEBUG] Initial Qt6 theme detected:", currentTheme);
+                    IconTheme.setCurrentTheme(currentTheme);
+                    // Refresh themes when we first load
+                    IconTheme.refreshThemes();
+                } else if (lastTheme !== currentTheme) {
+                    console.log("[DOCK DEBUG] Qt6 theme changed from", lastTheme, "to", currentTheme);
+                    lastTheme = currentTheme;
+                    
+                    // Update the theme in the icon system
+                    IconTheme.setCurrentTheme(currentTheme);
+                    
+                    // Refresh the available themes
+                    IconTheme.refreshThemes();
+                    
+                    // Force complete refresh of all dock items
+                    forceRefreshIcons();
+                }
+            } catch (e) {
+                console.log("[DOCK DEBUG] Error reading Qt6 theme settings:", e);
+            }
+        }
+    }
+    
+    // Timer to periodically check Qt6 theme changes
+    Timer {
+        id: qt6ThemeCheckTimer
+        interval: 2000 // Check every 2 seconds for theme changes
+        repeat: true
+        running: true
+        
+        onTriggered: {
+            // Reload the Qt6 settings file to check for changes
+            try {
+                qt6SettingsView.reload();
+            } catch (e) {
+                console.log("[DOCK DEBUG] Error reloading Qt6 settings:", e);
+            }
         }
     }
     
@@ -140,11 +235,20 @@ Scope {
     
     // Add a new app to pinned apps
     function addPinnedApp(appClass) {
+        // Map window class to desktop file if known
+        var windowClassToDesktopFile = {
+            "photo.exe": "AffinityPhoto.desktop",
+            "Photo.exe": "AffinityPhoto.desktop",
+            "designer.exe": "AffinityDesigner.desktop",
+            "Designer.exe": "AffinityDesigner.desktop"
+            // Add more mappings as needed
+        };
+        var toPin = windowClassToDesktopFile[appClass] || appClass;
         // Check if app is already pinned
-        if (!pinnedApps.includes(appClass)) {
+        if (!pinnedApps.includes(toPin)) {
             // Create a new array to trigger QML reactivity
             var newPinnedApps = pinnedApps.slice()
-            newPinnedApps.push(appClass)
+            newPinnedApps.push(toPin)
             pinnedApps = newPinnedApps
             savePinnedApps()
         }
@@ -189,11 +293,26 @@ Scope {
         onLoaded: {
             try {
                 const fileContents = dockConfigView.text()
+                console.log("[DOCK DEBUG] Raw config file contents:", fileContents)
                 const config = JSON.parse(fileContents)
+                console.log("[DOCK DEBUG] Parsed config:", JSON.stringify(config))
                 if (config) {
                     // Load pinned apps
                     if (config.pinnedApps) {
-                        dock.pinnedApps = config.pinnedApps
+                        // Migrate any known window class to desktop file name
+                        var windowClassToDesktopFile = {
+                            "photo.exe": "AffinityPhoto.desktop",
+                            "Photo.exe": "AffinityPhoto.desktop",
+                            "designer.exe": "AffinityDesigner.desktop",
+                            "Designer.exe": "AffinityDesigner.desktop"
+                            // Add more mappings as needed
+                        };
+                        var migratedPinnedApps = config.pinnedApps.map(function(app) {
+                            return windowClassToDesktopFile[app] || app;
+                        });
+                        console.log("[DOCK DEBUG] Migrated pinnedApps:", JSON.stringify(migratedPinnedApps))
+                        dock.pinnedApps = migratedPinnedApps
+                        console.log("[DOCK DEBUG] pinnedApps after setting:", JSON.stringify(dock.pinnedApps))
                     }
                     
                     // Load auto-hide setting if available
@@ -225,6 +344,10 @@ Scope {
         // Apply initial blur settings
         Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
         Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
+        
+        // Debug: Show what's in pinnedApps
+        console.log("[DOCK DEBUG] Dock component completed")
+        console.log("[DOCK DEBUG] pinnedApps:", JSON.stringify(pinnedApps))
     }
     
     function showMenuForApp(appInfo) {
@@ -233,7 +356,7 @@ Scope {
     }
     
     Variants {
-        model: Quickshell.screens
+        model: Quickshell.screens.filter(screen => screen.name === "DP-1")
 
         PanelWindow {
             id: dockRoot
@@ -268,54 +391,149 @@ Scope {
             // Track active windows
             property var activeWindows: []
             
+            // Helper function for controlled logging
+            function log(level, message) {
+                if (!ConfigOptions.logging.enabled) return
+                if (level === "debug" && !ConfigOptions.logging.debug) return
+                if (level === "info" && !ConfigOptions.logging.info) return
+                if (level === "warning" && !ConfigOptions.logging.warning) return
+                if (level === "error" && !ConfigOptions.logging.error) return
+                console.log(`[Dock][${level.toUpperCase()}] ${message}`)
+            }
+            
             // Update when window list changes
             Connections {
                 target: HyprlandData
-                function onWindowListChanged() { updateActiveWindows() }
+                function onWindowListChanged() { 
+                    console.log("[DOCK DEBUG] Window list changed event received")
+                    console.log("[DOCK DEBUG] Current window list:", JSON.stringify(HyprlandData.windowList.map(w => w.class)))
+                    log("debug", "Window list changed, updating active windows")
+                    updateActiveWindows() 
+                }
             }
             
             Component.onCompleted: {
+                console.log("[DOCK DEBUG] Dock component completed, initializing...")
+                console.log("[DOCK DEBUG] Initial window list:", JSON.stringify(HyprlandData.windowList.map(w => w.class)))
+                log("info", "Dock component completed, initializing...")
                 updateActiveWindows()
-                refreshTimer.start()
-            }
-            
-            Timer {
-                id: refreshTimer
-                interval: 2000
-                repeat: true
-                onTriggered: updateActiveWindows()
             }
             
             function updateActiveWindows() {
-                try {
-                    activeWindows = HyprlandData.windowList
-                        .filter(w => w.mapped && !w.hidden)
-                        .map(w => ({
-                            class: w.class,
-                            title: w.title,
-                            command: w.class.toLowerCase(),
-                            address: w.address,
-                            pid: w.pid,
-                            workspace: w.workspace
-                        }))
-                } catch (e) {
-                    activeWindows = []
+                console.log("[DOCK DEBUG] updateActiveWindows called")
+                console.log("[DOCK DEBUG] Current monitor:", modelData.name)
+                console.log("[DOCK DEBUG] All windows:", JSON.stringify(HyprlandData.windowList.map(w => ({class: w.class, monitor: w.monitor}))))
+                
+                // Get the monitor ID for the current monitor
+                const currentMonitorId = HyprlandData.monitors.findIndex(m => m.name === modelData.name)
+                console.log("[DOCK DEBUG] Current monitor ID:", currentMonitorId)
+                
+                const windows = HyprlandData.windowList.filter(window => 
+                    window.monitor === currentMonitorId
+                )
+                
+                console.log("[DOCK DEBUG] Filtered windows for monitor:", JSON.stringify(windows.map(w => w.class)))
+                
+                if (JSON.stringify(windows) !== JSON.stringify(activeWindows)) {
+                    log("debug", `Updating active windows: ${windows.length} windows found`)
+                    log("debug", `Window list: ${JSON.stringify(windows.map(w => w.class))}`)
+                    activeWindows = windows
                 }
             }
             
             function getIconForClass(windowClass) {
-                return Icons.noKnowledgeIconGuess(windowClass) || windowClass.toLowerCase()
+                // Special handling for Affinity Designer and Affinity Photo
+                if (windowClass === 'designer.exe' || windowClass === 'Designer.exe') {
+                    windowClass = 'AffinityDesigner.desktop';
+                }
+                if (windowClass === 'photo.exe' || windowClass === 'Photo.exe') {
+                    windowClass = 'AffinityPhoto.desktop';
+                }
+                if (windowClass.endsWith('.desktop')) {
+                    // Try user applications first, then system applications
+                    var userPath = `/home/matt/.local/share/applications/${windowClass}`
+                    var systemPath = `/usr/share/applications/${windowClass}`
+                    var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
+                    var content = ""
+                    try {
+                        fileView.path = userPath
+                        content = fileView.text()
+                    } catch (e) {
+                        try {
+                            fileView.path = systemPath
+                            content = fileView.text()
+                        } catch (e2) {
+                            fileView.destroy()
+                            return windowClass.toLowerCase()
+                        }
+                    }
+                    // Parse the desktop file to find Icon line
+                    var lines = content.split('\n')
+                    for (var i = 0; i < lines.length; i++) {
+                        var line = lines[i].trim()
+                        if (line.startsWith('Icon=')) {
+                            var iconName = line.substring(5)
+                            fileView.destroy()
+                            var resolvedIcon = IconTheme.getIconPath(iconName) || iconName
+                            console.log('[DOCK DEBUG] getIconForClass:', windowClass, 'Icon entry:', iconName, 'Resolved icon:', resolvedIcon)
+                            return resolvedIcon
+                        }
+                    }
+                    fileView.destroy()
+                    return windowClass.toLowerCase()
+                }
+                var resolvedIcon = IconTheme.getIconPath(windowClass) || windowClass.toLowerCase()
+                console.log('[DOCK DEBUG] getIconForClass:', windowClass, 'Resolved icon:', resolvedIcon)
+                return resolvedIcon
             }
             
             function isWindowActive(windowClass) {
-                return activeWindows.some(w => 
-                    w.class.toLowerCase() === windowClass.toLowerCase())
+                // Map .desktop files to possible window classes and vice versa
+                var mapping = {
+                    'AffinityPhoto.desktop': ['photo.exe', 'Photo.exe', 'affinityphoto', 'AffinityPhoto'],
+                    'AffinityDesigner.desktop': ['designer.exe', 'Designer.exe', 'affinitydesigner', 'AffinityDesigner'],
+                    'microsoft-edge-dev': ['microsoft-edge-dev', 'msedge', 'edge'],
+                    'vesktop': ['vesktop', 'discord'],
+                    'steam-native': ['steam', 'steam.exe'],
+                    'org.gnome.nautilus': ['nautilus', 'org.gnome.nautilus'],
+                    'lutris': ['lutris', 'net.lutris.lutris'],
+                    'heroic': ['heroic', 'heroicgameslauncher'],
+                    'obs': ['obs', 'com.obsproject.studio'],
+                    'ptyxis': ['ptyxis', 'org.gnome.ptyxis']
+                };
+                var targetClass = windowClass.toLowerCase();
+                var possibleClasses = [targetClass];
+                // If the pinned app is a .desktop file and has a mapping, add those classes
+                if (mapping[windowClass]) {
+                    possibleClasses = possibleClasses.concat(mapping[windowClass].map(c => c.toLowerCase()));
+                }
+                // If the pinned app is a window class and is mapped from a .desktop, add that .desktop
+                for (var key in mapping) {
+                    if (mapping[key].map(c => c.toLowerCase()).includes(targetClass)) {
+                        possibleClasses.push(key.toLowerCase());
+                    }
+                }
+                return activeWindows.some(w => possibleClasses.includes(w.class.toLowerCase()));
             }
             
             function focusOrLaunchApp(appInfo) {
-                Hyprland.dispatch(isWindowActive(appInfo.class) ?
-                    `dispatch focuswindow class:${appInfo.class}` :
-                    `exec ${appInfo.command}`)
+                if (isWindowActive(appInfo.class)) {
+                    Hyprland.dispatch(`dispatch focuswindow class:${appInfo.class}`)
+                } else {
+                    let cmd;
+                    if (appInfo.class.endsWith('.desktop')) {
+                        // For .desktop files, extract the actual Exec command
+                        cmd = dock.getDesktopFileExecCommand(appInfo.class);
+                        if (!cmd) {
+                            // Fallback to gio launch if we can't parse the desktop file
+                            cmd = `gio launch /home/matt/.local/share/applications/${appInfo.class} || gio launch /usr/share/applications/${appInfo.class}`;
+                        }
+                    } else {
+                        // For regular apps, use mapping or fallback
+                        cmd = desktopIdToCommand[appInfo.class] || appInfo.class.toLowerCase();
+                    }
+                    Hyprland.dispatch(`exec ${cmd}`)
+                }
             }
 
             anchors.left: false
@@ -418,7 +636,10 @@ Scope {
                             // Pinned apps
                             Repeater {
                                 id: pinnedAppsRepeater
-                                model: dock.pinnedApps
+                                model: {
+                                    console.log("[DOCK DEBUG] Repeater model - pinnedApps:", JSON.stringify(dock.pinnedApps))
+                                    return dock.pinnedApps
+                                }
                                 
                                 DockItem {
                                     property var parentRepeater: pinnedAppsRepeater  // Add reference to the repeater
@@ -431,13 +652,16 @@ Scope {
                                         command: modelData.toLowerCase()
                                     })
                                     onClicked: {
+                                        console.log("[DOCK DEBUG] Clicked pinned app:", modelData);
                                         // Find the window for this pinned app
                                         var targetWindow = HyprlandData.windowList.find(w => 
                                             w.class.toLowerCase() === modelData.toLowerCase() ||
                                             w.initialClass.toLowerCase() === modelData.toLowerCase()
                                         )
+                                        console.log("[DOCK DEBUG] Found target window:", targetWindow ? targetWindow.class : "none");
                                         
                                         if (targetWindow) {
+                                            console.log("[DOCK DEBUG] Window exists, focusing it");
                                             // If window exists, focus it and switch to its workspace
                                             if (targetWindow.address) {
                                                 Hyprland.dispatch(`focuswindow address:${targetWindow.address}`)
@@ -450,9 +674,24 @@ Scope {
                                                 Hyprland.dispatch(`focuswindow class:${modelData}`)
                                             }
                                         } else {
+                                            console.log("[DOCK DEBUG] No window exists, launching app");
                                             // If no window exists, launch the app
-                                            let cmd = dock.desktopIdToCommand[modelData] || modelData.toLowerCase();
-                                            Hyprland.dispatch(`exec ${cmd}`)
+                                            if (modelData.endsWith('.desktop')) {
+                                                let entry = DesktopEntries.applications[modelData];
+                                                if (!entry) {
+                                                    console.log('[DOCK DEBUG] DesktopEntries.applications keys:', Object.keys(DesktopEntries.applications));
+                                                }
+                                                if (entry && entry.execute) {
+                                                    entry.execute();
+                                                } else {
+                                                    Hyprland.dispatch(`exec gio launch /home/matt/.local/share/applications/${modelData} || gio launch /usr/share/applications/${modelData}`);
+                                                }
+                                            } else {
+                                                let cmd = dock.desktopIdToCommand[modelData] || modelData.toLowerCase();
+                                                console.log("[DOCK DEBUG] Launching app:", modelData);
+                                                console.log("[DOCK DEBUG] Command:", cmd);
+                                                Hyprland.dispatch(`exec ${cmd}`)
+                                            }
                                         }
                                     }
                                     onUnpinApp: {
@@ -476,22 +715,40 @@ Scope {
                                 id: nonPinnedAppsRepeater
                                 model: {
                                     var nonPinnedApps = []
+                                    console.log("[DOCK DEBUG] Active windows count:", dockRoot.activeWindows.length)
+                                    console.log("[DOCK DEBUG] Active windows:", JSON.stringify(dockRoot.activeWindows.map(w => w.class)))
+                                    console.log("[DOCK DEBUG] Pinned apps:", JSON.stringify(dock.pinnedApps))
+                                    // Build a mapping for .desktop files to possible window classes
+                                    var mapping = {
+                                        'AffinityPhoto.desktop': ['photo.exe', 'Photo.exe', 'affinityphoto', 'AffinityPhoto'],
+                                        'AffinityDesigner.desktop': ['designer.exe', 'Designer.exe', 'affinitydesigner', 'AffinityDesigner'],
+                                        'microsoft-edge-dev': ['microsoft-edge-dev', 'msedge', 'edge'],
+                                        'vesktop': ['vesktop', 'discord'],
+                                        'steam-native': ['steam', 'steam.exe'],
+                                        'org.gnome.nautilus': ['nautilus', 'org.gnome.nautilus'],
+                                        'lutris': ['lutris', 'net.lutris.lutris'],
+                                        'heroic': ['heroic', 'heroicgameslauncher'],
+                                        'obs': ['obs', 'com.obsproject.studio'],
+                                        'ptyxis': ['ptyxis', 'org.gnome.ptyxis']
+                                    };
+                                    // Build a set of all window classes covered by pinned apps
+                                    var pinnedClasses = new Set()
+                                    for (var i = 0; i < dock.pinnedApps.length; i++) {
+                                        var pin = dock.pinnedApps[i]
+                                        pinnedClasses.add(pin.toLowerCase())
+                                        if (mapping[pin]) {
+                                            mapping[pin].forEach(function(cls) {
+                                                pinnedClasses.add(cls.toLowerCase())
+                                            })
+                                        }
+                                    }
                                     for (var i = 0; i < dockRoot.activeWindows.length; i++) {
                                         var activeWindow = dockRoot.activeWindows[i]
-                                        var isPinned = false
-                                        
-                                        for (var j = 0; j < dock.pinnedApps.length; j++) {
-                                            if (dock.pinnedApps[j].toLowerCase() === activeWindow.class.toLowerCase()) {
-                                                isPinned = true
-                                                break
-                                            }
-                                        }
-                                        
-                                        if (!isPinned) {
+                                        if (!pinnedClasses.has(activeWindow.class.toLowerCase())) {
                                             nonPinnedApps.push(activeWindow)
                                         }
                                     }
-                                    
+                                    console.log("[DOCK DEBUG] Non-pinned apps found:", JSON.stringify(nonPinnedApps.map(w => w.class)))
                                     return nonPinnedApps
                                 }
                                 
@@ -501,6 +758,9 @@ Scope {
                                     isActive: true
                                     isPinned: false
                                     appInfo: modelData
+                                    Component.onCompleted: {
+                                        console.log("[DOCK DEBUG] Unpinned DockItem created for class:", modelData.class, "icon property set to:", icon);
+                                    }
                                     
                                     onClicked: {
                                         // For unpinned apps, we already have the specific window
@@ -546,5 +806,121 @@ Scope {
                 }
             }
         }
+    }
+
+    // Function to extract Exec command from desktop file
+    function getDesktopFileExecCommand(desktopFileName) {
+        try {
+            // Try user applications first, then system applications
+            var userPath = `/home/matt/.local/share/applications/${desktopFileName}`
+            var systemPath = `/usr/share/applications/${desktopFileName}`
+            
+            var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
+            
+            // Try user path first
+            fileView.path = userPath
+            var content = ""
+            try {
+                content = fileView.text()
+            } catch (e) {
+                // Try system path if user path fails
+                fileView.path = systemPath
+                content = fileView.text()
+            }
+            
+            // Parse the desktop file to find Exec line
+            var lines = content.split('\n')
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim()
+                if (line.startsWith('Exec=')) {
+                    var execCommand = line.substring(5) // Remove 'Exec=' prefix
+                    console.log("[DOCK DEBUG] Found Exec command for", desktopFileName + ":", execCommand)
+                    fileView.destroy()
+                    return execCommand
+                }
+            }
+            
+            fileView.destroy()
+            console.log("[DOCK DEBUG] No Exec command found in", desktopFileName)
+            return ""
+        } catch (e) {
+            console.log("[DOCK DEBUG] Error reading desktop file", desktopFileName + ":", e)
+            return ""
+        }
+    }
+
+    // Manual function to force refresh all icons (useful for testing)
+    function forceRefreshIcons() {
+        console.log("[DOCK DEBUG] Manually forcing icon refresh");
+        
+        // Refresh the theme discovery system
+        IconTheme.refreshThemes();
+        
+        // Clear and reload pinned apps with staggered timing
+        if (pinnedAppsRepeater) {
+            var oldModel = dock.pinnedApps.slice(); // Create a copy
+            pinnedAppsRepeater.model = [];
+            
+            // Wait for the UI to clear, then restore
+            Qt.callLater(function() {
+                // Force garbage collection
+                gc();
+                
+                // Wait a bit more then restore
+                Qt.callLater(function() {
+                    pinnedAppsRepeater.model = oldModel;
+                    console.log("[DOCK DEBUG] Pinned apps model restored");
+                });
+            });
+        }
+        
+        // Refresh active windows which will refresh non-pinned apps
+        Qt.callLater(function() {
+            updateActiveWindows();
+            console.log("[DOCK DEBUG] Active windows updated");
+        });
+        
+        console.log("[DOCK DEBUG] Icon refresh initiated");
+    }
+
+    // Window Preview System
+    WindowPreview {
+        id: windowPreview
+        screen: dockRoot.screen  // Pass screen info to preview
+    }
+
+    // Preview helper functions
+    function showWindowPreviews(appClass, position, itemWidth) {
+        console.log("[DOCK PREVIEW DEBUG] showWindowPreviews called with:", appClass);
+        
+        // Get all windows for this app class
+        const windows = HyprlandData.windowList.filter(w => 
+            w.class && w.class.toLowerCase() === appClass.toLowerCase()
+        );
+        
+        console.log("[DOCK PREVIEW DEBUG] Found", windows.length, "windows for class:", appClass);
+        console.log("[DOCK PREVIEW DEBUG] All windows:", JSON.stringify(windows.map(w => ({class: w.class, title: w.title})), null, 2));
+        
+        if (windows.length > 0) {  // Changed from > 1 to > 0 for testing
+            console.log("[DOCK PREVIEW DEBUG] Showing previews for", windows.length, "windows");
+            // Show previews for any windows (temporarily changed for testing)
+            previewAppClass = appClass;
+            previewPosition = position;
+            previewItemWidth = itemWidth;
+            windowPreview.showPreviews(windows, appClass, position, itemWidth);
+            showDockPreviews = true;
+        } else {
+            console.log("[DOCK PREVIEW DEBUG] Not showing previews - only", windows.length, "window(s)");
+        }
+    }
+    
+    function hideWindowPreviews() {
+        windowPreview.hidePreviews();
+        showDockPreviews = false;
+    }
+    
+    function hideWindowPreviewsImmediately() {
+        windowPreview.hideImmediately();
+        showDockPreviews = false;
     }
 }

@@ -14,7 +14,7 @@ Singleton {
     property int networkStrength: 0
     property bool wifiEnabled: false
     property string networkType: "none"  // "ethernet", "wifi", or "none"
-    
+
     // Network activity properties
     property real downloadSpeed: 0  // KB/s
     property real uploadSpeed: 0    // KB/s

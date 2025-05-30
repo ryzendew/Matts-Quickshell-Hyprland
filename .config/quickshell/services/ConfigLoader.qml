@@ -16,25 +16,59 @@ Singleton {
     property string fileName: "config.json"
     property string filePath: FileUtils.trimFileProtocol(`${root.fileDir}/${root.fileName}`)
     property bool firstLoad: true
+    property bool isLoading: false
+    property string lastError: ""
+
+    // Helper function for controlled logging
+    function log(level, message) {
+        if (!ConfigOptions.logging.enabled) return
+        if (level === "debug" && !ConfigOptions.logging.debug) return
+        if (level === "info" && !ConfigOptions.logging.info) return
+        if (level === "warning" && !ConfigOptions.logging.warning) return
+        if (level === "error" && !ConfigOptions.logging.error) return
+        console.log(`[ConfigLoader][${level.toUpperCase()}] ${message}`)
+    }
 
     function loadConfig() {
-        configFileView.reload()
+        if (isLoading) {
+            log("warning", "Config load already in progress")
+            return
+        }
+
+        isLoading = true
+        lastError = ""
+        
+        try {
+            log("info", "Loading configuration from: " + filePath)
+            configFileView.reload()
+        } catch (e) {
+            lastError = e.toString()
+            log("error", "Failed to load config: " + lastError)
+            isLoading = false
+        }
     }
 
     function applyConfig(fileContent) {
         try {
-            const json = JSON.parse(fileContent);
+            log("debug", "Parsing configuration JSON")
+            const json = JSON.parse(fileContent)
 
-            ObjectUtils.applyToQtObject(ConfigOptions, json);
+            log("debug", "Applying configuration to Qt objects")
+            ObjectUtils.applyToQtObject(ConfigOptions, json)
+            
             if (root.firstLoad) {
-                root.firstLoad = false;
+                root.firstLoad = false
+                log("info", "Initial configuration loaded successfully")
             } else {
+                log("info", "Configuration reloaded successfully")
                 Hyprland.dispatch(`exec notify-send "${qsTr("Shell configuration reloaded")}" "${root.filePath}"`)
             }
         } catch (e) {
-            console.error("[ConfigLoader] Error reading file:", e);
+            lastError = e.toString()
+            log("error", "Error applying configuration: " + lastError)
             Hyprland.dispatch(`exec notify-send "${qsTr("Shell configuration failed to load")}" "${root.filePath}"`)
-            return;
+        } finally {
+            isLoading = false
         }
     }
 
@@ -48,27 +82,12 @@ Singleton {
         }
     }
 
-	FileView { 
+    FileView {
         id: configFileView
-        path: Qt.resolvedUrl(root.filePath)
-        watchChanges: true
-        onFileChanged: {
-            console.log("[ConfigLoader] File changed, reloading...")
-            this.reload()
-            delayedFileRead.start()
-        }
-        onLoadedChanged: {
-            const fileContent = configFileView.text()
-            root.applyConfig(fileContent)
-        }
-        onLoadFailed: (error) => {
-            if(error == FileViewError.FileNotFound) {
-                console.log("[ConfigLoader] File not found, creating new file.")
-                const plainConfig = ObjectUtils.toPlainObject(ConfigOptions)
-                configFileView.setText(JSON.stringify(plainConfig, null, 2))
-                Hyprland.dispatch(`exec notify-send "${qsTr("Shell configuration created")}" "${root.filePath}"`)
-            } else {
-                Hyprland.dispatch(`exec notify-send "${qsTr("Shell configuration failed to load")}" "${root.filePath}"`)
+        path: root.filePath
+        onTextChanged: {
+            if (text !== "") {
+                delayedFileRead.start()
             }
         }
     }

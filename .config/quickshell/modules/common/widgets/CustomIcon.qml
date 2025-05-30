@@ -10,15 +10,20 @@ Item {
     width: 30
     height: 30
     
-    IconImage {
+    SystemIcon {
         id: iconImage
         anchors.fill: parent
-        source: {
-            if (iconFolder && iconFolder + "/" + root.source) {
-                return iconFolder + "/" + root.source
+        iconName: {
+            var potentialPath = "";
+            if (root.source && root.source.startsWith("/")) {
+                potentialPath = root.source;
+            } else if (iconFolder && root.source) {
+                potentialPath = root.source;
+            } else {
+                potentialPath = root.source;
             }
-            return root.source
+            return potentialPath;
         }
-        implicitSize: root.height
+        iconSize: Math.min(root.width, root.height)
     }
 }

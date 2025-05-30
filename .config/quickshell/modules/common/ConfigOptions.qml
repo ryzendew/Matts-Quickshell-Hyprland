@@ -12,6 +12,14 @@ Singleton {
         property int fakeScreenRounding: 0 // 0: None | 1: Always | 2: When not fullscreen
     }
 
+    property QtObject logging: QtObject {
+        property bool enabled: false // Master switch for all logging
+        property bool debug: false   // Debug level logging
+        property bool info: false    // Info level logging
+        property bool warning: true  // Warning level logging (default true for safety)
+        property bool error: true    // Error level logging (default true for safety)
+    }
+
     property QtObject apps: QtObject {
         property string bluetooth: "better-control --bluetooth"
         property string imageViewer: "loupe"
