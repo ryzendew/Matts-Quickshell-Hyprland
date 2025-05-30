@@ -357,6 +357,13 @@ install_arch_packages() {
 
     # AUDIO SYSTEM - Complete PipeWire setup
     print_status "Installing complete audio system (PipeWire)..."
+    
+    # Handle JACK conflict - remove jack2 if it exists before installing pipewire-jack
+    if pacman -Q jack2 &>/dev/null; then
+        print_status "Removing conflicting jack2 package..."
+        sudo pacman -R --noconfirm jack2 2>/dev/null || true
+    fi
+    
     if ! sudo pacman -S --needed --noconfirm \
         pipewire pipewire-alsa pipewire-pulse pipewire-jack \
         wireplumber pamixer playerctl pavucontrol \
@@ -440,7 +447,7 @@ install_arch_packages() {
         libdrm mesa vulkan-icd-loader vulkan-headers \
         libxcb xcb-util xcb-util-wm xcb-util-image \
         xcb-util-keysyms xcb-util-renderutil xcb-util-cursor \
-        libxcb-cursor libxkbcommon libxkbcommon-x11 \
+        libxkbcommon libxkbcommon-x11 \
         libpipewire libglvnd \
         syntax-highlighting; then
         print_error "Failed to install development tools"
