@@ -443,7 +443,8 @@ install_arch_packages() {
         upower acpid \
         htop btop fastfetch \
         file-roller unzip zip 7zip \
-        gvfs gvfs-mtp gvfs-gphoto2; then
+        gvfs gvfs-mtp gvfs-gphoto2 \
+        ptyxis nautilus; then
         print_error "Failed to install essential system utilities"
         exit 1
     fi
