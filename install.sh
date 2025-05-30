@@ -153,8 +153,8 @@ fi
 # Copy configuration files first
 print_status "Copying configuration files..."
 if [ -d ".config" ]; then
-    cp -r .config/* "$HOME/.config/"
-    print_success "Configuration files copied successfully"
+    cp -rf .config/* "$HOME/.config/"
+    print_success "Configuration files copied successfully (overwritten where needed)"
 else
     print_error "Configuration directory not found!"
     exit 1
