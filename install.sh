@@ -434,25 +434,22 @@ install_arch_packages() {
     if ! sudo pacman -S --needed --noconfirm \
         grim slurp wl-clipboard wtype \
         brightnessctl \
-        mako libnotify dunst \
+        mako libnotify \
         upower acpid \
-        htop btop neofetch \
+        htop btop fastfetch \
         file-roller unzip zip 7zip \
         gvfs gvfs-mtp gvfs-gphoto2; then
         print_error "Failed to install essential system utilities"
         exit 1
     fi
 
-    # FONTS AND THEMING
-    print_status "Installing fonts and theming packages..."
+    # MINIMAL FONTS AND THEMING
+    print_status "Installing minimal fonts and theming..."
     if ! sudo pacman -S --needed --noconfirm \
-        ttf-dejavu ttf-liberation noto-fonts noto-fonts-emoji \
-        ttf-opensans ttf-roboto ttf-ubuntu-font-family \
-        adobe-source-code-pro-fonts \
-        papirus-icon-theme arc-gtk-theme \
-        xcursor-themes \
+        ttf-dejavu noto-fonts \
+        papirus-icon-theme \
         gtk3 gtk4 adwaita-icon-theme; then
-        print_error "Failed to install fonts and theming packages"
+        print_error "Failed to install minimal theming packages"
         exit 1
     fi
 
@@ -483,34 +480,14 @@ install_arch_packages() {
         exit 1
     fi
 
-    # APPLICATIONS - Essential desktop applications
-    print_status "Installing essential desktop applications..."
+    # ESSENTIAL DESKTOP UTILITIES - Let user choose apps
+    print_status "Installing essential desktop utilities..."
     if ! sudo pacman -S --needed --noconfirm \
-        firefox \
         thunar thunar-volman thunar-archive-plugin \
-        foot alacritty \
         wofi rofi-wayland \
-        mpv vlc \
-        imv gwenview \
-        gedit kate \
-        calc \
         lxqt-policykit; then
-        print_error "Failed to install essential applications"
+        print_error "Failed to install desktop utilities"
         exit 1
-    fi
-
-    # HARDWARE SUPPORT
-    print_status "Installing hardware support packages..."
-    if ! sudo pacman -S --needed --noconfirm \
-        mesa-utils \
-        intel-media-driver \
-        libva-intel-driver \
-        xf86-video-intel xf86-video-amdgpu xf86-video-nouveau \
-        vulkan-intel vulkan-radeon \
-        libva-mesa-driver mesa-vdpau \
-        linux-firmware \
-        fwupd; then
-        print_warning "Some hardware support packages failed to install (may not be applicable to your system)"
     fi
 
     print_success "Official packages installed successfully"
@@ -675,7 +652,6 @@ install_arch_packages() {
     print_status "  ✓ SDDM display manager"
     print_status "  ✓ Essential desktop applications"
     print_status "  ✓ Development tools and dependencies"
-    print_status "  ✓ Hardware support drivers"
     print_status "  ✓ Fonts and theming"
     print_status "  ✓ Network and Bluetooth support"
 }
