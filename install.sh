@@ -127,6 +127,25 @@ fi
 # Check distribution compatibility
 check_distribution
 
+# Clone repository if not already running from it
+print_status "Setting up dotfiles repository..."
+if [ ! -d "$HOME/Dotfiles" ]; then
+    print_status "Cloning repository to ~/Dotfiles..."
+    cd "$HOME"
+    if ! git clone https://github.com/ruzendew/Matts-Quickshell-Hyprland.git Dotfiles; then
+        print_error "Failed to clone repository"
+        print_error "Please check your internet connection and try again"
+        exit 1
+    fi
+    print_success "Repository cloned successfully"
+else
+    print_status "Dotfiles directory already exists"
+fi
+
+# Change to the dotfiles directory
+cd "$HOME/Dotfiles"
+print_status "Working from: $(pwd)"
+
 print_status "Matt's Quickshell Hyprland Configuration Installer"
 print_status "=============================================="
 print_status "Distribution: $DISTRO"
@@ -227,7 +246,7 @@ install_arch_packages() {
         print_status "yay is already installed"
     fi
 
-    # Install all required packages from official repositories
+    # Install all required packages from official repositories (including build deps)
     print_status "Installing required packages from official repositories..."
     if ! sudo pacman -S --needed --noconfirm \
         hyprland wayland wayland-protocols xdg-desktop-portal-hyprland \
@@ -235,10 +254,11 @@ install_arch_packages() {
         networkmanager nm-connection-editor sddm \
         qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia \
         qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations \
-        qt6-virtualkeyboard qt6-5compat \
+        qt6-virtualkeyboard qt6-5compat qt6-shadertools \
         qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations \
         grim slurp wl-clipboard wtype brightnessctl pamixer mako syntax-highlighting \
-        ttf-dejavu noto-fonts; then
+        ttf-dejavu noto-fonts \
+        cmake ninja pkgconf git jemalloc cli11 libdrm mesa libxcb libpipewire; then
         print_error "Failed to install required packages from official repositories"
         exit 1
     fi
@@ -251,12 +271,14 @@ install_arch_packages() {
         print_warning "Failed to install google-breakpad, trying to continue anyway..."
     fi
 
-    # Install Quickshell from AUR with retry mechanism
+    # Install Quickshell from AUR with retry mechanism and fallback
     print_status "Installing Quickshell from AUR..."
+    quickshell_installed=false
     retry_count=0
     while [ $retry_count -lt 3 ]; do
         if yay -S --needed --noconfirm quickshell; then
-            print_success "Quickshell installed successfully"
+            print_success "Quickshell installed successfully from AUR"
+            quickshell_installed=true
             break
         else
             retry_count=$((retry_count + 1))
@@ -269,13 +291,35 @@ install_arch_packages() {
         fi
     done
     
-    if [ $retry_count -eq 3 ]; then
-        print_error "Failed to install Quickshell after 3 attempts"
+    # Fallback to prebuilt package if compilation failed
+    if [ "$quickshell_installed" = false ]; then
+        print_warning "AUR compilation failed, trying prebuilt package..."
+        if [ -d "ArchPackages" ] && [ "$(ls -A ArchPackages/*.pkg.tar.* 2>/dev/null)" ]; then
+            print_status "Installing prebuilt Quickshell package..."
+            if sudo pacman -U --needed --noconfirm ArchPackages/quickshell*.pkg.tar.*; then
+                print_success "Quickshell installed successfully from prebuilt package"
+                quickshell_installed=true
+            else
+                print_warning "Failed to install prebuilt package"
+            fi
+        else
+            print_warning "No prebuilt packages found in ArchPackages folder"
+        fi
+    fi
+    
+    # Final check
+    if [ "$quickshell_installed" = false ]; then
+        print_error "Failed to install Quickshell from both AUR and prebuilt packages"
         print_error "This could be due to:"
-        print_error "1. Network issues during git clone"
-        print_error "2. Missing build dependencies"
-        print_error "3. AUR package build errors"
-        print_error "Try installing manually with: yay -S quickshell"
+        print_error "1. Missing build dependencies (cmake, ninja, qt6 dev packages)"
+        print_error "2. Network issues during git clone"
+        print_error "3. Compilation errors"
+        print_error "4. No prebuilt packages available"
+        print_error ""
+        print_error "Manual solutions:"
+        print_error "1. Add a prebuilt quickshell package to ArchPackages/ folder"
+        print_error "2. Try: yay -S quickshell-git"
+        print_error "3. Build manually from source"
         exit 1
     fi
 
