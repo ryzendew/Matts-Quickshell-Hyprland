@@ -137,7 +137,12 @@ check_distribution
 
 # Clone repository if not already running from it
 print_status "Setting up dotfiles repository..."
-if [ ! -d "$HOME/Dotfiles" ]; then
+
+# Check if we're already in a repository with .config
+if [ -d ".config" ] && [ -f "install.sh" ]; then
+    print_status "Already running from repository directory"
+    REPO_DIR="$(pwd)"
+elif [ ! -d "$HOME/Dotfiles" ]; then
     print_status "Cloning repository to ~/Dotfiles..."
     cd "$HOME"
     
@@ -152,6 +157,7 @@ if [ ! -d "$HOME/Dotfiles" ]; then
         if git clone "$url" Dotfiles 2>/dev/null; then
             print_success "Repository cloned successfully"
             cloned=true
+            REPO_DIR="$HOME/Dotfiles"
             break
         else
             print_warning "Failed to clone from $url"
@@ -176,7 +182,7 @@ if [ ! -d "$HOME/Dotfiles" ]; then
             exit 1
         else
             print_warning "Continuing with current directory - make sure .config folder exists here"
-            # Don't change directory, use current location
+            REPO_DIR="$(pwd)"
             if [ ! -d ".config" ]; then
                 print_error "No .config directory found in current location"
                 print_error "Please run this script from the dotfiles repository or clone it manually"
@@ -186,15 +192,12 @@ if [ ! -d "$HOME/Dotfiles" ]; then
     fi
 else
     print_status "Dotfiles directory already exists"
+    REPO_DIR="$HOME/Dotfiles"
 fi
 
-# Change to the dotfiles directory (only if we successfully cloned or it already existed)
-if [ -d "$HOME/Dotfiles" ]; then
-    cd "$HOME/Dotfiles"
-    print_status "Working from: $(pwd)"
-else
-    print_status "Working from current directory: $(pwd)"
-fi
+# Change to the repository directory
+cd "$REPO_DIR"
+print_status "Working from: $(pwd)"
 
 print_status "Matt's Quickshell Hyprland Configuration Installer"
 print_status "=============================================="
