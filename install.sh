@@ -150,11 +150,20 @@ if [ -d "$HOME/.config" ]; then
     echo
 fi
 
-# Copy configuration files first
+# Copy configuration files, backing up any overwritten files/folders
 print_status "Copying configuration files..."
 if [ -d ".config" ]; then
-    cp -rf .config/* "$HOME/.config/"
-    print_success "Configuration files copied successfully (overwritten where needed)"
+    overwrite_backup_dir="$HOME/.config.backup.$(date +%Y%m%d_%H%M%S).overwrite"
+    mkdir -p "$overwrite_backup_dir"
+    for item in .config/*; do
+        base_item="$(basename "$item")"
+        if [ -e "$HOME/.config/$base_item" ]; then
+            print_status "Backing up $base_item before overwriting..."
+            cp -r "$HOME/.config/$base_item" "$overwrite_backup_dir/"
+        fi
+        cp -rf "$item" "$HOME/.config/"
+    done
+    print_success "Configuration files copied successfully (overwritten where needed, backups made)"
 else
     print_error "Configuration directory not found!"
     exit 1
