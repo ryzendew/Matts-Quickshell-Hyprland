@@ -24,7 +24,7 @@ Singleton {
         property string bluetooth: "better-control --bluetooth"
         property string imageViewer: "loupe"
         property string network: "better-control --wifi"
-        property string settings: "better-control"
+        property string settings: "systemsettings"
         property string taskManager: "gnome-usage"
         property string terminal: "foot" // This is only for shell actions
     }

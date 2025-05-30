@@ -43,4 +43,13 @@ Singleton {
             workspaceShowNumbers = false
         }
     }
+
+    GlobalShortcut {
+        name: "windowClose"
+        description: qsTr("Close active window")
+
+        onPressed: {
+            Hyprland.dispatch("dispatch killactive")
+        }
+    }
 }

@@ -23,7 +23,7 @@ Rectangle {
         anchors.centerIn: parent
         width: 22
         height: 22
-        source: StandardPaths.standardLocations(StandardPaths.ConfigLocation)[0] + "/quickshell/logo/Arch-linux-logo.png"
+        source: "file:///home/matt/.config/quickshell/logo/Arch-linux-logo.png"
         fillMode: Image.PreserveAspectFit
     }
     

@@ -30,7 +30,7 @@ Singleton {
             "replace": "steam_icon_$1"
         },
         {
-            "regex": "Minecraft.*",
+            "regex": "/Minecraft.*$/",
             "replace": "minecraft"
         }
     ]

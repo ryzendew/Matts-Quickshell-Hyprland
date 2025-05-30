@@ -11,23 +11,27 @@ const substitutions = {
     "wpsoffice": "wps-office2019-kprometheus",
     "footclient": "foot",
     "zen": "zen-browser",
-    "ptyxis": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/org.gnome.Ptyxis.svg",
-    "AffinityPhoto.desktop": "/home/matt/.local/share/icons/AffinityPhoto.png",
-    "steam-native": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/steam.svg",
-    "lutris": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/lutris.svg",
-    "com.blackmagicdesign.resolve.desktop": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/resolve.svg",
-    "cider": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/cider.svg",
-    "vesktop": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/vesktop.svg",
-    "obs": "/home/matt/.config/quickshell/assets/icons/obs.svg",
-    "heroic": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/heroic.svg",
-    "microsoft-edge-dev": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/microsoft-edge-dev.svg",
-    "org.gnome.Nautilus": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/nautilus.svg",
+     "ptyxis": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/org.gnome.Ptyxis.svg",
+      "AffinityPhoto.desktop": "/home/matt/.local/share/icons/AffinityPhoto.png",
+      "steam-native": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/steam.svg",
+      "lutris": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/lutris.svg",
+      "com.blackmagicdesign.resolve.desktop": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/resolve.svg",
+      "cider": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/cider.svg",
+      "vesktop": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/vesktop.svg",
+      "obs": "/home/matt/.config/quickshell/assets/icons/obs.svg",
+      "heroic": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/heroic.svg",
+      "microsoft-edge-dev": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/microsoft-edge-dev.svg",
+      "org.gnome.Nautilus": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/nautilus.svg",
     "": "image-missing"
 }
 const regexSubstitutions = [
     {
         "regex": "/^steam_app_(\\d+)$/",
         "replace": "steam_icon_$1"
+    },
+    {
+        "regex": "/Minecraft.*$/",
+        "replace": "minecraft"
     }
 ]
 
