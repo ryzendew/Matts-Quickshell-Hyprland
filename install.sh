@@ -247,7 +247,7 @@ install_arch_packages() {
 
     # Install Quickshell first from AUR
     print_status "Installing Quickshell from AUR..."
-    if ! yay -S --needed --noconfirm quickshell-git; then
+    if ! yay -S --needed --noconfirm quickshell; then
         print_error "Failed to install Quickshell from AUR"
         print_error "This is a critical component. Installation cannot continue."
         exit 1
