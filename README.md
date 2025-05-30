@@ -69,7 +69,7 @@ sudo pacman -S grim slurp wl-clipboard wtype brightnessctl pamixer mako syntax-h
 sudo pacman -S ttf-dejavu noto-fonts
 
 # AUR packages
-yay -S quickshell-git matugen-bin grimblast hyprswitch nwg-displays nwg-look
+yay -S quickshell matugen-bin grimblast hyprswitch nwg-displays nwg-look
 ```
 
 ## 🖥️ Supported Distributions

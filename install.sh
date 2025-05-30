@@ -135,69 +135,55 @@ fi
 # Check distribution compatibility
 check_distribution
 
-# Clone repository if not already running from it
+# Clone repository to temporary Dotfiles folder
 print_status "Setting up dotfiles repository..."
 
-# Check if we're already in a repository with .config
-if [ -d ".config" ] && [ -f "install.sh" ]; then
-    print_status "Already running from repository directory"
-    REPO_DIR="$(pwd)"
-elif [ ! -d "$HOME/Dotfiles" ]; then
-    print_status "Cloning repository to ~/Dotfiles..."
-    cd "$HOME"
-    
-    # Try multiple repository URLs
-    repo_urls=(
-        "https://github.com/ryzendew/Matts-Quickshell-Hyprland.git"
-    )
-    
-    cloned=false
-    for url in "${repo_urls[@]}"; do
-        print_status "Trying to clone from: $url"
-        if git clone "$url" Dotfiles 2>/dev/null; then
-            print_success "Repository cloned successfully"
-            cloned=true
-            REPO_DIR="$HOME/Dotfiles"
-            break
-        else
-            print_warning "Failed to clone from $url"
-        fi
-    done
-    
-    if [ "$cloned" = false ]; then
-        print_error "Failed to clone repository from all available URLs"
-        print_error ""
-        print_error "This could be due to:"
-        print_error "1. Network connectivity issues"
-        print_error "2. Repository is private or moved"
-        print_error "3. GitHub access problems"
-        print_error ""
-        print_error "Manual solutions:"
-        print_error "1. Clone manually: git clone <correct-repo-url> ~/Dotfiles"
-        print_error "2. Download and extract the repository to ~/Dotfiles"
-        print_error "3. Run this script from inside an existing repository copy"
-        print_error ""
-        read -p "Do you want to continue assuming configs are in current directory? [y/N]: " continue_choice
-        if [[ ! $continue_choice =~ ^[Yy]$ ]]; then
-            exit 1
-        else
-            print_warning "Continuing with current directory - make sure .config folder exists here"
-            REPO_DIR="$(pwd)"
-            if [ ! -d ".config" ]; then
-                print_error "No .config directory found in current location"
-                print_error "Please run this script from the dotfiles repository or clone it manually"
-                exit 1
-            fi
-        fi
-    fi
+# Always create a fresh temporary Dotfiles directory
+TEMP_DOTFILES="$HOME/Dotfiles"
+if [ -d "$TEMP_DOTFILES" ]; then
+    print_status "Removing existing Dotfiles directory..."
+    rm -rf "$TEMP_DOTFILES"
+fi
+
+print_status "Cloning repository to ~/Dotfiles..."
+cd "$HOME"
+
+# Clone repository
+repo_url="https://github.com/ryzendew/Matts-Quickshell-Hyprland.git"
+print_status "Cloning from: $repo_url"
+if git clone "$repo_url" Dotfiles 2>/dev/null; then
+    print_success "Repository cloned successfully"
+    REPO_DIR="$TEMP_DOTFILES"
 else
-    print_status "Dotfiles directory already exists"
-    REPO_DIR="$HOME/Dotfiles"
+    print_error "Failed to clone repository from $repo_url"
+    print_error ""
+    print_error "This could be due to:"
+    print_error "1. Network connectivity issues"
+    print_error "2. Repository access problems"
+    print_error "3. Git not installed properly"
+    print_error ""
+    print_error "Manual solutions:"
+    print_error "1. Check your internet connection"
+    print_error "2. Try cloning manually: git clone $repo_url ~/Dotfiles"
+    print_error "3. Ensure git is installed: sudo pacman -S git"
+    exit 1
 fi
 
 # Change to the repository directory
 cd "$REPO_DIR"
 print_status "Working from: $(pwd)"
+
+# Verify required files exist
+if [ ! -d ".config" ]; then
+    print_error "Configuration directory not found in cloned repository!"
+    print_error "Repository may be corrupted or incomplete."
+    exit 1
+fi
+
+if [ ! -d "ArchPackages" ]; then
+    print_warning "ArchPackages directory not found in repository"
+    print_warning "Prebuilt Quickshell package will not be available as fallback"
+fi
 
 print_status "Matt's Quickshell Hyprland Configuration Installer"
 print_status "=============================================="
@@ -349,8 +335,9 @@ install_arch_packages() {
     # Fallback to prebuilt package if compilation failed
     if [ "$quickshell_installed" = false ]; then
         print_warning "AUR compilation failed, trying prebuilt package..."
-        if [ -d "ArchPackages" ] && [ "$(ls -A ArchPackages/*.pkg.tar.* 2>/dev/null)" ]; then
+        if [ -d "ArchPackages" ] && [ -n "$(ls ArchPackages/*.pkg.tar.* 2>/dev/null)" ]; then
             print_status "Installing prebuilt Quickshell package..."
+            print_status "Found packages: $(ls ArchPackages/*.pkg.tar.*)"
             if sudo pacman -U --needed --noconfirm ArchPackages/quickshell*.pkg.tar.*; then
                 print_success "Quickshell installed successfully from prebuilt package"
                 quickshell_installed=true
@@ -359,6 +346,12 @@ install_arch_packages() {
             fi
         else
             print_warning "No prebuilt packages found in ArchPackages folder"
+            print_status "Checking ArchPackages directory contents:"
+            if [ -d "ArchPackages" ]; then
+                ls -la ArchPackages/
+            else
+                print_warning "ArchPackages directory doesn't exist"
+            fi
         fi
     fi
     
@@ -373,8 +366,8 @@ install_arch_packages() {
         print_error ""
         print_error "Manual solutions:"
         print_error "1. Add a prebuilt quickshell package to ArchPackages/ folder"
-        print_error "2. Try: yay -S quickshell-git"
-        print_error "3. Build manually from source"
+        print_error "2. Try building from source manually"
+        print_error "3. Check AUR for alternative quickshell packages"
         exit 1
     fi
 

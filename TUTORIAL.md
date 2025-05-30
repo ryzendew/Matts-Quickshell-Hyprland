@@ -189,10 +189,10 @@ Finally, let's install some additional tools from the AUR:
 
 ```bash
 # Install Quickshell and additional tools
-yay -S quickshell-git matugen-bin grimblast hyprswitch nwg-displays nwg-look
+yay -S quickshell matugen-bin grimblast hyprswitch nwg-displays nwg-look
 ```
 This installs:
-- `quickshell-git`: The latest version of Quickshell
+- `quickshell`: The latest version of Quickshell
 - `matugen-bin`: For theme generation
 - `grimblast`: For better screenshots
 - `hyprswitch`: For switching between Hyprland configurations
