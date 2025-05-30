@@ -438,7 +438,7 @@ install_arch_packages() {
     print_status "Installing essential system utilities..."
     if ! sudo pacman -S --needed --noconfirm \
         grim slurp wl-clipboard wtype \
-        brightnessctl \
+        brightnessctl ddcutil \
         mako libnotify \
         upower acpid \
         htop btop fastfetch \
@@ -454,7 +454,10 @@ install_arch_packages() {
     if ! sudo pacman -S --needed --noconfirm \
         ttf-dejavu noto-fonts \
         papirus-icon-theme \
-        gtk3 gtk4 adwaita-icon-theme; then
+        gtk3 gtk4 adwaita-icon-theme \
+        kvantum-qt5 kvantum-qt6 \
+        qt6ct qt5ct \
+        xdg-desktop-portal-qt; then
         print_error "Failed to install minimal theming packages"
         exit 1
     fi
