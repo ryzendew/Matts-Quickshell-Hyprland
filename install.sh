@@ -132,19 +132,62 @@ print_status "Setting up dotfiles repository..."
 if [ ! -d "$HOME/Dotfiles" ]; then
     print_status "Cloning repository to ~/Dotfiles..."
     cd "$HOME"
-    if ! git clone https://github.com/ruzendew/Matts-Quickshell-Hyprland.git Dotfiles; then
-        print_error "Failed to clone repository"
-        print_error "Please check your internet connection and try again"
-        exit 1
+    
+    # Try multiple repository URLs
+    repo_urls=(
+        "https://github.com/ruzendew/Matts-Quickshell-Hyprland.git"
+        "https://github.com/Matts-Quickshell-Hyprland/Matts-Quickshell-Hyprland.git"
+    )
+    
+    cloned=false
+    for url in "${repo_urls[@]}"; do
+        print_status "Trying to clone from: $url"
+        if git clone "$url" Dotfiles; then
+            print_success "Repository cloned successfully"
+            cloned=true
+            break
+        else
+            print_warning "Failed to clone from $url"
+        fi
+    done
+    
+    if [ "$cloned" = false ]; then
+        print_error "Failed to clone repository from all available URLs"
+        print_error ""
+        print_error "This could be due to:"
+        print_error "1. Network connectivity issues"
+        print_error "2. Repository is private or moved"
+        print_error "3. GitHub access problems"
+        print_error ""
+        print_error "Manual solutions:"
+        print_error "1. Clone manually: git clone <correct-repo-url> ~/Dotfiles"
+        print_error "2. Download and extract the repository to ~/Dotfiles"
+        print_error "3. Run this script from inside an existing repository copy"
+        print_error ""
+        read -p "Do you want to continue assuming configs are in current directory? [y/N]: " continue_choice
+        if [[ ! $continue_choice =~ ^[Yy]$ ]]; then
+            exit 1
+        else
+            print_warning "Continuing with current directory - make sure .config folder exists here"
+            # Don't change directory, use current location
+            if [ ! -d ".config" ]; then
+                print_error "No .config directory found in current location"
+                print_error "Please run this script from the dotfiles repository or clone it manually"
+                exit 1
+            fi
+        fi
     fi
-    print_success "Repository cloned successfully"
 else
     print_status "Dotfiles directory already exists"
 fi
 
-# Change to the dotfiles directory
-cd "$HOME/Dotfiles"
-print_status "Working from: $(pwd)"
+# Change to the dotfiles directory (only if we successfully cloned or it already existed)
+if [ -d "$HOME/Dotfiles" ]; then
+    cd "$HOME/Dotfiles"
+    print_status "Working from: $(pwd)"
+else
+    print_status "Working from current directory: $(pwd)"
+fi
 
 print_status "Matt's Quickshell Hyprland Configuration Installer"
 print_status "=============================================="
