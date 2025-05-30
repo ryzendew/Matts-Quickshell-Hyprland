@@ -317,29 +317,15 @@ install_arch_packages() {
         print_warning "Failed to install google-breakpad, trying to continue anyway..."
     fi
 
-    # Install Quickshell from AUR with retry mechanism and fallback
+    # Install Quickshell from AUR with fallback to prebuilt package
     print_status "Installing Quickshell from AUR..."
     quickshell_installed=false
-    retry_count=0
-    while [ $retry_count -lt 3 ]; do
-        if yay -S --needed --noconfirm quickshell; then
-            print_success "Quickshell installed successfully from AUR"
-            quickshell_installed=true
-            break
-        else
-            retry_count=$((retry_count + 1))
-            print_warning "Quickshell installation failed, attempt $retry_count/3"
-            if [ $retry_count -lt 3 ]; then
-                print_status "Cleaning yay cache and retrying..."
-                yay -Scc --noconfirm 2>/dev/null || true
-                sleep 2
-            fi
-        fi
-    done
     
-    # Fallback to prebuilt package if compilation failed
-    if [ "$quickshell_installed" = false ]; then
-        print_warning "AUR compilation failed, trying prebuilt package..."
+    if yay -S --needed --noconfirm quickshell; then
+        print_success "Quickshell installed successfully from AUR"
+        quickshell_installed=true
+    else
+        print_warning "AUR installation failed, trying prebuilt package..."
         if [ -d "ArchPackages" ] && [ -n "$(ls ArchPackages/*.pkg.tar.* 2>/dev/null)" ]; then
             print_status "Installing prebuilt Quickshell package..."
             print_status "Found packages: $(ls ArchPackages/*.pkg.tar.*)"
