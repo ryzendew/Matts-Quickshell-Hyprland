@@ -358,17 +358,34 @@ install_arch_packages() {
     # AUDIO SYSTEM - Complete PipeWire setup
     print_status "Installing complete audio system (PipeWire)..."
     
-    # Handle JACK conflict - remove jack2 if it exists before installing pipewire-jack
+    # Handle JACK conflict - remove jack2 and related packages if they exist
     if pacman -Q jack2 &>/dev/null; then
-        print_status "Removing conflicting jack2 package..."
-        sudo pacman -R --noconfirm jack2 2>/dev/null || true
+        print_status "Removing conflicting JACK packages..."
+        # Remove jack2 and any packages that depend on it
+        sudo pacman -Rdd --noconfirm jack2 2>/dev/null || true
+        # Also check for other JACK-related packages
+        sudo pacman -Rdd --noconfirm jack 2>/dev/null || true
     fi
     
+    # Install PipeWire core first
     if ! sudo pacman -S --needed --noconfirm \
-        pipewire pipewire-alsa pipewire-pulse pipewire-jack \
-        wireplumber pamixer playerctl pavucontrol \
+        pipewire wireplumber; then
+        print_error "Failed to install PipeWire core"
+        exit 1
+    fi
+    
+    # Install PipeWire compatibility layers
+    if ! sudo pacman -S --needed --noconfirm \
+        pipewire-alsa pipewire-pulse pipewire-jack; then
+        print_error "Failed to install PipeWire compatibility layers"
+        exit 1
+    fi
+    
+    # Install audio utilities
+    if ! sudo pacman -S --needed --noconfirm \
+        pamixer playerctl pavucontrol \
         alsa-utils alsa-plugins pulseaudio-alsa; then
-        print_error "Failed to install audio system packages"
+        print_error "Failed to install audio utilities"
         exit 1
     fi
 
