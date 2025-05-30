@@ -25,7 +25,7 @@ QtObject {
     
     // Optional persistence settings
     property bool enablePersistence: true
-    property string configPath: "file:///home/matt/.config/quickshell/bar-modules-order.json"
+    property string configPath: StandardPaths.standardLocations(StandardPaths.ConfigLocation)[0] + "/quickshell/bar-modules-order.json"
     
     // File for persistence (optional)
     property FileView configFile: enablePersistence ? persistenceFile : null

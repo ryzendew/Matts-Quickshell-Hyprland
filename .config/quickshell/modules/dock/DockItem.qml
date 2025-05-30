@@ -480,7 +480,7 @@ Rectangle {
                                 if (dockItem.appInfo.class.endsWith('.desktop')) {
                                     // For .desktop files, use gio launch with full path
                                     // Check user applications first, then system applications  
-                                    command = `gio launch /home/matt/.local/share/applications/${dockItem.appInfo.class} || gio launch /usr/share/applications/${dockItem.appInfo.class}`;
+                                    command = `gio launch ${StandardPaths.standardLocations(StandardPaths.ApplicationsLocation)[0]}/${dockItem.appInfo.class} || gio launch /usr/share/applications/${dockItem.appInfo.class}`;
                                 } else {
                                 // Try different variations of the class name
                                 var classLower = dockItem.appInfo.class.toLowerCase()

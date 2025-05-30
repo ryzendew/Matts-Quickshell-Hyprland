@@ -141,8 +141,8 @@ Scope {
     
     // FileView to monitor Qt6 theme settings changes
     FileView {
-        id: qt6SettingsView
-        path: "/home/matt/.config/qt6ct/qt6ct.conf"
+        id: qt6ctConfig
+        path: StandardPaths.standardLocations(StandardPaths.ConfigLocation)[0] + "/qt6ct/qt6ct.conf"
         
         property string lastTheme: ""
         
@@ -195,7 +195,7 @@ Scope {
         onTriggered: {
             // Reload the Qt6 settings file to check for changes
             try {
-                qt6SettingsView.reload();
+                qt6ctConfig.reload();
             } catch (e) {
                 console.log("[DOCK DEBUG] Error reloading Qt6 settings:", e);
             }
@@ -451,7 +451,7 @@ Scope {
                 }
                 if (windowClass.endsWith('.desktop')) {
                     // Try user applications first, then system applications
-                    var userPath = `/home/matt/.local/share/applications/${windowClass}`
+                    var userPath = `${StandardPaths.standardLocations(StandardPaths.ApplicationsLocation)[0]}/${windowClass}`
                     var systemPath = `/usr/share/applications/${windowClass}`
                     var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
                     var content = ""
@@ -526,7 +526,7 @@ Scope {
                         cmd = dock.getDesktopFileExecCommand(appInfo.class);
                         if (!cmd) {
                             // Fallback to gio launch if we can't parse the desktop file
-                            cmd = `gio launch /home/matt/.local/share/applications/${appInfo.class} || gio launch /usr/share/applications/${appInfo.class}`;
+                            cmd = `gio launch ${StandardPaths.standardLocations(StandardPaths.ApplicationsLocation)[0]}/${appInfo.class} || gio launch /usr/share/applications/${appInfo.class}`;
                         }
                     } else {
                         // For regular apps, use mapping or fallback
@@ -615,7 +615,7 @@ Scope {
                                     // Arch Linux logo
                                     Image {
                                         anchors.centerIn: parent
-                                        source: "/home/matt/.config/quickshell/logo/Arch-linux-logo.png"
+                                        source: StandardPaths.standardLocations(StandardPaths.ConfigLocation)[0] + "/quickshell/logo/Arch-linux-logo.png"
                                         width: parent.width * 0.65
                                         height: parent.height * 0.65
                                         fillMode: Image.PreserveAspectFit
@@ -684,7 +684,7 @@ Scope {
                                                 if (entry && entry.execute) {
                                                     entry.execute();
                                                 } else {
-                                                    Hyprland.dispatch(`exec gio launch /home/matt/.local/share/applications/${modelData} || gio launch /usr/share/applications/${modelData}`);
+                                                    Hyprland.dispatch(`exec gio launch ${StandardPaths.standardLocations(StandardPaths.ApplicationsLocation)[0]}/${modelData} || gio launch /usr/share/applications/${modelData}`);
                                                 }
                                             } else {
                                                 let cmd = dock.desktopIdToCommand[modelData] || modelData.toLowerCase();
@@ -812,7 +812,7 @@ Scope {
     function getDesktopFileExecCommand(desktopFileName) {
         try {
             // Try user applications first, then system applications
-            var userPath = `/home/matt/.local/share/applications/${desktopFileName}`
+            var userPath = `${StandardPaths.standardLocations(StandardPaths.ApplicationsLocation)[0]}/${desktopFileName}`
             var systemPath = `/usr/share/applications/${desktopFileName}`
             
             var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)

@@ -226,6 +226,11 @@ if [ -d ".config" ]; then
         cp -rf "$item" "$HOME/.config/" 2>/dev/null || true
     done
     
+    # Fix hardcoded paths - replace /home/matt/ with actual user's home directory
+    print_status "Fixing hardcoded paths for current user..."
+    find "$HOME/.config/quickshell" -type f \( -name "*.qml" -o -name "*.js" \) -exec sed -i "s|/home/matt/|$HOME/|g" {} \; 2>/dev/null || true
+    find "$HOME/.config/hypr" -type f -name "*.conf" -exec sed -i "s|/home/matt/|$HOME/|g" {} \; 2>/dev/null || true
+    
     print_success "Configuration files copied successfully (force overwritten, backups made)"
 else
     print_error "Configuration directory not found!"

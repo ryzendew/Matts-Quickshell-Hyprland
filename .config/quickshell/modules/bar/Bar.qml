@@ -11,6 +11,7 @@ import Quickshell.Wayland
 import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Services.Mpris
+import Qt.labs.platform
 
 Scope {
     id: bar
@@ -176,7 +177,7 @@ Scope {
                                     anchors.centerIn: parent
                                     width: 22
                                     height: 22
-                                    source: "file:///home/matt/.config/quickshell/logo/Arch-linux-logo.png"
+                                    source: StandardPaths.standardLocations(StandardPaths.ConfigLocation)[0] + "/quickshell/logo/Arch-linux-logo.png"
                                     fillMode: Image.PreserveAspectFit
                                 }
                                 
