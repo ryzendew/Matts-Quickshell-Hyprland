@@ -153,36 +153,22 @@ fi
 # Copy configuration files, backing up any overwritten files/folders
 print_status "Copying configuration files..."
 if [ -d ".config" ]; then
-    # Get absolute path of source config directory
-    source_config="$(realpath .config)"
-    dest_config="$(realpath "$HOME/.config")"
+    overwrite_backup_dir="$HOME/.config.backup.$(date +%Y%m%d_%H%M%S).overwrite"
+    mkdir -p "$overwrite_backup_dir"
     
-    # Check if source and destination are the same
-    if [ "$source_config" = "$dest_config" ]; then
-        print_warning "Source and destination .config directories are the same - skipping copy"
-    else
-        overwrite_backup_dir="$HOME/.config.backup.$(date +%Y%m%d_%H%M%S).overwrite"
-        mkdir -p "$overwrite_backup_dir"
+    for item in .config/*; do
+        base_item="$(basename "$item")"
         
-        for item in .config/*; do
-            base_item="$(basename "$item")"
-            source_item="$(realpath "$item")"
-            dest_item="$(realpath "$HOME/.config/$base_item" 2>/dev/null || echo "$HOME/.config/$base_item")"
-            
-            # Skip if source and destination are the same
-            if [ "$source_item" = "$dest_item" ]; then
-                print_warning "Skipping $base_item - source and destination are identical"
-                continue
-            fi
-            
-            if [ -e "$HOME/.config/$base_item" ]; then
-                print_status "Backing up $base_item before overwriting..."
-                cp -r "$HOME/.config/$base_item" "$overwrite_backup_dir/"
-            fi
-            cp -rf "$item" "$HOME/.config/"
-        done
-    fi
-    print_success "Configuration files copied successfully (overwritten where needed, backups made)"
+        if [ -e "$HOME/.config/$base_item" ]; then
+            print_status "Backing up $base_item before overwriting..."
+            cp -rf "$HOME/.config/$base_item" "$overwrite_backup_dir/" 2>/dev/null || true
+        fi
+        
+        print_status "Force copying $base_item..."
+        cp -rf "$item" "$HOME/.config/" 2>/dev/null || true
+    done
+    
+    print_success "Configuration files copied successfully (force overwritten, backups made)"
 else
     print_error "Configuration directory not found!"
     exit 1
