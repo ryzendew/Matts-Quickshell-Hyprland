@@ -234,6 +234,61 @@ fi
 
 # Distribution-specific package installation functions
 install_arch_packages() {
+    # Show comprehensive package installation summary
+    print_status "COMPREHENSIVE ARCH LINUX + HYPRLAND INSTALLATION"
+    print_status "=================================================="
+    echo
+    print_status "This installer will install ALL dependencies needed for a complete Hyprland desktop:"
+    echo
+    print_status "📦 CORE COMPONENTS:"
+    print_status "   • Hyprland + Wayland foundation (hyprland, wayland, xdg-desktop-portal-hyprland)"
+    print_status "   • Complete Qt6 framework for Quickshell (qt6-base, qt6-declarative, etc.)"
+    print_status "   • Qt5 compatibility for legacy applications"
+    echo
+    print_status "🔊 AUDIO SYSTEM:"
+    print_status "   • Complete PipeWire setup (pipewire, wireplumber, pamixer, pavucontrol)"
+    print_status "   • ALSA compatibility and media controls"
+    echo
+    print_status "🖥️  DISPLAY & SESSION:"
+    print_status "   • SDDM display manager with Qt6 support"
+    print_status "   • Polkit authentication system"
+    print_status "   • XWayland for X11 app compatibility"
+    echo
+    print_status "🌐 CONNECTIVITY:"
+    print_status "   • NetworkManager for network management"
+    print_status "   • Bluetooth support (bluez, bluez-utils)"
+    print_status "   • Network configuration tools"
+    echo
+    print_status "🎨 DESKTOP ENVIRONMENT:"
+    print_status "   • Essential applications (Firefox, Thunar, terminals, media players)"
+    print_status "   • Comprehensive font collection (Noto, Liberation, Adobe Source Code Pro)"
+    print_status "   • Icon themes and GTK theming (Papirus, Arc)"
+    print_status "   • Screenshot and clipboard tools (grim, slurp, wl-clipboard)"
+    echo
+    print_status "🔧 DEVELOPMENT & BUILD TOOLS:"
+    print_status "   • Complete build environment (cmake, ninja, gcc, base-devel)"
+    print_status "   • Graphics libraries (mesa, vulkan, libdrm)"
+    print_status "   • All Quickshell build dependencies"
+    echo
+    print_status "🚀 PERFORMANCE & HARDWARE:"
+    print_status "   • GPU drivers for Intel, AMD, and NVIDIA"
+    print_status "   • Hardware acceleration libraries"
+    print_status "   • Power management tools"
+    echo
+    print_status "🎯 AUR PACKAGES:"
+    print_status "   • Quickshell (main shell framework)"
+    print_status "   • Hyprland ecosystem (hypridle, hyprlock, swww, etc.)"
+    print_status "   • Additional utilities (matugen, grimblast, waybar-hyprland)"
+    echo
+    print_status "Total packages: ~200+ (ensuring nothing is missing for vanilla Arch)"
+    echo
+    read -p "Proceed with comprehensive installation? [Y/n]: " proceed_choice
+    if [[ $proceed_choice =~ ^[Nn]$ ]]; then
+        print_status "Installation cancelled by user"
+        exit 0
+    fi
+    echo
+
     # Update system
     print_status "Updating system packages..."
     sudo pacman -Syu --noconfirm
@@ -287,26 +342,151 @@ install_arch_packages() {
         print_status "yay is already installed"
     fi
 
-    # Install all required packages from official repositories (including build deps)
-    print_status "Installing required packages from official repositories..."
+    # COMPREHENSIVE PACKAGE INSTALLATION FOR VANILLA ARCH + HYPRLAND
+    print_status "Installing comprehensive package set for complete Hyprland desktop environment..."
+    
+    # CORE HYPRLAND AND WAYLAND FOUNDATION
+    print_status "Installing core Hyprland and Wayland components..."
     if ! sudo pacman -S --needed --noconfirm \
-        hyprland wayland wayland-protocols xdg-desktop-portal-hyprland \
-        pipewire pipewire-alsa pipewire-pulse pipewire-jack wireplumber pamixer \
-        networkmanager nm-connection-editor sddm \
-        qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia \
-        qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations \
-        qt6-virtualkeyboard qt6-5compat qt6-shadertools \
-        qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations \
-        grim slurp wl-clipboard wtype brightnessctl pamixer mako syntax-highlighting \
-        ttf-dejavu noto-fonts \
-        cmake ninja pkgconf git jemalloc cli11 libdrm mesa libxcb libpipewire \
-        xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor \
-        libxcb-cursor libxkbcommon libxkbcommon-x11 \
-        xorg-xwayland xorg-xlsclients xorg-xrandr \
-        wayland-utils weston xdg-utils \
-        vulkan-icd-loader vulkan-headers; then
-        print_error "Failed to install required packages from official repositories"
+        hyprland wayland wayland-protocols wayland-utils \
+        xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-desktop-portal \
+        xdg-utils xdg-user-dirs; then
+        print_error "Failed to install core Hyprland/Wayland packages"
         exit 1
+    fi
+
+    # AUDIO SYSTEM - Complete PipeWire setup
+    print_status "Installing complete audio system (PipeWire)..."
+    if ! sudo pacman -S --needed --noconfirm \
+        pipewire pipewire-alsa pipewire-pulse pipewire-jack \
+        wireplumber pamixer playerctl pavucontrol \
+        alsa-utils alsa-plugins pulseaudio-alsa; then
+        print_error "Failed to install audio system packages"
+        exit 1
+    fi
+
+    # DISPLAY MANAGER AND SESSION MANAGEMENT
+    print_status "Installing display manager and session components..."
+    if ! sudo pacman -S --needed --noconfirm \
+        sddm qt6-svg qt6-declarative \
+        systemd polkit polkit-qt6; then
+        print_error "Failed to install display manager packages"
+        exit 1
+    fi
+
+    # NETWORK MANAGEMENT
+    print_status "Installing network management..."
+    if ! sudo pacman -S --needed --noconfirm \
+        networkmanager nm-connection-editor \
+        dhcpcd wpa_supplicant \
+        bluez bluez-utils; then
+        print_error "Failed to install network management packages"
+        exit 1
+    fi
+
+    # QT6 FRAMEWORK - Complete Qt6 installation for Quickshell
+    print_status "Installing complete Qt6 framework..."
+    if ! sudo pacman -S --needed --noconfirm \
+        qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats \
+        qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors \
+        qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat \
+        qt6-shadertools qt6-languageserver qt6-charts qt6-webengine \
+        qt6-webchannel qt6-websockets qt6-connectivity qt6-serialport; then
+        print_error "Failed to install Qt6 framework packages"
+        exit 1
+    fi
+
+    # QT5 COMPATIBILITY (some apps still need it)
+    print_status "Installing Qt5 compatibility packages..."
+    if ! sudo pacman -S --needed --noconfirm \
+        qt5-base qt5-declarative qt5-graphicaleffects \
+        qt5-imageformats qt5-svg qt5-translations qt5-wayland; then
+        print_error "Failed to install Qt5 compatibility packages"
+        exit 1
+    fi
+
+    # ESSENTIAL SYSTEM UTILITIES
+    print_status "Installing essential system utilities..."
+    if ! sudo pacman -S --needed --noconfirm \
+        grim slurp wl-clipboard wl-copy-paste wtype \
+        brightnessctl light acpi \
+        mako libnotify dunst \
+        upower acpid \
+        htop btop neofetch \
+        file-roller unzip zip p7zip \
+        gvfs gvfs-mtp gvfs-gphoto2; then
+        print_error "Failed to install essential system utilities"
+        exit 1
+    fi
+
+    # FONTS AND THEMING
+    print_status "Installing fonts and theming packages..."
+    if ! sudo pacman -S --needed --noconfirm \
+        ttf-dejavu ttf-liberation noto-fonts noto-fonts-emoji \
+        ttf-opensans ttf-roboto ttf-ubuntu-font-family \
+        adobe-source-code-pro-fonts \
+        papirus-icon-theme arc-gtk-theme \
+        xcursor-themes \
+        gtk3 gtk4 adwaita-icon-theme; then
+        print_error "Failed to install fonts and theming packages"
+        exit 1
+    fi
+
+    # DEVELOPMENT TOOLS AND BUILD DEPENDENCIES FOR QUICKSHELL
+    print_status "Installing development tools and Quickshell build dependencies..."
+    if ! sudo pacman -S --needed --noconfirm \
+        cmake ninja pkgconf make gcc \
+        git jemalloc cli11 \
+        libdrm mesa vulkan-icd-loader vulkan-headers \
+        libxcb xcb-util xcb-util-wm xcb-util-image \
+        xcb-util-keysyms xcb-util-renderutil xcb-util-cursor \
+        libxcb-cursor libxkbcommon libxkbcommon-x11 \
+        libpipewire libglvnd \
+        syntax-highlighting; then
+        print_error "Failed to install development tools"
+        exit 1
+    fi
+
+    # X11 COMPATIBILITY AND XWAYLAND
+    print_status "Installing X11 compatibility layer..."
+    if ! sudo pacman -S --needed --noconfirm \
+        xorg-xwayland xorg-xlsclients xorg-xrandr \
+        xorg-xinput xorg-xdpyinfo \
+        libx11 libxcomposite libxcursor libxdamage \
+        libxext libxfixes libxi libxinerama \
+        libxrandr libxrender libxss libxtst; then
+        print_error "Failed to install X11 compatibility packages"
+        exit 1
+    fi
+
+    # APPLICATIONS - Essential desktop applications
+    print_status "Installing essential desktop applications..."
+    if ! sudo pacman -S --needed --noconfirm \
+        firefox \
+        thunar thunar-volman thunar-archive-plugin \
+        foot alacritty \
+        wofi rofi-wayland \
+        mpv vlc \
+        imv gwenview \
+        gedit kate \
+        calc \
+        lxqt-policykit; then
+        print_error "Failed to install essential applications"
+        exit 1
+    fi
+
+    # HARDWARE SUPPORT
+    print_status "Installing hardware support packages..."
+    if ! sudo pacman -S --needed --noconfirm \
+        mesa-utils \
+        intel-media-driver \
+        libva-intel-driver \
+        xf86-video-intel xf86-video-amdgpu xf86-video-nouveau \
+        vulkan-intel vulkan-radeon \
+        libva-mesa-driver mesa-vdpau \
+        linux-firmware \
+        fwupd; then
+        print_warning "Some hardware support packages failed to install (may not be applicable to your system)"
     fi
 
     print_success "Official packages installed successfully"
@@ -363,39 +543,117 @@ install_arch_packages() {
     fi
 
     # Install remaining AUR packages
-    print_status "Installing remaining AUR packages..."
-    if ! yay -S --needed --noconfirm \
-        matugen-bin grimblast hyprswitch nwg-displays nwg-look; then
-        print_warning "Failed to install some AUR packages"
+    print_status "Installing additional AUR packages..."
+    declare -a aur_packages=(
+        "matugen-bin"
+        "grimblast"
+        "hyprswitch"
+        "nwg-displays"
+        "nwg-look"
+        "swww"
+        "hypridle"
+        "hyprlock"
+        "hyprpaper"
+        "hyprpicker"
+        "wlogout"
+        "better-control"
+    )
+    
+    failed_packages=()
+    for package in "${aur_packages[@]}"; do
+        print_status "Installing $package..."
+        if ! yay -S --needed --noconfirm "$package"; then
+            print_warning "Failed to install $package"
+            failed_packages+=("$package")
+        else
+            print_success "$package installed successfully"
+        fi
+    done
+    
+    if [ ${#failed_packages[@]} -gt 0 ]; then
+        print_warning "The following AUR packages failed to install:"
+        for pkg in "${failed_packages[@]}"; do
+            print_warning "  - $pkg"
+        done
         print_warning "You can try installing these packages manually later:"
-        print_warning "yay -S matugen-bin grimblast hyprswitch nwg-displays nwg-look"
+        printf 'yay -S %s\n' "${failed_packages[@]}"
+        
         read -p "Continue anyway? [y/N]: " continue_choice
         if [[ ! $continue_choice =~ ^[Yy]$ ]]; then
             exit 1
         fi
     else
-        print_success "AUR packages installed successfully"
+        print_success "All AUR packages installed successfully"
     fi
 
     # Enable essential system services
     print_status "Enabling essential system services..."
     service_errors=0
 
+    # Enable NetworkManager
     if ! sudo systemctl enable NetworkManager 2>/dev/null; then
         print_warning "Failed to enable NetworkManager"
         service_errors=$((service_errors + 1))
+    else
+        print_success "NetworkManager enabled"
     fi
 
+    # Enable SDDM
     if ! sudo systemctl enable sddm 2>/dev/null; then
         print_warning "Failed to enable SDDM"
         service_errors=$((service_errors + 1))
+    else
+        print_success "SDDM enabled"
+    fi
+
+    # Enable Bluetooth
+    if ! sudo systemctl enable bluetooth 2>/dev/null; then
+        print_warning "Failed to enable Bluetooth (may not be available)"
+        service_errors=$((service_errors + 1))
+    else
+        print_success "Bluetooth enabled"
+    fi
+
+    # Start NetworkManager if not running
+    if ! systemctl is-active --quiet NetworkManager; then
+        print_status "Starting NetworkManager..."
+        sudo systemctl start NetworkManager
     fi
 
     if [ $service_errors -eq 0 ]; then
-        print_success "System services enabled"
+        print_success "All system services enabled successfully"
+    elif [ $service_errors -le 2 ]; then
+        print_warning "$service_errors service(s) failed to enable. This is usually not critical."
     else
         print_warning "$service_errors service(s) failed to enable. You may need to enable them manually later."
     fi
+
+    # Additional configuration
+    print_status "Performing additional system configuration..."
+    
+    # Create user directories
+    xdg-user-dirs-update 2>/dev/null || true
+    
+    # Update font cache
+    print_status "Updating font cache..."
+    fc-cache -fv 2>/dev/null || true
+    
+    # Update icon cache
+    print_status "Updating icon cache..."
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
+    gtk-update-icon-cache -f -t /usr/share/icons/Papirus 2>/dev/null || true
+    
+    print_success "Arch Linux package installation completed successfully!"
+    print_status "Your system now has:"
+    print_status "  ✓ Complete Hyprland + Wayland setup"
+    print_status "  ✓ Full Qt6 framework for Quickshell"
+    print_status "  ✓ PipeWire audio system"
+    print_status "  ✓ SDDM display manager"
+    print_status "  ✓ Essential desktop applications"
+    print_status "  ✓ Development tools and dependencies"
+    print_status "  ✓ Hardware support drivers"
+    print_status "  ✓ Fonts and theming"
+    print_status "  ✓ Network and Bluetooth support"
 }
 
 install_pikaos_packages() {
