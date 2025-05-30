@@ -314,21 +314,40 @@ Rectangle {
                     for (var i = 0; i < dockContainer.children.length; i++) {
                         var item = dockContainer.children[i]
                         if (item && item !== dockItem && item.closeMenu && typeof item.closeMenu === "function") {
-                        item.closeMenu()
+                            item.closeMenu()
                         }
                     }
                 }
                 
-                if (dockItem.showMenu) {
-                    dockItem.closeMenu()
+                // Force cleanup of any existing menu loader
+                if (menuLoader.active) {
+                    menuLoader.active = false
+                    // Small delay to ensure cleanup
+                    Qt.callLater(function() {
+                        if (dockItem.showMenu) {
+                            dockItem.closeMenu()
+                        } else {
+                            // Hide any active previews when opening menu
+                            dock.hideWindowPreviewsImmediately();
+                            
+                            // Store the click position for menu positioning
+                            lastClickPos = Qt.point(mouse.x, mouse.y)
+                            dockItem.showMenu = true
+                            dockItem.isActiveMenu = true
+                        }
+                    })
                 } else {
-                    // Hide any active previews when opening menu
-                    dock.hideWindowPreviewsImmediately();
-                    
-                    // Store the click position for menu positioning
-                    lastClickPos = Qt.point(mouse.x, mouse.y)
-                    dockItem.showMenu = true
-                    dockItem.isActiveMenu = true
+                    if (dockItem.showMenu) {
+                        dockItem.closeMenu()
+                    } else {
+                        // Hide any active previews when opening menu
+                        dock.hideWindowPreviewsImmediately();
+                        
+                        // Store the click position for menu positioning
+                        lastClickPos = Qt.point(mouse.x, mouse.y)
+                        dockItem.showMenu = true
+                        dockItem.isActiveMenu = true
+                    }
                 }
             }
         }
@@ -398,16 +417,29 @@ Rectangle {
     Loader {
         id: menuLoader
         active: dockItem.showMenu
+        
+        // Ensure proper cleanup when menu becomes inactive
+        onActiveChanged: {
+            if (!active && item) {
+                // Force immediate cleanup of the menu panel
+                item.visible = false
+                if (item.destroy) {
+                    item.destroy()
+                }
+            }
+        }
+        
         sourceComponent: PanelWindow {
             id: menuPanel
             visible: dockItem.showMenu
-            color: Qt.rgba(0, 0, 0, 0)
+            color: "transparent"  // Changed from Qt.rgba(0, 0, 0, 0) to "transparent"
             implicitWidth: 200
             implicitHeight: menuContent.implicitHeight
 
             // Set up as a popup window
-            WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.namespace: "quickshell:dockmenu"
+            WlrLayershell.layer: WlrLayer.Top  // Changed from Overlay to Top to prevent stacking
+            WlrLayershell.namespace: "quickshell:dockmenu:" + dockItem.icon  // Make namespace unique per item
+            WlrLayershell.exclusionMode: ExclusionMode.Normal
 
             // Let the window float freely
             anchors.left: true
@@ -421,6 +453,18 @@ Rectangle {
                     return clickGlobal.x + 655
                 }
                 bottom: 2
+            }
+
+            // Force cleanup when visibility changes
+            onVisibleChanged: {
+                if (!visible) {
+                    // Immediately destroy the panel when it becomes invisible
+                    Qt.callLater(function() {
+                        if (menuPanel && typeof menuPanel.destroy === "function") {
+                            menuPanel.destroy()
+                        }
+                    })
+                }
             }
 
             // Click outside to close
@@ -439,16 +483,17 @@ Rectangle {
                 anchors.fill: parent
                 radius: Appearance.rounding.small
                 color: Appearance.colors.colLayer0
+                opacity: 1.0  // Explicit opacity
                 implicitHeight: menuLayout.implicitHeight + radius * 2
 
-                DropShadow {
-                    anchors.fill: parent
-                    horizontalOffset: 0
-                    verticalOffset: 1
-                    radius: 8.0
-                    samples: 17
-                    color: Appearance.colors.colShadow
-                    source: parent
+                // Simplified shadow without potential overlay issues
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    source: menuContent
+                    shadowEnabled: true
+                    shadowColor: Appearance.colors.colShadow
+                    shadowVerticalOffset: 1
+                    shadowBlur: 0.5
                 }
 
                 ColumnLayout {
@@ -480,7 +525,7 @@ Rectangle {
                                 if (dockItem.appInfo.class.endsWith('.desktop')) {
                                     // For .desktop files, use gio launch with full path
                                     // Check user applications first, then system applications  
-                                    command = `gio launch ${StandardPaths.standardLocations(StandardPaths.ApplicationsLocation)[0]}/${dockItem.appInfo.class} || gio launch /usr/share/applications/${dockItem.appInfo.class}`;
+                                    command = `gio launch /home/matt/.local/share/applications/${dockItem.appInfo.class} || gio launch /usr/share/applications/${dockItem.appInfo.class}`;
                                 } else {
                                 // Try different variations of the class name
                                 var classLower = dockItem.appInfo.class.toLowerCase()
@@ -752,8 +797,28 @@ Rectangle {
     // --- Menu Close Function ---
     // Closes the right-click menu for this item
     function closeMenu() {
+        // Set states to false immediately
         showMenu = false
         isActiveMenu = false
+        
+        // Force immediate cleanup of the menu loader
+        if (menuLoader.active) {
+            menuLoader.active = false
+        }
+        
+        // Additional cleanup to prevent any overlay persistence
+        Qt.callLater(function() {
+            // Double-check that the menu is properly closed
+            if (showMenu) {
+                showMenu = false
+            }
+            if (isActiveMenu) {
+                isActiveMenu = false
+            }
+            
+            // Force garbage collection to clean up any remaining references
+            gc()
+        })
     }
 }
 

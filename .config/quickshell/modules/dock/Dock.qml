@@ -132,17 +132,17 @@ Scope {
         function onIconThemeChanged() {
             console.log("[DOCK DEBUG] Icon theme changed, reloading dock");
             // Force a reload of the dock by toggling visibility
-            dock.visible = false;
+            dockRoot.visible = false;
             Qt.callLater(function() {
-                dock.visible = true;
+                dockRoot.visible = true;
             });
         }
     }
     
     // FileView to monitor Qt6 theme settings changes
     FileView {
-        id: qt6ctConfig
-        path: StandardPaths.standardLocations(StandardPaths.ConfigLocation)[0] + "/qt6ct/qt6ct.conf"
+        id: qt6SettingsView
+        path: "/home/matt/.config/qt6ct/qt6ct.conf"
         
         property string lastTheme: ""
         
@@ -195,7 +195,7 @@ Scope {
         onTriggered: {
             // Reload the Qt6 settings file to check for changes
             try {
-                qt6ctConfig.reload();
+                qt6SettingsView.reload();
             } catch (e) {
                 console.log("[DOCK DEBUG] Error reloading Qt6 settings:", e);
             }
@@ -223,7 +223,7 @@ Scope {
         if (!autoHide) {
             // Force show the dock
             if (dockContainer) {
-                dockContainer.y = dock.height - dockHeight
+                dockContainer.y = dockRoot.height - dockHeight
                 // Stop any hide timers
                 hideTimer.stop()
             }
@@ -424,15 +424,12 @@ Scope {
                 console.log("[DOCK DEBUG] Current monitor:", modelData.name)
                 console.log("[DOCK DEBUG] All windows:", JSON.stringify(HyprlandData.windowList.map(w => ({class: w.class, monitor: w.monitor}))))
                 
-                // Get the monitor ID for the current monitor
-                const currentMonitorId = HyprlandData.monitors.findIndex(m => m.name === modelData.name)
-                console.log("[DOCK DEBUG] Current monitor ID:", currentMonitorId)
-                
+                // Show apps from ALL monitors/workspaces instead of filtering by current monitor
                 const windows = HyprlandData.windowList.filter(window => 
-                    window.monitor === currentMonitorId
+                    window.class && window.class.length > 0  // Only filter out windows without a valid class
                 )
                 
-                console.log("[DOCK DEBUG] Filtered windows for monitor:", JSON.stringify(windows.map(w => w.class)))
+                console.log("[DOCK DEBUG] All windows across all monitors:", JSON.stringify(windows.map(w => w.class)))
                 
                 if (JSON.stringify(windows) !== JSON.stringify(activeWindows)) {
                     log("debug", `Updating active windows: ${windows.length} windows found`)
@@ -451,7 +448,7 @@ Scope {
                 }
                 if (windowClass.endsWith('.desktop')) {
                     // Try user applications first, then system applications
-                    var userPath = `${StandardPaths.standardLocations(StandardPaths.ApplicationsLocation)[0]}/${windowClass}`
+                    var userPath = `/home/matt/.local/share/applications/${windowClass}`
                     var systemPath = `/usr/share/applications/${windowClass}`
                     var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
                     var content = ""
@@ -526,7 +523,7 @@ Scope {
                         cmd = dock.getDesktopFileExecCommand(appInfo.class);
                         if (!cmd) {
                             // Fallback to gio launch if we can't parse the desktop file
-                            cmd = `gio launch ${StandardPaths.standardLocations(StandardPaths.ApplicationsLocation)[0]}/${appInfo.class} || gio launch /usr/share/applications/${appInfo.class}`;
+                            cmd = `gio launch /home/matt/.local/share/applications/${appInfo.class} || gio launch /usr/share/applications/${appInfo.class}`;
                         }
                     } else {
                         // For regular apps, use mapping or fallback
@@ -615,7 +612,7 @@ Scope {
                                     // Arch Linux logo
                                     Image {
                                         anchors.centerIn: parent
-                                        source: StandardPaths.standardLocations(StandardPaths.ConfigLocation)[0] + "/quickshell/logo/Arch-linux-logo.png"
+                                        source: "/home/matt/.config/quickshell/logo/Arch-linux-logo.png"
                                         width: parent.width * 0.65
                                         height: parent.height * 0.65
                                         fillMode: Image.PreserveAspectFit
@@ -653,10 +650,31 @@ Scope {
                                     })
                                     onClicked: {
                                         console.log("[DOCK DEBUG] Clicked pinned app:", modelData);
-                                        // Find the window for this pinned app
+                                        
+                                        // Build mapping for .desktop files to possible window classes
+                                        var mapping = {
+                                            'AffinityPhoto.desktop': ['photo.exe', 'Photo.exe', 'affinityphoto', 'AffinityPhoto'],
+                                            'AffinityDesigner.desktop': ['designer.exe', 'Designer.exe', 'affinitydesigner', 'AffinityDesigner'],
+                                            'microsoft-edge-dev': ['microsoft-edge-dev', 'msedge', 'edge'],
+                                            'vesktop': ['vesktop', 'discord'],
+                                            'steam-native': ['steam', 'steam.exe'],
+                                            'org.gnome.Nautilus': ['nautilus', 'org.gnome.nautilus'],
+                                            'lutris': ['lutris', 'net.lutris.lutris'],
+                                            'heroic': ['heroic', 'heroicgameslauncher'],
+                                            'obs': ['obs', 'com.obsproject.studio'],
+                                            'ptyxis': ['ptyxis', 'org.gnome.ptyxis']
+                                        };
+                                        
+                                        // Build list of possible window classes for this pinned app
+                                        var possibleClasses = [modelData.toLowerCase()];
+                                        if (mapping[modelData]) {
+                                            possibleClasses = possibleClasses.concat(mapping[modelData].map(c => c.toLowerCase()));
+                                        }
+                                        
+                                        // Find the window for this pinned app across all monitors/workspaces
                                         var targetWindow = HyprlandData.windowList.find(w => 
-                                            w.class.toLowerCase() === modelData.toLowerCase() ||
-                                            w.initialClass.toLowerCase() === modelData.toLowerCase()
+                                            possibleClasses.includes(w.class.toLowerCase()) ||
+                                            possibleClasses.includes(w.initialClass.toLowerCase())
                                         )
                                         console.log("[DOCK DEBUG] Found target window:", targetWindow ? targetWindow.class : "none");
                                         
@@ -666,12 +684,13 @@ Scope {
                                             if (targetWindow.address) {
                                                 Hyprland.dispatch(`focuswindow address:${targetWindow.address}`)
                                                 
-                                                // Also switch to the workspace on the current monitor
+                                                // Switch to the workspace containing the window
                                                 if (targetWindow.workspace && targetWindow.workspace.id) {
                                                     Hyprland.dispatch(`workspace ${targetWindow.workspace.id}`)
                                                 }
                                             } else {
-                                                Hyprland.dispatch(`focuswindow class:${modelData}`)
+                                                // Fallback to focusing by class
+                                                Hyprland.dispatch(`focuswindow class:${targetWindow.class}`)
                                             }
                                         } else {
                                             console.log("[DOCK DEBUG] No window exists, launching app");
@@ -684,7 +703,7 @@ Scope {
                                                 if (entry && entry.execute) {
                                                     entry.execute();
                                                 } else {
-                                                    Hyprland.dispatch(`exec gio launch ${StandardPaths.standardLocations(StandardPaths.ApplicationsLocation)[0]}/${modelData} || gio launch /usr/share/applications/${modelData}`);
+                                                    Hyprland.dispatch(`exec gio launch /home/matt/.local/share/applications/${modelData} || gio launch /usr/share/applications/${modelData}`);
                                                 }
                                             } else {
                                                 let cmd = dock.desktopIdToCommand[modelData] || modelData.toLowerCase();
@@ -763,15 +782,17 @@ Scope {
                                     }
                                     
                                     onClicked: {
+                                        console.log("[DOCK DEBUG] Clicked unpinned app:", modelData.class);
                                         // For unpinned apps, we already have the specific window
                                         if (modelData.address) {
                                             Hyprland.dispatch(`focuswindow address:${modelData.address}`)
                                             
-                                            // Also switch to the workspace on the current monitor
+                                            // Switch to the workspace containing the window
                                             if (modelData.workspace && modelData.workspace.id) {
                                                 Hyprland.dispatch(`workspace ${modelData.workspace.id}`)
                                             }
                                         } else {
+                                            // Fallback to focusing by class
                                             Hyprland.dispatch(`focuswindow class:${modelData.class}`)
                                         }
                                     }
@@ -812,7 +833,7 @@ Scope {
     function getDesktopFileExecCommand(desktopFileName) {
         try {
             // Try user applications first, then system applications
-            var userPath = `${StandardPaths.standardLocations(StandardPaths.ApplicationsLocation)[0]}/${desktopFileName}`
+            var userPath = `/home/matt/.local/share/applications/${desktopFileName}`
             var systemPath = `/usr/share/applications/${desktopFileName}`
             
             var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
