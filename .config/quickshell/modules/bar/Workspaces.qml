@@ -223,7 +223,7 @@ Item {
                                 (workspaceButtonWidth - workspaceIconSize) / 2 : workspaceIconMarginShrinked
 
                             opacity: (workspaceButtonBackground.biggestWindow && !GlobalStates.workspaceShowNumbers && !ConfigOptions.bar.workspaces.alwaysShowNumbers) ? 
-                                1 : workspaceButtonBackground.biggestWindow ? workspaceIconOpacityShrinked : 0
+                                1 : (workspaceButtonBackground.biggestWindow && parent.color !== "transparent") ? workspaceIconOpacityShrinked : 0
                             source: workspaceButtonBackground.mainAppIconSource
                             implicitSize: (!GlobalStates.workspaceShowNumbers && !ConfigOptions.bar.workspaces.alwaysShowNumbers) ? workspaceIconSize : workspaceIconSizeShrinked
 

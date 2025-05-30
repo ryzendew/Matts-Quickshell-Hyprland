@@ -509,7 +509,7 @@ Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: Math.min(workspaceLayout.implicitHeight, 300)
                         color: Appearance.colors.colLayer0
-                        radius: Appearance.rounding.small
+            radius: Appearance.rounding.small
                         clip: true
 
                         // Get current workspace
