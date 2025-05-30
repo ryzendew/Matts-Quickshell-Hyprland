@@ -116,6 +116,14 @@ if ! ping -c 1 8.8.8.8 &> /dev/null; then
     exit 1
 fi
 
+# Check if git is available
+if ! command -v git &> /dev/null; then
+    print_error "Git is not installed. Please install git and try again."
+    print_error "On Arch: sudo pacman -S git"
+    print_error "On PikaOS: sudo apt install git"
+    exit 1
+fi
+
 # Check available disk space (need at least 2GB)
 print_status "Checking available disk space..."
 available_space=$(df / | awk 'NR==2 {print $4}')
@@ -135,14 +143,13 @@ if [ ! -d "$HOME/Dotfiles" ]; then
     
     # Try multiple repository URLs
     repo_urls=(
-        "https://github.com/ruzendew/Matts-Quickshell-Hyprland.git"
-        "https://github.com/Matts-Quickshell-Hyprland/Matts-Quickshell-Hyprland.git"
+        "https://github.com/ryzendew/Matts-Quickshell-Hyprland.git"
     )
     
     cloned=false
     for url in "${repo_urls[@]}"; do
         print_status "Trying to clone from: $url"
-        if git clone "$url" Dotfiles; then
+        if git clone "$url" Dotfiles 2>/dev/null; then
             print_success "Repository cloned successfully"
             cloned=true
             break
@@ -257,12 +264,14 @@ install_arch_packages() {
         # Clone with retry mechanism
         retry_count=0
         while [ $retry_count -lt 3 ]; do
-            if git clone https://aur.archlinux.org/yay-bin.git; then
+            if git clone https://aur.archlinux.org/yay-bin.git 2>/dev/null; then
                 break
             else
                 retry_count=$((retry_count + 1))
                 print_warning "Git clone failed, attempt $retry_count/3"
-                sleep 2
+                if [ $retry_count -lt 3 ]; then
+                    sleep 2
+                fi
             fi
         done
         
@@ -412,12 +421,14 @@ install_pikaos_packages() {
     sudo apt install -y git
 
     # Check if Quickshell is already available
-    if command -v quickshell &> /dev/null || dpkg -l | grep -q quickshell 2>/dev/null; then
+    if command -v quickshell &> /dev/null || command -v qs &> /dev/null || dpkg -l 2>/dev/null | grep -q quickshell; then
         print_success "Quickshell is already available on PikaOS"
     else
         print_warning "Quickshell not found. Installing via pikman (if available)..."
         if command -v pikman &> /dev/null; then
-            pikman install quickshell
+            if ! pikman install quickshell; then
+                print_warning "Failed to install quickshell via pikman"
+            fi
         else
             print_error "Quickshell not available and pikman not found"
             print_error "Please ensure you're using PikaOS Hyprland Edition"
