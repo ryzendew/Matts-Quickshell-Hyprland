@@ -98,6 +98,10 @@ PanelWindow {
     implicitWidth: Math.max(220, contentItem.implicitWidth + 20)
     implicitHeight: Math.max(140, contentItem.implicitHeight + 20)
     
+    // Ensure previewWindow.implicitWidth and previewWindow.implicitHeight are defined
+    property real previewWidth: previewWindow.implicitWidth || 220
+    property real previewHeight: previewWindow.implicitHeight || 140
+    
     // Main content item with scale and opacity animations
     Item {
         id: contentItem

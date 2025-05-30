@@ -132,9 +132,9 @@ Scope {
         function onIconThemeChanged() {
             console.log("[DOCK DEBUG] Icon theme changed, reloading dock");
             // Force a reload of the dock by toggling visibility
-            dockRoot.visible = false;
+            dock.visible = false;
             Qt.callLater(function() {
-                dockRoot.visible = true;
+                dock.visible = true;
             });
         }
     }
@@ -223,7 +223,7 @@ Scope {
         if (!autoHide) {
             // Force show the dock
             if (dockContainer) {
-                dockContainer.y = dockRoot.height - dockHeight
+                dockContainer.y = dock.height - dockHeight
                 // Stop any hide timers
                 hideTimer.stop()
             }
