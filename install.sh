@@ -245,14 +245,39 @@ install_arch_packages() {
 
     print_success "Official packages installed successfully"
 
-    # Install Quickshell first from AUR
+    # Install critical AUR dependencies first  
+    print_status "Installing critical AUR dependencies..."
+    if ! yay -S --needed --noconfirm google-breakpad; then
+        print_warning "Failed to install google-breakpad, trying to continue anyway..."
+    fi
+
+    # Install Quickshell from AUR with retry mechanism
     print_status "Installing Quickshell from AUR..."
-    if ! yay -S --needed --noconfirm quickshell; then
-        print_error "Failed to install Quickshell from AUR"
-        print_error "This is a critical component. Installation cannot continue."
+    retry_count=0
+    while [ $retry_count -lt 3 ]; do
+        if yay -S --needed --noconfirm quickshell; then
+            print_success "Quickshell installed successfully"
+            break
+        else
+            retry_count=$((retry_count + 1))
+            print_warning "Quickshell installation failed, attempt $retry_count/3"
+            if [ $retry_count -lt 3 ]; then
+                print_status "Cleaning yay cache and retrying..."
+                yay -Scc --noconfirm 2>/dev/null || true
+                sleep 2
+            fi
+        fi
+    done
+    
+    if [ $retry_count -eq 3 ]; then
+        print_error "Failed to install Quickshell after 3 attempts"
+        print_error "This could be due to:"
+        print_error "1. Network issues during git clone"
+        print_error "2. Missing build dependencies"
+        print_error "3. AUR package build errors"
+        print_error "Try installing manually with: yay -S quickshell"
         exit 1
     fi
-    print_success "Quickshell installed successfully"
 
     # Install remaining AUR packages
     print_status "Installing remaining AUR packages..."
