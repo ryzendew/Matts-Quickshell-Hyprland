@@ -299,14 +299,19 @@ install_arch_packages() {
         qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations \
         grim slurp wl-clipboard wtype brightnessctl pamixer mako syntax-highlighting \
         ttf-dejavu noto-fonts \
-        cmake ninja pkgconf git jemalloc cli11 libdrm mesa libxcb libpipewire; then
+        cmake ninja pkgconf git jemalloc cli11 libdrm mesa libxcb libpipewire \
+        xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor \
+        libxcb-cursor libxkbcommon libxkbcommon-x11 \
+        xorg-xwayland xorg-xlsclients xorg-xrandr \
+        wayland-utils weston xdg-utils \
+        vulkan-icd-loader vulkan-headers; then
         print_error "Failed to install required packages from official repositories"
         exit 1
     fi
 
     print_success "Official packages installed successfully"
 
-    # Install critical AUR dependencies first  
+    # Install critical AUR dependencies first
     print_status "Installing critical AUR dependencies..."
     if ! yay -S --needed --noconfirm google-breakpad; then
         print_warning "Failed to install google-breakpad, trying to continue anyway..."
