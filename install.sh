@@ -432,12 +432,12 @@ install_arch_packages() {
     # ESSENTIAL SYSTEM UTILITIES
     print_status "Installing essential system utilities..."
     if ! sudo pacman -S --needed --noconfirm \
-        grim slurp wl-clipboard wl-copy-paste wtype \
-        brightnessctl light acpi \
+        grim slurp wl-clipboard wtype \
+        brightnessctl \
         mako libnotify dunst \
         upower acpid \
         htop btop neofetch \
-        file-roller unzip zip p7zip \
+        file-roller unzip zip 7zip \
         gvfs gvfs-mtp gvfs-gphoto2; then
         print_error "Failed to install essential system utilities"
         exit 1
