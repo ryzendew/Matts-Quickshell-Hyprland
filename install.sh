@@ -491,8 +491,8 @@ install_arch_packages() {
         ttf-dejavu noto-fonts \
         papirus-icon-theme \
         gtk3 gtk4 adwaita-icon-theme \
-        qt6ct qt5ct \ 
-        ; then
+        qt6ct qt5ct
+    then
         print_error "Failed to install minimal theming packages"
         exit 1
     fi
