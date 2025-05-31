@@ -461,39 +461,6 @@ install_arch_packages() {
         exit 1
     fi
 
-    # Install Tela Circle icon theme
-    print_status "Installing Tela Circle icon theme..."
-    cd /tmp
-    print_status "Cloning Tela Circle icon theme repository..."
-    if ! git clone https://github.com/vinceliuice/Tela-circle-icon-theme.git 2>&1; then
-        print_error "Failed to clone Tela Circle icon theme repository"
-        print_error "Checking if git is installed..."
-        if ! command -v git &> /dev/null; then
-            print_error "Git is not installed. Installing git..."
-            sudo pacman -S --needed --noconfirm git
-            print_status "Retrying clone..."
-            if ! git clone https://github.com/vinceliuice/Tela-circle-icon-theme.git 2>&1; then
-                print_error "Still failed to clone repository"
-                print_error "Please try installing manually:"
-                print_error "cd /tmp && git clone https://github.com/vinceliuice/Tela-circle-icon-theme.git"
-                print_error "cd Tela-circle-icon-theme && ./install.sh -a"
-            fi
-        fi
-    else
-        print_success "Repository cloned successfully"
-        cd Tela-circle-icon-theme
-        print_status "Running installation script..."
-        if ! ./install.sh -a 2>&1; then
-            print_error "Failed to install Tela Circle icon theme"
-            print_error "Please try installing manually:"
-            print_error "cd /tmp/Tela-circle-icon-theme && ./install.sh -a"
-        else
-            print_success "Tela Circle icon theme installed successfully"
-        fi
-        cd ~
-        rm -rf /tmp/Tela-circle-icon-theme
-    fi
-
     # DEVELOPMENT TOOLS AND BUILD DEPENDENCIES FOR QUICKSHELL
     print_status "Installing development tools and Quickshell build dependencies..."
     if ! sudo pacman -S --needed --noconfirm \
@@ -598,6 +565,7 @@ install_arch_packages() {
         "hyprpicker"
         "wlogout"
         "better-control"
+        "tela-circle-icon-theme-all"
     )
     
     failed_packages=()
@@ -611,6 +579,17 @@ install_arch_packages() {
         fi
     done
     
+    # Install Tela Circle icon theme to user's local directory
+    print_status "Installing Tela Circle icon theme to user's local directory..."
+    if [ -d "/usr/share/icons/Tela-circle-dark" ]; then
+        mkdir -p "$HOME/.local/share/icons"
+        cp -r "/usr/share/icons/Tela-circle-dark" "$HOME/.local/share/icons/"
+        cp -r "/usr/share/icons/Tela-circle" "$HOME/.local/share/icons/"
+        print_success "Tela Circle icon theme installed to user's local directory"
+    else
+        print_warning "Tela Circle icon theme not found in system directory"
+    fi
+
     if [ ${#failed_packages[@]} -gt 0 ]; then
         print_warning "The following AUR packages failed to install:"
         for pkg in "${failed_packages[@]}"; do
