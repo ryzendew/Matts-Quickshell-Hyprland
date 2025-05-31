@@ -461,6 +461,22 @@ install_arch_packages() {
         exit 1
     fi
 
+    # Install Tela Circle icon theme
+    print_status "Installing Tela Circle icon theme..."
+    cd /tmp
+    if ! git clone https://github.com/vinceliuice/Tela-circle-icon-theme.git 2>/dev/null; then
+        print_warning "Failed to clone Tela Circle icon theme repository"
+    else
+        cd Tela-circle-icon-theme
+        if ! ./install.sh -a; then
+            print_warning "Failed to install Tela Circle icon theme"
+        else
+            print_success "Tela Circle icon theme installed successfully"
+        fi
+        cd ~
+        rm -rf /tmp/Tela-circle-icon-theme
+    fi
+
     # DEVELOPMENT TOOLS AND BUILD DEPENDENCIES FOR QUICKSHELL
     print_status "Installing development tools and Quickshell build dependencies..."
     if ! sudo pacman -S --needed --noconfirm \
@@ -502,8 +518,8 @@ install_arch_packages() {
 
     # Install critical AUR dependencies first
     print_status "Installing critical AUR dependencies..."
-    if ! yay -S --needed --noconfirm google-breakpad; then
-        print_warning "Failed to install google-breakpad, trying to continue anyway..."
+    if ! yay -S --needed --noconfirm google-breakpad nwg-displays; then
+        print_warning "Failed to install google-breakpad or nwg-displays, trying to continue anyway..."
     fi
 
     # Install Quickshell from AUR with fallback to prebuilt package
@@ -557,7 +573,6 @@ install_arch_packages() {
         "matugen-bin"
         "grimblast"
         "hyprswitch"
-        "nwg-displays"
         "nwg-look"
         "swww"
         "hypridle"
