@@ -14,6 +14,21 @@ NC='\033[0m' # No Color
 
 # Distribution detection
 DISTRO=""
+FORCE_INSTALL=false
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --force)
+            FORCE_INSTALL=true
+            shift
+            ;;
+        *)
+            print_error "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
 
 # Print colored output
 print_status() {
@@ -241,6 +256,9 @@ fi
 install_arch_packages() {
     # Show comprehensive package installation summary
     print_status "COMPREHENSIVE ARCH LINUX + HYPRLAND INSTALLATION"
+    if [ "$FORCE_INSTALL" = true ]; then
+        print_status "FORCE REINSTALL MODE ENABLED - All packages will be reinstalled"
+    fi
     print_status "=================================================="
     echo
     print_status "This installer will install ALL dependencies needed for a complete Hyprland desktop:"
@@ -296,14 +314,22 @@ install_arch_packages() {
 
     # Update system
     print_status "Updating system packages..."
-    sudo pacman -Syu --noconfirm
+    if [ "$FORCE_INSTALL" = true ]; then
+        sudo pacman -Syu --noconfirm --overwrite "*"
+    else
+        sudo pacman -Syu --noconfirm
+    fi
 
     # Install base-devel and git if not present
     print_status "Installing base development tools..."
-    sudo pacman -S --needed --noconfirm base-devel git
+    if [ "$FORCE_INSTALL" = true ]; then
+        sudo pacman -S --needed --noconfirm --overwrite "*" base-devel git
+    else
+        sudo pacman -S --needed --noconfirm base-devel git
+    fi
 
     # Install yay-bin if not present
-    if ! command -v yay &> /dev/null; then
+    if ! command -v yay &> /dev/null || [ "$FORCE_INSTALL" = true ]; then
         print_status "Installing yay AUR helper..."
         cd /tmp
         
@@ -352,12 +378,22 @@ install_arch_packages() {
     
     # CORE HYPRLAND AND WAYLAND FOUNDATION
     print_status "Installing core Hyprland and Wayland components..."
-    if ! sudo pacman -S --needed --noconfirm \
-        hyprland wayland wayland-protocols wayland-utils \
-        xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-desktop-portal \
-        xdg-utils xdg-user-dirs; then
-        print_error "Failed to install core Hyprland/Wayland packages"
-        exit 1
+    if [ "$FORCE_INSTALL" = true ]; then
+        if ! sudo pacman -S --needed --noconfirm --overwrite "*" \
+            hyprland wayland wayland-protocols wayland-utils \
+            xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-desktop-portal \
+            xdg-utils xdg-user-dirs; then
+            print_error "Failed to install core Hyprland/Wayland packages"
+            exit 1
+        fi
+    else
+        if ! sudo pacman -S --needed --noconfirm \
+            hyprland wayland wayland-protocols wayland-utils \
+            xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-desktop-portal \
+            xdg-utils xdg-user-dirs; then
+            print_error "Failed to install core Hyprland/Wayland packages"
+            exit 1
+        fi
     fi
 
     # AUDIO SYSTEM - Complete PipeWire setup
@@ -502,35 +538,52 @@ install_arch_packages() {
 
     # Install critical AUR dependencies first
     print_status "Installing critical AUR dependencies..."
-    if ! yay -S --needed --noconfirm google-breakpad nwg-displays; then
-        print_warning "Failed to install google-breakpad or nwg-displays, trying to continue anyway..."
+    if [ "$FORCE_INSTALL" = true ]; then
+        if ! yay -S --needed --noconfirm --overwrite "*" google-breakpad nwg-displays; then
+            print_warning "Failed to install google-breakpad or nwg-displays, trying to continue anyway..."
+        fi
+    else
+        if ! yay -S --needed --noconfirm google-breakpad nwg-displays; then
+            print_warning "Failed to install google-breakpad or nwg-displays, trying to continue anyway..."
+        fi
     fi
 
     # Install Quickshell from AUR with fallback to prebuilt package
     print_status "Installing Quickshell from AUR..."
     quickshell_installed=false
     
-    if yay -S --needed --noconfirm quickshell; then
-        print_success "Quickshell installed successfully from AUR"
-        quickshell_installed=true
-    else
-        print_warning "AUR installation failed, trying prebuilt package..."
-        if [ -d "ArchPackages" ] && [ -n "$(ls ArchPackages/*.pkg.tar.* 2>/dev/null)" ]; then
-            print_status "Installing prebuilt Quickshell package..."
-            print_status "Found packages: $(ls ArchPackages/*.pkg.tar.*)"
-            if sudo pacman -U --needed --noconfirm ArchPackages/quickshell*.pkg.tar.*; then
-                print_success "Quickshell installed successfully from prebuilt package"
-                quickshell_installed=true
-            else
-                print_warning "Failed to install prebuilt package"
-            fi
+    if [ "$FORCE_INSTALL" = true ]; then
+        if yay -S --needed --noconfirm --overwrite "*" quickshell; then
+            print_success "Quickshell installed successfully from AUR"
+            quickshell_installed=true
         else
-            print_warning "No prebuilt packages found in ArchPackages folder"
-            print_status "Checking ArchPackages directory contents:"
-            if [ -d "ArchPackages" ]; then
-                ls -la ArchPackages/
-            else
-                print_warning "ArchPackages directory doesn't exist"
+            print_warning "AUR installation failed, trying prebuilt package..."
+            if [ -d "ArchPackages" ] && [ -n "$(ls ArchPackages/*.pkg.tar.* 2>/dev/null)" ]; then
+                print_status "Installing prebuilt Quickshell package..."
+                print_status "Found packages: $(ls ArchPackages/*.pkg.tar.*)"
+                if sudo pacman -U --needed --noconfirm --overwrite "*" ArchPackages/quickshell*.pkg.tar.*; then
+                    print_success "Quickshell installed successfully from prebuilt package"
+                    quickshell_installed=true
+                else
+                    print_warning "Failed to install prebuilt package"
+                fi
+            fi
+        fi
+    else
+        if yay -S --needed --noconfirm quickshell; then
+            print_success "Quickshell installed successfully from AUR"
+            quickshell_installed=true
+        else
+            print_warning "AUR installation failed, trying prebuilt package..."
+            if [ -d "ArchPackages" ] && [ -n "$(ls ArchPackages/*.pkg.tar.* 2>/dev/null)" ]; then
+                print_status "Installing prebuilt Quickshell package..."
+                print_status "Found packages: $(ls ArchPackages/*.pkg.tar.*)"
+                if sudo pacman -U --needed --noconfirm ArchPackages/quickshell*.pkg.tar.*; then
+                    print_success "Quickshell installed successfully from prebuilt package"
+                    quickshell_installed=true
+                else
+                    print_warning "Failed to install prebuilt package"
+                fi
             fi
         fi
     fi
@@ -571,11 +624,20 @@ install_arch_packages() {
     failed_packages=()
     for package in "${aur_packages[@]}"; do
         print_status "Installing $package..."
-        if ! yay -S --needed --noconfirm "$package"; then
-            print_warning "Failed to install $package"
-            failed_packages+=("$package")
+        if [ "$FORCE_INSTALL" = true ]; then
+            if ! yay -S --needed --noconfirm --overwrite "*" "$package"; then
+                print_warning "Failed to install $package"
+                failed_packages+=("$package")
+            else
+                print_success "$package installed successfully"
+            fi
         else
-            print_success "$package installed successfully"
+            if ! yay -S --needed --noconfirm "$package"; then
+                print_warning "Failed to install $package"
+                failed_packages+=("$package")
+            else
+                print_success "$package installed successfully"
+            fi
         fi
     done
     

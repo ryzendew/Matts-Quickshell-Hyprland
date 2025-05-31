@@ -27,7 +27,11 @@ A comprehensive Quickshell-based Hyprland configuration converted from end-4's o
 
 ### One-Line Install
 ```bash
+# Normal installation
 curl -fsSL https://raw.githubusercontent.com/ryzendew/Matts-Quickshell-Hyprland/main/install.sh | bash
+
+# Force reinstall all packages
+curl -fsSL https://raw.githubusercontent.com/ryzendew/Matts-Quickshell-Hyprland/main/install.sh | bash -- --force
 ```
 
 ### Manual Installation
@@ -35,7 +39,12 @@ curl -fsSL https://raw.githubusercontent.com/ryzendew/Matts-Quickshell-Hyprland/
 git clone https://github.com/ryzendew/Matts-Quickshell-Hyprland.git
 cd Matts-Quickshell-Hyprland
 chmod +x install.sh
+
+# Normal installation
 ./install.sh
+
+# Force reinstall all packages
+./install.sh --force
 ```
 
 ## 🛠️ System Requirements
