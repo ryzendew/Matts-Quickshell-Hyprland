@@ -53,7 +53,7 @@ Scope {
     }
 
     Variants { // For each monitor
-        model:
+        model: Quickshell.screens  // Show on all monitors
 
         PanelWindow { // Bar window
             id: barRoot
