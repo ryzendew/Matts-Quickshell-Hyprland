@@ -619,7 +619,6 @@ install_arch_packages() {
         "hyprpicker"
         "wlogout"
         "better-control"
-        "tela-circle-icon-theme-all"
     )
     
     failed_packages=()
@@ -642,16 +641,20 @@ install_arch_packages() {
         fi
     done
     
-    # Install Tela Circle icon theme to user's local directory
-    print_status "Installing Tela Circle icon theme to user's local directory..."
-    if [ -d "/usr/share/icons/Tela-circle-dark" ]; then
-        mkdir -p "$HOME/.local/share/icons"
-        cp -r "/usr/share/icons/Tela-circle-dark" "$HOME/.local/share/icons/"
-        cp -r "/usr/share/icons/Tela-circle" "$HOME/.local/share/icons/"
-        print_success "Tela Circle icon theme installed to user's local directory"
+    # Install Tela Circle icon theme from official repository
+    print_status "Installing Tela Circle icon theme from official repository..."
+    if [ ! -d "/tmp/Tela-circle-icon-theme" ]; then
+        git clone --depth=1 https://github.com/vinceliuice/Tela-circle-icon-theme.git /tmp/Tela-circle-icon-theme
     else
-        print_warning "Tela Circle icon theme not found in system directory"
+        print_status "Tela-circle-icon-theme already cloned, pulling latest changes..."
+        cd /tmp/Tela-circle-icon-theme
+        git pull
     fi
+    cd /tmp/Tela-circle-icon-theme
+    ./install.sh -a
+    print_success "Tela Circle icon theme installed from source."
+    # Optionally clean up
+    # rm -rf /tmp/Tela-circle-icon-theme
 
     if [ ${#failed_packages[@]} -gt 0 ]; then
         print_warning "The following AUR packages failed to install:"
