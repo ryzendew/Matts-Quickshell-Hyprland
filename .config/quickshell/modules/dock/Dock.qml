@@ -374,7 +374,7 @@ Scope {
     }
     
     Variants {
-        model: Quickshell.screens.filter(screen => screen.name === "DP-1")
+        model:
 
         PanelWindow {
             id: dockRoot
