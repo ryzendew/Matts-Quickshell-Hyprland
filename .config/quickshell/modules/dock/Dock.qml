@@ -72,7 +72,7 @@ Scope {
     
     // Debug pinnedApps changes
     onPinnedAppsChanged: {
-        console.log("[DOCK DEBUG] pinnedApps changed to:", JSON.stringify(pinnedApps))
+        // console.log("[DOCK DEBUG] pinnedApps changed to:", JSON.stringify(pinnedApps))
     }
     
     // Settings file path
@@ -110,19 +110,37 @@ Scope {
         target: AppearanceSettingsState
         function onDockBlurAmountChanged() {
             // Update Hyprland blur rules for dock
-            Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
-            Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
-            // Reload Quickshell
+            if (AppearanceSettingsState.blurEnabled) {
+                Hyprland.dispatch(`setvar decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
+            }
+            // Reload Quickshell - this might be for other theming aspects tied to blur amount
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
         function onDockBlurPassesChanged() {
-            Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
-            // Reload Quickshell
+            if (AppearanceSettingsState.blurEnabled) {
+                Hyprland.dispatch(`setvar decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
+            }
+            // Reload Quickshell - this might be for other theming aspects
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
         function onDockTransparencyChanged() {
             // Reload Quickshell
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+        }
+        // Add onBlurEnabledChanged if needed to unset layerrule or disable blur
+        function onBlurEnabledChanged() {
+            if (!AppearanceSettingsState.blurEnabled) {
+                // This will remove the blur rule for the dock if blur is globally disabled
+                Hyprland.dispatch(`layerrule unset,^(quickshell:dock:blur)$`)
+            } else {
+                // This will re-apply blur rules if blur is re-enabled
+                // AppearanceSettingsState.updateDockBlurSettings() should handle this if called
+                // For now, just ensure size and passes are set if blur is on
+                Hyprland.dispatch(`setvar decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
+                Hyprland.dispatch(`setvar decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
+                Hyprland.dispatch(`layerrule blur,^(quickshell:dock:blur)$`)
+            }
+             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
     }
     
@@ -162,12 +180,12 @@ Scope {
                 
                 if (lastTheme === "") {
                     lastTheme = currentTheme;
-                    console.log("[DOCK DEBUG] Initial Qt6 theme detected:", currentTheme);
+                    // console.log("[DOCK DEBUG] Initial Qt6 theme detected:", currentTheme);
                     IconTheme.setCurrentTheme(currentTheme);
                     // Refresh themes when we first load
                     IconTheme.refreshThemes();
                 } else if (lastTheme !== currentTheme) {
-                    console.log("[DOCK DEBUG] Qt6 theme changed from", lastTheme, "to", currentTheme);
+                    // console.log("[DOCK DEBUG] Qt6 theme changed from", lastTheme, "to", currentTheme);
                     lastTheme = currentTheme;
                     
                     // Update the theme in the icon system
@@ -180,7 +198,7 @@ Scope {
                     forceRefreshIcons();
                 }
             } catch (e) {
-                console.log("[DOCK DEBUG] Error reading Qt6 theme settings:", e);
+                // console.log("[DOCK DEBUG] Error reading Qt6 theme settings:", e);
             }
         }
     }
@@ -197,7 +215,7 @@ Scope {
             try {
                 qt6SettingsView.reload();
             } catch (e) {
-                console.log("[DOCK DEBUG] Error reloading Qt6 settings:", e);
+                // console.log("[DOCK DEBUG] Error reloading Qt6 settings:", e);
             }
         }
     }
@@ -293,9 +311,9 @@ Scope {
         onLoaded: {
             try {
                 const fileContents = dockConfigView.text()
-                console.log("[DOCK DEBUG] Raw config file contents:", fileContents)
+                // console.log("[DOCK DEBUG] Raw config file contents:", fileContents)
                 const config = JSON.parse(fileContents)
-                console.log("[DOCK DEBUG] Parsed config:", JSON.stringify(config))
+                // console.log("[DOCK DEBUG] Parsed config:", JSON.stringify(config))
                 if (config) {
                     // Load pinned apps
                     if (config.pinnedApps) {
@@ -310,9 +328,9 @@ Scope {
                         var migratedPinnedApps = config.pinnedApps.map(function(app) {
                             return windowClassToDesktopFile[app] || app;
                         });
-                        console.log("[DOCK DEBUG] Migrated pinnedApps:", JSON.stringify(migratedPinnedApps))
+                        // console.log("[DOCK DEBUG] Migrated pinnedApps:", JSON.stringify(migratedPinnedApps))
                         dock.pinnedApps = migratedPinnedApps
-                        console.log("[DOCK DEBUG] pinnedApps after setting:", JSON.stringify(dock.pinnedApps))
+                        // console.log("[DOCK DEBUG] pinnedApps after setting:", JSON.stringify(dock.pinnedApps))
                     }
                     
                     // Load auto-hide setting if available
@@ -346,8 +364,8 @@ Scope {
         Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
         
         // Debug: Show what's in pinnedApps
-        console.log("[DOCK DEBUG] Dock component completed")
-        console.log("[DOCK DEBUG] pinnedApps:", JSON.stringify(pinnedApps))
+        // console.log("[DOCK DEBUG] Dock component completed")
+        // console.log("[DOCK DEBUG] pinnedApps:", JSON.stringify(pinnedApps))
     }
     
     function showMenuForApp(appInfo) {
@@ -405,31 +423,31 @@ Scope {
             Connections {
                 target: HyprlandData
                 function onWindowListChanged() { 
-                    console.log("[DOCK DEBUG] Window list changed event received")
-                    console.log("[DOCK DEBUG] Current window list:", JSON.stringify(HyprlandData.windowList.map(w => w.class)))
+                    // console.log("[DOCK DEBUG] Window list changed event received")
+                    // console.log("[DOCK DEBUG] Current window list:", JSON.stringify(HyprlandData.windowList.map(w => w.class)))
                     log("debug", "Window list changed, updating active windows")
                     updateActiveWindows() 
                 }
             }
             
             Component.onCompleted: {
-                console.log("[DOCK DEBUG] Dock component completed, initializing...")
-                console.log("[DOCK DEBUG] Initial window list:", JSON.stringify(HyprlandData.windowList.map(w => w.class)))
+                // console.log("[DOCK DEBUG] Dock component completed, initializing...")
+                // console.log("[DOCK DEBUG] Initial window list:", JSON.stringify(HyprlandData.windowList.map(w => w.class)))
                 log("info", "Dock component completed, initializing...")
                 updateActiveWindows()
             }
             
             function updateActiveWindows() {
-                console.log("[DOCK DEBUG] updateActiveWindows called")
-                console.log("[DOCK DEBUG] Current monitor:", modelData.name)
-                console.log("[DOCK DEBUG] All windows:", JSON.stringify(HyprlandData.windowList.map(w => ({class: w.class, monitor: w.monitor}))))
+                // console.log("[DOCK DEBUG] updateActiveWindows called")
+                // console.log("[DOCK DEBUG] Current monitor:", modelData.name)
+                // console.log("[DOCK DEBUG] All windows:", JSON.stringify(HyprlandData.windowList.map(w => ({class: w.class, monitor: w.monitor}))))
                 
                 // Show apps from ALL monitors/workspaces instead of filtering by current monitor
                 const windows = HyprlandData.windowList.filter(window => 
                     window.class && window.class.length > 0  // Only filter out windows without a valid class
                 )
                 
-                console.log("[DOCK DEBUG] All windows across all monitors:", JSON.stringify(windows.map(w => w.class)))
+                // console.log("[DOCK DEBUG] All windows across all monitors:", JSON.stringify(windows.map(w => w.class)))
                 
                 if (JSON.stringify(windows) !== JSON.stringify(activeWindows)) {
                     log("debug", `Updating active windows: ${windows.length} windows found`)
@@ -472,7 +490,7 @@ Scope {
                             var iconName = line.substring(5)
                             fileView.destroy()
                             var resolvedIcon = IconTheme.getIconPath(iconName) || iconName
-                            console.log('[DOCK DEBUG] getIconForClass:', windowClass, 'Icon entry:', iconName, 'Resolved icon:', resolvedIcon)
+                            // console.log('[DOCK DEBUG] getIconForClass:', windowClass, 'Icon entry:', iconName, 'Resolved icon:', resolvedIcon)
                             return resolvedIcon
                         }
                     }
@@ -480,7 +498,7 @@ Scope {
                     return windowClass.toLowerCase()
                 }
                 var resolvedIcon = IconTheme.getIconPath(windowClass) || windowClass.toLowerCase()
-                console.log('[DOCK DEBUG] getIconForClass:', windowClass, 'Resolved icon:', resolvedIcon)
+                // console.log('[DOCK DEBUG] getIconForClass:', windowClass, 'Resolved icon:', resolvedIcon)
                 return resolvedIcon
             }
             
@@ -489,15 +507,15 @@ Scope {
                 var mapping = {
                     'AffinityPhoto.desktop': ['photo.exe', 'Photo.exe', 'affinityphoto', 'AffinityPhoto'],
                     'AffinityDesigner.desktop': ['designer.exe', 'Designer.exe', 'affinitydesigner', 'AffinityDesigner'],
-                    'microsoft-edge-dev': ['microsoft-edge-dev', 'msedge', 'edge'],
-                    'vesktop': ['vesktop', 'discord'],
-                    'steam-native': ['steam', 'steam.exe'],
-                    'org.gnome.nautilus': ['nautilus', 'org.gnome.nautilus'],
-                    'lutris': ['lutris', 'net.lutris.lutris'],
-                    'heroic': ['heroic', 'heroicgameslauncher'],
-                    'obs': ['obs', 'com.obsproject.studio'],
-                    'ptyxis': ['ptyxis', 'org.gnome.ptyxis']
-                };
+                        'microsoft-edge-dev': ['microsoft-edge-dev', 'msedge', 'edge'],
+                        'vesktop': ['vesktop', 'discord'],
+                        'steam-native': ['steam', 'steam.exe'],
+                        'org.gnome.nautilus': ['nautilus', 'org.gnome.nautilus'],
+                        'lutris': ['lutris', 'net.lutris.lutris'],
+                        'heroic': ['heroic', 'heroicgameslauncher'],
+                        'obs': ['obs', 'com.obsproject.studio'],
+                        'ptyxis': ['ptyxis', 'org.gnome.ptyxis']
+                    };
                 var targetClass = windowClass.toLowerCase();
                 var possibleClasses = [targetClass];
                 // If the pinned app is a .desktop file and has a mapping, add those classes
@@ -515,7 +533,7 @@ Scope {
             
             function focusOrLaunchApp(appInfo) {
                 if (isWindowActive(appInfo.class)) {
-                    Hyprland.dispatch(`dispatch focuswindow class:${appInfo.class}`)
+                    Hyprland.dispatch(`focuswindow class:${appInfo.class}`)
                 } else {
                     let cmd;
                     if (appInfo.class.endsWith('.desktop')) {
@@ -634,7 +652,7 @@ Scope {
                             Repeater {
                                 id: pinnedAppsRepeater
                                 model: {
-                                    console.log("[DOCK DEBUG] Repeater model - pinnedApps:", JSON.stringify(dock.pinnedApps))
+                                    // console.log("[DOCK DEBUG] Repeater model - pinnedApps:", JSON.stringify(dock.pinnedApps))
                                     return dock.pinnedApps
                                 }
                                 
@@ -649,7 +667,7 @@ Scope {
                                         command: modelData.toLowerCase()
                                     })
                                     onClicked: {
-                                        console.log("[DOCK DEBUG] Clicked pinned app:", modelData);
+                                        // console.log("[DOCK DEBUG] Clicked pinned app:", modelData);
                                         
                                         // Build mapping for .desktop files to possible window classes
                                         var mapping = {
@@ -676,10 +694,10 @@ Scope {
                                             possibleClasses.includes(w.class.toLowerCase()) ||
                                             possibleClasses.includes(w.initialClass.toLowerCase())
                                         )
-                                        console.log("[DOCK DEBUG] Found target window:", targetWindow ? targetWindow.class : "none");
+                                        // console.log("[DOCK DEBUG] Found target window:", targetWindow ? targetWindow.class : "none");
                                         
                                         if (targetWindow) {
-                                            console.log("[DOCK DEBUG] Window exists, focusing it");
+                                            // console.log("[DOCK DEBUG] Window exists, focusing it");
                                             // If window exists, focus it and switch to its workspace
                                             if (targetWindow.address) {
                                                 Hyprland.dispatch(`focuswindow address:${targetWindow.address}`)
@@ -693,12 +711,12 @@ Scope {
                                                 Hyprland.dispatch(`focuswindow class:${targetWindow.class}`)
                                             }
                                         } else {
-                                            console.log("[DOCK DEBUG] No window exists, launching app");
+                                            // console.log("[DOCK DEBUG] No window exists, launching app");
                                             // If no window exists, launch the app
                                             if (modelData.endsWith('.desktop')) {
                                                 let entry = DesktopEntries.applications[modelData];
                                                 if (!entry) {
-                                                    console.log('[DOCK DEBUG] DesktopEntries.applications keys:', Object.keys(DesktopEntries.applications));
+                                                    // console.log('[DOCK DEBUG] DesktopEntries.applications keys:', Object.keys(DesktopEntries.applications));
                                                 }
                                                 if (entry && entry.execute) {
                                                     entry.execute();
@@ -707,8 +725,8 @@ Scope {
                                                 }
                                             } else {
                                                 let cmd = dock.desktopIdToCommand[modelData] || modelData.toLowerCase();
-                                                console.log("[DOCK DEBUG] Launching app:", modelData);
-                                                console.log("[DOCK DEBUG] Command:", cmd);
+                                                // console.log("[DOCK DEBUG] Launching app:", modelData);
+                                                // console.log("[DOCK DEBUG] Command:", cmd);
                                                 Hyprland.dispatch(`exec ${cmd}`)
                                             }
                                         }
@@ -734,9 +752,9 @@ Scope {
                                 id: nonPinnedAppsRepeater
                                 model: {
                                     var nonPinnedApps = []
-                                    console.log("[DOCK DEBUG] Active windows count:", dockRoot.activeWindows.length)
-                                    console.log("[DOCK DEBUG] Active windows:", JSON.stringify(dockRoot.activeWindows.map(w => w.class)))
-                                    console.log("[DOCK DEBUG] Pinned apps:", JSON.stringify(dock.pinnedApps))
+                                    // console.log("[DOCK DEBUG] Active windows count:", dockRoot.activeWindows.length)
+                                    // console.log("[DOCK DEBUG] Active windows:", JSON.stringify(dockRoot.activeWindows.map(w => w.class)))
+                                    // console.log("[DOCK DEBUG] Pinned apps:", JSON.stringify(dock.pinnedApps))
                                     // Build a mapping for .desktop files to possible window classes
                                     var mapping = {
                                         'AffinityPhoto.desktop': ['photo.exe', 'Photo.exe', 'affinityphoto', 'AffinityPhoto'],
@@ -767,7 +785,7 @@ Scope {
                                             nonPinnedApps.push(activeWindow)
                                         }
                                     }
-                                    console.log("[DOCK DEBUG] Non-pinned apps found:", JSON.stringify(nonPinnedApps.map(w => w.class)))
+                                    // console.log("[DOCK DEBUG] Non-pinned apps found:", JSON.stringify(nonPinnedApps.map(w => w.class)))
                                     return nonPinnedApps
                                 }
                                 
@@ -778,11 +796,11 @@ Scope {
                                     isPinned: false
                                     appInfo: modelData
                                     Component.onCompleted: {
-                                        console.log("[DOCK DEBUG] Unpinned DockItem created for class:", modelData.class, "icon property set to:", icon);
+                                        // console.log("[DOCK DEBUG] Unpinned DockItem created for class:", modelData.class, "icon property set to:", icon);
                                     }
                                     
                                     onClicked: {
-                                        console.log("[DOCK DEBUG] Clicked unpinned app:", modelData.class);
+                                        // console.log("[DOCK DEBUG] Clicked unpinned app:", modelData.class);
                                         // For unpinned apps, we already have the specific window
                                         if (modelData.address) {
                                             Hyprland.dispatch(`focuswindow address:${modelData.address}`)
@@ -855,24 +873,24 @@ Scope {
                 var line = lines[i].trim()
                 if (line.startsWith('Exec=')) {
                     var execCommand = line.substring(5) // Remove 'Exec=' prefix
-                    console.log("[DOCK DEBUG] Found Exec command for", desktopFileName + ":", execCommand)
+                    // console.log("[DOCK DEBUG] Found Exec command for", desktopFileName + ":", execCommand)
                     fileView.destroy()
                     return execCommand
                 }
             }
             
             fileView.destroy()
-            console.log("[DOCK DEBUG] No Exec command found in", desktopFileName)
+            // console.log("[DOCK DEBUG] No Exec command found in", desktopFileName)
             return ""
         } catch (e) {
-            console.log("[DOCK DEBUG] Error reading desktop file", desktopFileName + ":", e)
+            // console.log("[DOCK DEBUG] Error reading desktop file", desktopFileName + ":", e)
             return ""
         }
     }
 
     // Manual function to force refresh all icons (useful for testing)
     function forceRefreshIcons() {
-        console.log("[DOCK DEBUG] Manually forcing icon refresh");
+        // console.log("[DOCK DEBUG] Manually forcing icon refresh");
         
         // Refresh the theme discovery system
         IconTheme.refreshThemes();
@@ -890,7 +908,7 @@ Scope {
                 // Wait a bit more then restore
                 Qt.callLater(function() {
                     pinnedAppsRepeater.model = oldModel;
-                    console.log("[DOCK DEBUG] Pinned apps model restored");
+                    // console.log("[DOCK DEBUG] Pinned apps model restored");
                 });
             });
         }
@@ -898,10 +916,10 @@ Scope {
         // Refresh active windows which will refresh non-pinned apps
         Qt.callLater(function() {
             updateActiveWindows();
-            console.log("[DOCK DEBUG] Active windows updated");
+            // console.log("[DOCK DEBUG] Active windows updated");
         });
         
-        console.log("[DOCK DEBUG] Icon refresh initiated");
+        // console.log("[DOCK DEBUG] Icon refresh initiated");
     }
 
     // Window Preview System
@@ -912,18 +930,18 @@ Scope {
 
     // Preview helper functions
     function showWindowPreviews(appClass, position, itemWidth) {
-        console.log("[DOCK PREVIEW DEBUG] showWindowPreviews called with:", appClass);
+        // console.log("[DOCK PREVIEW DEBUG] showWindowPreviews called with:", appClass);
         
         // Get all windows for this app class
         const windows = HyprlandData.windowList.filter(w => 
             w.class && w.class.toLowerCase() === appClass.toLowerCase()
         );
         
-        console.log("[DOCK PREVIEW DEBUG] Found", windows.length, "windows for class:", appClass);
-        console.log("[DOCK PREVIEW DEBUG] All windows:", JSON.stringify(windows.map(w => ({class: w.class, title: w.title})), null, 2));
+        // console.log("[DOCK PREVIEW DEBUG] Found", windows.length, "windows for class:", appClass);
+        // console.log("[DOCK PREVIEW DEBUG] All windows:", JSON.stringify(windows.map(w => ({class: w.class, title: w.title})), null, 2));
         
         if (windows.length > 0) {  // Changed from > 1 to > 0 for testing
-            console.log("[DOCK PREVIEW DEBUG] Showing previews for", windows.length, "windows");
+            // console.log("[DOCK PREVIEW DEBUG] Showing previews for", windows.length, "windows");
             // Show previews for any windows (temporarily changed for testing)
             previewAppClass = appClass;
             previewPosition = position;
@@ -931,7 +949,7 @@ Scope {
             windowPreview.showPreviews(windows, appClass, position, itemWidth);
             showDockPreviews = true;
         } else {
-            console.log("[DOCK PREVIEW DEBUG] Not showing previews - only", windows.length, "window(s)");
+            // console.log("[DOCK PREVIEW DEBUG] Not showing previews - only", windows.length, "window(s)");
         }
     }
     
@@ -943,5 +961,247 @@ Scope {
     function hideWindowPreviewsImmediately() {
         windowPreview.hideImmediately();
         showDockPreviews = false;
+    }
+
+    Menu {
+        id: dockContextMenu
+        property var contextAppInfo: null
+        property bool contextIsPinned: false
+        property var contextDockItem: null
+
+        MenuItem {
+            text: dockContextMenu.contextIsPinned ? qsTr("Unpin from dock") : qsTr("Pin to dock")
+            onTriggered: {
+                if (dockContextMenu.contextIsPinned) dock.removePinnedApp(dockContextMenu.contextAppInfo.class)
+                else dock.addPinnedApp(dockContextMenu.contextAppInfo.class)
+            }
+        }
+        MenuItem {
+            text: qsTr("Launch new instance")
+            onTriggered: {
+                var command = ""
+                if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.class) {
+                    if (dockContextMenu.contextAppInfo.class.endsWith('.desktop')) {
+                        command = `gio launch /home/matt/.local/share/applications/${dockContextMenu.contextAppInfo.class} || gio launch /usr/share/applications/${dockContextMenu.contextAppInfo.class}`;
+                    } else {
+                        var classLower = dockContextMenu.contextAppInfo.class.toLowerCase()
+                        var classWithDesktop = dockContextMenu.contextAppInfo.class + ".desktop"
+                        if (dock.desktopIdToCommand[dockContextMenu.contextAppInfo.class]) {
+                            command = dock.desktopIdToCommand[dockContextMenu.contextAppInfo.class]
+                        } else if (dock.desktopIdToCommand[classLower]) {
+                            command = dock.desktopIdToCommand[classLower]
+                        } else if (dock.desktopIdToCommand[classWithDesktop]) {
+                            command = dock.desktopIdToCommand[classWithDesktop]
+                        } else {
+                            command = dockContextMenu.contextAppInfo.command || dockContextMenu.contextAppInfo.class.toLowerCase()
+                        }
+                    }
+                }
+                Hyprland.dispatch(`exec ${command}`)
+            }
+        }
+        MenuSeparator {}
+        Menu {
+            title: qsTr("Move to workspace")
+            enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+            
+            MenuItem {
+                text: qsTr("Workspace 1")
+                enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+                onTriggered: {
+                    if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                        console.log("[DOCK MENU DEBUG] Moving window to workspace 1, address:", dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 1,address:${dockContextMenu.contextAppInfo.address}`)
+                    } else {
+                        console.log("[DOCK MENU DEBUG] Cannot move to workspace 1 - missing address:", dockContextMenu.contextAppInfo)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Workspace 2")
+                enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+                onTriggered: {
+                    if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                        console.log("[DOCK MENU DEBUG] Moving window to workspace 2, address:", dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 2,address:${dockContextMenu.contextAppInfo.address}`)
+                    } else {
+                        console.log("[DOCK MENU DEBUG] Cannot move to workspace 2 - missing address:", dockContextMenu.contextAppInfo)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Workspace 3")
+                enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+                onTriggered: {
+                    if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                        console.log("[DOCK MENU DEBUG] Moving window to workspace 3, address:", dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 3,address:${dockContextMenu.contextAppInfo.address}`)
+                    } else {
+                        console.log("[DOCK MENU DEBUG] Cannot move to workspace 3 - missing address:", dockContextMenu.contextAppInfo)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Workspace 4")
+                enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+                onTriggered: {
+                    if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                        console.log("[DOCK MENU DEBUG] Moving window to workspace 4, address:", dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 4,address:${dockContextMenu.contextAppInfo.address}`)
+                    } else {
+                        console.log("[DOCK MENU DEBUG] Cannot move to workspace 4 - missing address:", dockContextMenu.contextAppInfo)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Workspace 5")
+                enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+                onTriggered: {
+                    if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                        console.log("[DOCK MENU DEBUG] Moving window to workspace 5, address:", dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 5,address:${dockContextMenu.contextAppInfo.address}`)
+                    } else {
+                        console.log("[DOCK MENU DEBUG] Cannot move to workspace 5 - missing address:", dockContextMenu.contextAppInfo)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Workspace 6")
+                enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+                onTriggered: {
+                    if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                        console.log("[DOCK MENU DEBUG] Moving window to workspace 6, address:", dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 6,address:${dockContextMenu.contextAppInfo.address}`)
+                    } else {
+                        console.log("[DOCK MENU DEBUG] Cannot move to workspace 6 - missing address:", dockContextMenu.contextAppInfo)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Workspace 7")
+                enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+                onTriggered: {
+                    if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                        console.log("[DOCK MENU DEBUG] Moving window to workspace 7, address:", dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 7,address:${dockContextMenu.contextAppInfo.address}`)
+                    } else {
+                        console.log("[DOCK MENU DEBUG] Cannot move to workspace 7 - missing address:", dockContextMenu.contextAppInfo)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Workspace 8")
+                enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+                onTriggered: {
+                    if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                        console.log("[DOCK MENU DEBUG] Moving window to workspace 8, address:", dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 8,address:${dockContextMenu.contextAppInfo.address}`)
+                    } else {
+                        console.log("[DOCK MENU DEBUG] Cannot move to workspace 8 - missing address:", dockContextMenu.contextAppInfo)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Workspace 9")
+                enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+                onTriggered: {
+                    if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                        console.log("[DOCK MENU DEBUG] Moving window to workspace 9, address:", dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 9,address:${dockContextMenu.contextAppInfo.address}`)
+                    } else {
+                        console.log("[DOCK MENU DEBUG] Cannot move to workspace 9 - missing address:", dockContextMenu.contextAppInfo)
+                    }
+                }
+            }
+            MenuItem {
+                text: qsTr("Workspace 10")
+                enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+                onTriggered: {
+                    if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                        console.log("[DOCK MENU DEBUG] Moving window to workspace 10, address:", dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 10,address:${dockContextMenu.contextAppInfo.address}`)
+                    } else {
+                        console.log("[DOCK MENU DEBUG] Cannot move to workspace 10 - missing address:", dockContextMenu.contextAppInfo)
+                    }
+                }
+            }
+        }
+        MenuItem {
+            text: qsTr("Toggle floating")
+            enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
+            onTriggered: {
+                if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                    Hyprland.dispatch(`togglefloating address:${dockContextMenu.contextAppInfo.address}`)
+                }
+            }
+        }
+        MenuSeparator {}
+        MenuItem {
+            text: qsTr("Close")
+            onTriggered: {
+                if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
+                    Hyprland.dispatch(`closewindow address:${dockContextMenu.contextAppInfo.address}`)
+                } else if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.pid) {
+                    Hyprland.dispatch(`closewindow pid:${dockContextMenu.contextAppInfo.pid}`)
+                } else if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.class) {
+                    Hyprland.dispatch(`closewindow class:${dockContextMenu.contextAppInfo.class}`)
+                }
+                if (dockContextMenu.contextDockItem && dockContextMenu.contextDockItem.closeApp) dockContextMenu.contextDockItem.closeApp()
+            }
+        }
+    }
+
+    function openDockContextMenu(appInfo, isPinned, dockItem, mouse) {
+        var finalAppInfo = appInfo
+        
+        // For pinned apps, we need to find the actual window to get the address
+        if (isPinned && appInfo && appInfo.class) {
+            // Build mapping for .desktop files to possible window classes
+            var mapping = {
+                'AffinityPhoto.desktop': ['photo.exe', 'Photo.exe', 'affinityphoto', 'AffinityPhoto'],
+                'AffinityDesigner.desktop': ['designer.exe', 'Designer.exe', 'affinitydesigner', 'AffinityDesigner'],
+                'microsoft-edge-dev': ['microsoft-edge-dev', 'msedge', 'edge'],
+                'vesktop': ['vesktop', 'discord'],
+                'steam-native': ['steam', 'steam.exe'],
+                'org.gnome.Nautilus': ['nautilus', 'org.gnome.nautilus'],
+                'lutris': ['lutris', 'net.lutris.lutris'],
+                'heroic': ['heroic', 'heroicgameslauncher'],
+                'obs': ['obs', 'com.obsproject.studio'],
+                'ptyxis': ['ptyxis', 'org.gnome.ptyxis']
+            };
+            
+            // Build list of possible window classes for this pinned app
+            var possibleClasses = [appInfo.class.toLowerCase()];
+            if (mapping[appInfo.class]) {
+                possibleClasses = possibleClasses.concat(mapping[appInfo.class].map(c => c.toLowerCase()));
+            }
+            
+            // Find the window for this pinned app
+            var targetWindow = HyprlandData.windowList.find(w => 
+                possibleClasses.includes(w.class.toLowerCase()) ||
+                possibleClasses.includes(w.initialClass.toLowerCase())
+            )
+            
+            if (targetWindow) {
+                // Use the actual window data instead of the simple appInfo
+                finalAppInfo = targetWindow
+                console.log("[DOCK MENU DEBUG] Found window for pinned app:", targetWindow.class, "address:", targetWindow.address)
+            } else {
+                console.log("[DOCK MENU DEBUG] No window found for pinned app:", appInfo.class)
+            }
+        }
+        
+        // Now set the context with the final app info
+        dockContextMenu.contextAppInfo = finalAppInfo
+        dockContextMenu.contextIsPinned = isPinned
+        dockContextMenu.contextDockItem = dockItem
+        
+        console.log("[DOCK MENU DEBUG] Opening context menu for app:", dockContextMenu.contextAppInfo ? dockContextMenu.contextAppInfo.class : "null")
+        console.log("[DOCK MENU DEBUG] App info:", JSON.stringify(dockContextMenu.contextAppInfo, null, 2))
+        console.log("[DOCK MENU DEBUG] Has address:", dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address ? "yes" : "no")
+        console.log("[DOCK MENU DEBUG] Address value:", dockContextMenu.contextAppInfo ? dockContextMenu.contextAppInfo.address : "undefined")
+        
+        // Just open the menu at default position for now
+        dockContextMenu.open()
     }
 }

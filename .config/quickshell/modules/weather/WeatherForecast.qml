@@ -216,11 +216,11 @@ Item {
                         weatherCache.lastLocation = locationKey;
                                         parseWeatherOpenMeteo(data);
                                     } catch (e) {
-                                        console.log("Open-Meteo parse error:", e);
+                                        // console.log("Open-Meteo parse error:", e);
                                         fallbackWeatherData("Parse error");
                                     }
                                 } else {
-                                    console.log("Open-Meteo request error:", xhr.status);
+                                    // console.log("Open-Meteo request error:", xhr.status);
                                     fallbackWeatherData("Request error");
                                 }
                             }
@@ -228,11 +228,11 @@ Item {
                         xhr.open("GET", url);
                         xhr.send();
                     } catch (e) {
-                        ///console.log("Geo data parse error:", e);
+                        // console.log("Geo data parse error:", e);
                         fallbackWeatherData("Location error");
                     }
                 } else {
-                    ///console.log("Geo request error:", geoXhr.status);
+                    // console.log("Geo request error:", geoXhr.status);
                     fallbackWeatherData("Location error");
                 }
             }
@@ -244,13 +244,13 @@ Item {
 
     function parseWeatherOpenMeteo(data) {
         var forecast = [];
-        console.log("Open-Meteo API returned data for", data.daily ? data.daily.time.length : 0, "days");
+        // console.log("Open-Meteo API returned data for", data.daily ? data.daily.time.length : 0, "days");
         
         // Extract current weather data
         if (data.current) {
             currentTemp = Math.round(data.current.temperature_2m) + "°C";
             feelsLike = Math.round(data.current.apparent_temperature) + "°C";
-            console.log("Current weather - Temp:", currentTemp, "Feels like:", feelsLike);
+            // console.log("Current weather - Temp:", currentTemp, "Feels like:", feelsLike);
         }
         
         if (data.daily && data.daily.time && data.daily.time.length > 0) {
@@ -276,7 +276,7 @@ Item {
                 });
             }
         }
-        console.log("Parsed forecast with", forecast.length, "days");
+        // console.log("Parsed forecast with", forecast.length, "days");
         forecastData = forecast;
         
         // Set locationDisplay from nearest_area if available
@@ -296,14 +296,14 @@ Item {
     function parseWeather(data) {
         // Parse wttr.in JSON for 3-day forecast (backup method)
         var forecast = [];
-        console.log("wttr.in API returned weather data with", data.weather ? data.weather.length : 0, "days");
+        // console.log("wttr.in API returned weather data with", data.weather ? data.weather.length : 0, "days");
         
         // Extract current weather data from wttr.in
         if (data.current_condition && data.current_condition[0]) {
             var current = data.current_condition[0];
             currentTemp = current.temp_C + "°C";
             feelsLike = current.FeelsLikeC + "°C";
-            console.log("Current weather (wttr.in) - Temp:", currentTemp, "Feels like:", feelsLike);
+            // console.log("Current weather (wttr.in) - Temp:", currentTemp, "Feels like:", feelsLike);
         }
         
         if (data.weather && data.weather.length > 0) {
@@ -329,7 +329,7 @@ Item {
                 });
             }
         }
-        console.log("Parsed forecast with", forecast.length, "days");
+        // console.log("Parsed forecast with", forecast.length, "days");
         forecastData = forecast;
         // Set locationDisplay from nearest_area if available
         if (data.nearest_area && data.nearest_area[0]) {
@@ -358,6 +358,6 @@ Item {
         weatherCache.lastWeatherJson = ""
         weatherCache.lastWeatherTimestamp = 0
         weatherCache.lastLocation = ""
-        console.log("Weather cache cleared")
+        // console.log("Weather cache cleared")
     }
 } 

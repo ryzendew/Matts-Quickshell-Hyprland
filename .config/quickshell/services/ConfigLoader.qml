@@ -21,12 +21,11 @@ Singleton {
 
     // Helper function for controlled logging
     function log(level, message) {
-        if (!ConfigOptions.logging.enabled) return
         if (level === "debug" && !ConfigOptions.logging.debug) return
         if (level === "info" && !ConfigOptions.logging.info) return
         if (level === "warning" && !ConfigOptions.logging.warning) return
         if (level === "error" && !ConfigOptions.logging.error) return
-        console.log(`[ConfigLoader][${level.toUpperCase()}] ${message}`)
+        // console.log(`[ConfigLoader][${level.toUpperCase()}] ${message}`)
     }
 
     function loadConfig() {
@@ -40,7 +39,7 @@ Singleton {
         
         try {
             log("info", "Loading configuration from: " + filePath)
-            configFileView.reload()
+        configFileView.reload()
         } catch (e) {
             lastError = e.toString()
             log("error", "Failed to load config: " + lastError)
@@ -82,12 +81,12 @@ Singleton {
         }
     }
 
-    FileView {
+	FileView { 
         id: configFileView
         path: root.filePath
         onTextChanged: {
             if (text !== "") {
-                delayedFileRead.start()
+            delayedFileRead.start()
             }
         }
     }

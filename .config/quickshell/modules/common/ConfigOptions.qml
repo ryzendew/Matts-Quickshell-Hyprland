@@ -15,7 +15,7 @@ Singleton {
     property QtObject logging: QtObject {
         property bool enabled: false // Master switch for all logging
         property bool debug: false   // Debug level logging
-        property bool info: false    // Info level logging
+        property bool info: true    // Info level logging
         property bool warning: true  // Warning level logging (default true for safety)
         property bool error: true    // Error level logging (default true for safety)
     }

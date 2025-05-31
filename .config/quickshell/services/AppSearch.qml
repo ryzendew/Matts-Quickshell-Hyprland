@@ -45,12 +45,8 @@ Singleton {
 
     // Helper function for controlled logging
     function log(level, message) {
-        if (!ConfigOptions.logging.enabled) return
         if (level === "debug" && !ConfigOptions.logging.debug) return
-        if (level === "info" && !ConfigOptions.logging.info) return
-        if (level === "warning" && !ConfigOptions.logging.warning) return
-        if (level === "error" && !ConfigOptions.logging.error) return
-        console.log(`[AppSearch][${level.toUpperCase()}] ${message}`)
+        // console.log(`[AppSearch][${level.toUpperCase()}] ${message}`)
     }
 
     // Cache management functions
@@ -191,5 +187,9 @@ Singleton {
 
         // Give up
         return str;
+    }
+
+    function _updateDesktopFilesModel(forceRefresh) {
+        // ... existing code ...
     }
 }

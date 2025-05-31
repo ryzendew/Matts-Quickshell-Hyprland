@@ -755,34 +755,36 @@ Item {
     }
 
     function updateNetworkList() {
-        console.log("Updating network list...")
-        const cmd = "nmcli -t -f SSID,SIGNAL,SECURITY,IN-USE device wifi list"
-        Io.shellCommand(cmd, (exitCode, stdout) => {
-            if (exitCode === 0) {
-                console.log("Network scan successful:", stdout)
-                networksModel.clear()
-                const networks = stdout.split("\n")
-                networks.forEach(line => {
-                    if (line) {
-                        const [ssid, signal, security, inUse] = line.split(":")
-                        if (ssid) {
-                            networksModel.append({
-                                ssid: ssid,
-                                strength: parseInt(signal) || 0,
-                                secured: security !== "",
-                                connected: inUse === "*",
-                                saved: false
-                            })
-                        }
+        if (!ConfigOptions.logging.enabled && !ConfigOptions.logging.info) {
+            // console.log("Updating network list...")
+        }
+        NetworkManager.scan().then((stdout) => {
+            // console.log("Network scan successful:", stdout)
+            const lines = stdout.trim().split('\n');
+            const newNetworks = [];
+            lines.forEach(line => {
+                if (line) {
+                    const [ssid, signal, security, inUse] = line.split(":")
+                    if (ssid) {
+                        newNetworks.push({
+                            ssid: ssid,
+                            strength: parseInt(signal) || 0,
+                            secured: security !== "",
+                            connected: inUse === "*",
+                            saved: false
+                        })
                     }
-                })
-                console.log("Added", networksModel.count, "networks to model")
-                updateSavedNetworks()
-            } else {
-                console.log("Failed to get network list, exit code:", exitCode)
-                showError("Failed to get network list")
+                }
+            })
+            networksModel.model = newNetworks;
+            if (!ConfigOptions.logging.enabled && !ConfigOptions.logging.info) {
+                // console.log("Added", networksModel.count, "networks to model")
             }
-        })
+            updateSavedNetworks()
+        }).catch((stderr, exitCode) => {
+            // console.log("Failed to get network list, exit code:", exitCode)
+            // TODO: Show error to user
+        });
     }
 
     function updateSavedNetworks() {
@@ -825,17 +827,16 @@ Item {
     }
 
     onIsActiveChanged: {
-        console.log("Network tab active state changed:", isActive)
         if (isActive) {
-            console.log("Network tab became active, updating list...")
             updateNetworkList()
         }
     }
 
     Component.onCompleted: {
-        console.log("NetworkPage completed, active:", isActive)
-        updateNetworkList()  // Always try to update initially
-        loadNetworkSettings()
+        if (isActive) {
+            updateNetworkList()
+            loadNetworkSettings()
+        }
     }
 
     // Add functions for settings
@@ -879,13 +880,13 @@ Item {
     }
 
     function showHiddenNetworkDialog() {
-        // TODO: Implement hidden network connection dialog
-        console.log("Hidden network dialog not implemented yet")
+        // TODO: Implement hidden network dialog
+        // console.log("Hidden network dialog not implemented yet")
     }
 
     function showSavedNetworksDialog() {
-        // TODO: Implement saved networks management dialog
-        console.log("Saved networks dialog not implemented yet")
+        // TODO: Implement saved networks dialog
+        // console.log("Saved networks dialog not implemented yet")
     }
 
     // Add function to load current settings

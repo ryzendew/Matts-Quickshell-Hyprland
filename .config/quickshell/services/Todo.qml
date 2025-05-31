@@ -68,15 +68,15 @@ Singleton {
         onLoaded: {
             const fileContents = todoFileView.text()
             root.list = JSON.parse(fileContents)
-            console.log("[To Do] File loaded")
+            // console.log("[To Do] File loaded")
         }
         onLoadFailed: (error) => {
             if(error == FileViewError.FileNotFound) {
-                console.log("[To Do] File not found, creating new file.")
+                // console.log("[To Do] File not found, creating new file.")
                 root.list = []
                 todoFileView.setText(JSON.stringify(root.list))
             } else {
-                console.log("[To Do] Error loading file: " + error)
+                // console.log("[To Do] Error loading file: " + error)
             }
         }
     }

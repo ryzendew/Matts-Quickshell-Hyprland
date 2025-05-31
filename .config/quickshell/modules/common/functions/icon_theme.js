@@ -6,11 +6,24 @@ function getCurrentIconTheme() {
 
 function setCurrentTheme(theme) {
     currentDetectedTheme = theme;
-    console.log("[ICON DEBUG] Theme set to:", theme);
+    // console.log("[ICON DEBUG] Theme set to:", theme);
+}
+
+function getCurrentTheme() {
+    return currentDetectedTheme;
 }
 
 function getIconPath(iconName, homeDir) {
-    if (!iconName) return "";
+    if (!homeDir) {
+        // console.error("[ICON DEBUG] homeDir not provided to getIconPath!");
+        return "";
+    }
+    
+    // console.log("[ICON DEBUG] Getting icon for:", iconName, "with homeDir:", homeDir);
+    
+    if (!iconName || iconName.trim() === "") {
+        return "";
+    }
 
     // Strip "file://" prefix if present
     if (homeDir && homeDir.startsWith("file://")) {
@@ -18,11 +31,11 @@ function getIconPath(iconName, homeDir) {
     }
 
     if (!homeDir) {
-        console.error("[ICON DEBUG] homeDir not provided to getIconPath!");
+        // console.error("[ICON DEBUG] homeDir not provided to getIconPath!");
         return ""; // Cannot proceed without homeDir
     }
     
-    console.log("[ICON DEBUG] Getting icon for:", iconName, "with homeDir:", homeDir);
+    // console.log("[ICON DEBUG] Getting icon for:", iconName, "with homeDir:", homeDir);
     
     // Icon variations to try (most specific first)
     var iconVariations = [iconName];
@@ -89,10 +102,10 @@ function getIconPath(iconName, homeDir) {
         }
     }
     
-    console.log("[ICON DEBUG] No specific icon found for:", iconName, ", trying generic fallback.");
+    // console.log("[ICON DEBUG] No specific icon found for:", iconName, ", trying generic fallback.");
     return "/usr/share/icons/breeze/apps/48/applications-other.svg"; // Generic fallback raw path
 }
 
 function refreshThemes() {
-    console.log("[ICON DEBUG] Theme refresh requested (currently no-op)");
+    // console.log("[ICON DEBUG] Theme refresh requested (currently no-op)");
 } 

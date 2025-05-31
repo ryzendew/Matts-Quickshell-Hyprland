@@ -17,12 +17,12 @@ QuickToggleButton {
             // Re-enable sleep by starting hypridle
             startHypridle.startDetached()
             isInhibiting = false
-            console.log("Sleep/idle enabled")
+            // console.log("Sleep/idle enabled")
         } else {
             // Disable sleep by killing hypridle
             killHypridle.startDetached()
             isInhibiting = true
-            console.log("Sleep/idle disabled")
+            // console.log("Sleep/idle disabled")
         }
     }
     

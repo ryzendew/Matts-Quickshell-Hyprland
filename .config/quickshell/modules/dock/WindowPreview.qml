@@ -44,23 +44,20 @@ PanelWindow {
     }
     
     // Debug screen info
-    onScreenChanged: {
-        console.log("[WINDOW PREVIEW DEBUG] Screen changed:", screen ? "defined" : "undefined");
-        if (screen && screen.geometry) {
-            console.log("[WINDOW PREVIEW DEBUG] Screen geometry:", screen.geometry.width, "x", screen.geometry.height);
-        }
+    QtObject {
+        // console.log("[WINDOW PREVIEW DEBUG] Screen changed:", screen ? "defined" : "undefined");
+        // console.log("[WINDOW PREVIEW DEBUG] Screen geometry:", screen.geometry.width, "x", screen.geometry.height);
     }
     
     Component.onCompleted: {
-        console.log("[WINDOW PREVIEW DEBUG] Component completed");
-        console.log("[WINDOW PREVIEW DEBUG] Available screens:", Quickshell.screens ? Quickshell.screens.length : "none");
-        if (Quickshell.screens && Quickshell.screens.length > 0) {
-            for (var i = 0; i < Quickshell.screens.length; i++) {
-                var s = Quickshell.screens[i];
-                console.log("[WINDOW PREVIEW DEBUG] Screen", i + ":", s.name, s.geometry.width + "x" + s.geometry.height);
-            }
+        // console.log("[WINDOW PREVIEW DEBUG] Component completed");
+        // console.log("[WINDOW PREVIEW DEBUG] Available screens:", Quickshell.screens ? Quickshell.screens.length : "none");
+        if (Quickshell.screens) {
+            Quickshell.screens.forEach((s, i) => {
+                // console.log("[WINDOW PREVIEW DEBUG] Screen", i + ":", s.name, s.geometry.width + "x" + s.geometry.height);
+            })
         }
-        console.log("[WINDOW PREVIEW DEBUG] Final screen width:", screenWidth);
+        // console.log("[WINDOW PREVIEW DEBUG] Final screen width:", screenWidth);
     }
     
     // Window properties
@@ -68,14 +65,19 @@ PanelWindow {
     color: "transparent"
     
     // Debug: track visibility changes
-    onVisibleChanged: {
-        console.log("[WINDOW PREVIEW DEBUG] Visibility changed to:", visible, "isVisible:", isVisible, "targetWindows.length:", targetWindows.length);
+    Connections {
+        target: root
+        function onVisibleChanged() {
+            // console.log("[WINDOW PREVIEW DEBUG] Visibility changed to:", visible, "isVisible:", isVisible, "targetWindows.length:", targetWindows.length);
+        }
     }
-    
-    onTargetWindowsChanged: {
-        console.log("[WINDOW PREVIEW DEBUG] Target windows changed:", targetWindows.length, "windows");
-        if (targetWindows.length > 0) {
-            console.log("[WINDOW PREVIEW DEBUG] First window:", JSON.stringify({class: targetWindows[0].class, title: targetWindows[0].title}));
+    Connections {
+        target: repeaterModel
+        function onTargetWindowsChanged() {
+            // console.log("[WINDOW PREVIEW DEBUG] Target windows changed:", targetWindows.length, "windows");
+            if (targetWindows.length > 0) {
+                // console.log("[WINDOW PREVIEW DEBUG] First window:", JSON.stringify({class: targetWindows[0].class, title: targetWindows[0].title}));
+            }
         }
     }
     
@@ -371,23 +373,23 @@ PanelWindow {
     }
     
     // Functions
-    function showPreviews(windows, className, position, itemW) {
-        console.log("[WINDOW PREVIEW DEBUG] showPreviews called with:", windows.length, "windows for class:", className);
-        console.log("[WINDOW PREVIEW DEBUG] Position:", position, "ItemWidth:", itemW);
-        console.log("[WINDOW PREVIEW DEBUG] Screen width:", screenWidth);
-        
-        targetWindows = windows || [];
-        appClass = className || "";
-        targetPosition = position || Qt.point(0, 0);
-        itemWidth = itemW || 0;
-        
-        if (targetWindows.length > 0) {
-            console.log("[WINDOW PREVIEW DEBUG] Setting isVisible to true");
-            console.log("[WINDOW PREVIEW DEBUG] Calculated left margin:", Math.max(10, Math.min(targetPosition.x - (implicitWidth / 2), screenWidth - implicitWidth - 10)));
-            hideTimer.stop();
+    function showPreviews(windows, position, itemW, className) {
+        hidePreviews()
+        // console.log("[WINDOW PREVIEW DEBUG] showPreviews called with:", windows.length, "windows for class:", className);
+        // console.log("[WINDOW PREVIEW DEBUG] Position:", position, "ItemWidth:", itemW);
+        // console.log("[WINDOW PREVIEW DEBUG] Screen width:", screenWidth);
+
+        if (windows.length > 0) {
+            targetClassName = className
+            targetWindows = windows;
+            // console.log("[WINDOW PREVIEW DEBUG] Setting isVisible to true");
             isVisible = true;
+            const targetPosition = previewsContent.mapToItem(root, position.x, position.y);
+            // console.log("[WINDOW PREVIEW DEBUG] Calculated left margin:", Math.max(10, Math.min(targetPosition.x - (implicitWidth / 2), screenWidth - implicitWidth - 10)));
+            previewsContent.x = Math.max(10, Math.min(targetPosition.x - (implicitWidth / 2), screenWidth - implicitWidth - 10));
+            previewsContent.y = targetPosition.y - previewsContent.height - 10; // Position above the dock item
         } else {
-            console.log("[WINDOW PREVIEW DEBUG] No windows to show");
+            // console.log("[WINDOW PREVIEW DEBUG] No windows to show");
         }
     }
     

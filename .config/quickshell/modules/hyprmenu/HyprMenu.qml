@@ -21,9 +21,52 @@ Scope {
 
     // Function to refresh desktop database and app list
     function refreshApps() {
-        console.log("[HYPRMENU] Refreshing desktop application database...")
-        
-        // Find the menuWindow from the Variants
+        if (AppSearch.available) {
+            // console.log("[HYPRMENU] Refreshing desktop application database...")
+            // console.log("[HYPRMENU] Calling AppSearch.refresh()...")
+            AppSearch.refresh().then(() => {
+                // console.log("[HYPRMENU] AppSearch.refresh() completed successfully.");
+            }).catch((error) => {
+                // console.log("[HYPRMENU] Error calling AppSearch.refresh():", error);
+            });
+        } else {
+            // Fallback or alternative refresh logic if AppSearch is not available
+            // This section might need adjustment based on how you want to handle this case
+            var window = null
+            for (var i = 0; i < root.children.length; i++) {
+                if (root.children[i].objectName === "menuWindow") {
+                    window = root.children[i]
+                    break
+                }
+            }
+            if (window) {
+                window.isRefreshing = true
+            }
+            try {
+                // AppSearch.refresh() // Original call, assuming it might still be tried or logged
+                // console.log("[HYPRMENU] AppSearch.refresh() called (fallback attempt)."); 
+                // Set a timer to stop the refreshing state
+                Qt.createQmlObject('
+                    import QtQuick
+                    Timer {
+                        interval: 2000
+                        running: true
+                        onTriggered: {
+                            root.onRefreshCompleted()
+                            destroy()
+                        }
+                    }
+                ', root)
+            } catch (error) {
+                // console.log("[HYPRMENU] Error in fallback refresh logic:", error);
+                if (window) {
+                    window.isRefreshing = false
+                }
+            }
+        }
+    }
+    
+    function onRefreshCompleted() {
         var window = null
         for (var i = 0; i < root.children.length; i++) {
             if (root.children[i].objectName === "menuWindow") {
@@ -31,48 +74,8 @@ Scope {
                 break
             }
         }
-        
         if (window) {
-            window.isRefreshing = true
-        }
-        
-        // Use AppSearch refresh function
-        try {
-            console.log("[HYPRMENU] Calling AppSearch.refresh()...")
-            AppSearch.refresh()
-            
-            // Set a timer to stop the refreshing state
-            Qt.createQmlObject('
-                import QtQuick
-                Timer {
-                    interval: 2000
-                    running: true
-                    onTriggered: {
-                        root.onRefreshCompleted()
-                        destroy()
-                    }
-                }
-            ', root)
-            
-        } catch (error) {
-            console.log("[HYPRMENU] Error calling AppSearch.refresh():", error)
-            if (window) {
-                window.isRefreshing = false
-            }
-        }
-    }
-    
-    function onRefreshCompleted() {
-        // Find the menuWindow and update it
-        for (var i = 0; i < root.children.length; i++) {
-            if (root.children[i].objectName === "menuWindow") {
-                var window = root.children[i]
-                if (window.updateFilteredApps) {
-                    window.updateFilteredApps()
-                }
-                window.isRefreshing = false
-                break
-            }
+            window.isRefreshing = false
         }
     }
 
@@ -284,7 +287,7 @@ Scope {
                                 hoverEnabled: true
                                 enabled: !menuWindow.isRefreshing
                                 onClicked: {
-                                    console.log("[HYPRMENU] Manual refresh requested")
+                                    // console.log("[HYPRMENU] Manual refresh requested")
                                     root.refreshApps()
                                 }
                             }
@@ -649,6 +652,11 @@ Scope {
             
             Component.onCompleted: {
                 updateFilteredApps()
+                // Connect to the global signal for manual refresh
+                GlobalSignals.connect(Quickshell, "hyprmenuRefreshApps", () => {
+                    // console.log("[HYPRMENU] Manual refresh requested")
+                    refreshApps()
+                })
             }
             
             // Close on escape key

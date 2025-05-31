@@ -49,7 +49,7 @@ Singleton {
         description: qsTr("Close active window")
 
         onPressed: {
-            Hyprland.dispatch("dispatch killactive")
+            Hyprland.dispatch("killactive")
         }
     }
 }

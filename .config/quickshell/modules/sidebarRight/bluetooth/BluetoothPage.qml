@@ -671,8 +671,8 @@ Item {
     }
 
     function showPairedDevicesDialog() {
-        // TODO: Implement paired devices management dialog
-        console.log("Paired devices dialog not implemented yet")
+        // Placeholder for future implementation
+        // console.log("Paired devices dialog not implemented yet")
     }
 
     function loadBluetoothSettings() {

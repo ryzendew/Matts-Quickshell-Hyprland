@@ -6,6 +6,9 @@ import Quickshell.Hyprland
 QtObject {
     id: root
 
+    // General blur enable/disable
+    property bool blurEnabled: true // Assuming this should exist
+
     // Bar settings
     property int barBlurAmount: 8
     property int barBlurPasses: 4
@@ -28,7 +31,7 @@ QtObject {
     property bool weatherXray: false
 
     // Save settings when they change
-    onBarBlurAmountChanged: Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+    onBarBlurAmountChanged: Hyprland.dispatch("exec killall -SIGUSR2 quickshell") // This might be for other theme elements
     onBarBlurPassesChanged: Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     onBarXrayChanged: Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     
@@ -36,20 +39,24 @@ QtObject {
         Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     }
     onDockBlurAmountChanged: {
-        Hyprland.dispatch("keyword decoration:blur:enabled 1")
-        Hyprland.dispatch("keyword decoration:blur:size " + dockBlurAmount)
-        Hyprland.dispatch("keyword layerrule blur,^(quickshell:dock:blur)$")
+        if (blurEnabled) {
+            Hyprland.dispatch("setvar decoration:blur:enabled 1")
+            Hyprland.dispatch("setvar decoration:blur:size " + dockBlurAmount)
+            Hyprland.dispatch("layerrule blur,^(quickshell:dock:blur)$")
+        }
         Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     }
     onDockBlurPassesChanged: {
-        Hyprland.dispatch("keyword decoration:blur:passes " + dockBlurPasses)
+        if (blurEnabled) {
+            Hyprland.dispatch("setvar decoration:blur:passes " + dockBlurPasses)
+        }
         Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     }
     onDockXrayChanged: {
         if (dockXray) {
-            Hyprland.dispatch("keyword layerrule xray on,^(quickshell:dock:blur)$")
+            Hyprland.dispatch("layerrule xray on,^(quickshell:dock:blur)$")
         } else {
-            Hyprland.dispatch("keyword layerrule xray off,^(quickshell:dock:blur)$")
+            Hyprland.dispatch("layerrule xray off,^(quickshell:dock:blur)$")
         }
         Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     }
@@ -59,11 +66,11 @@ QtObject {
     }
     onSidebarXrayChanged: {
         if (sidebarXray) {
-            Hyprland.dispatch("keyword layerrule xray on,^(quickshell:sidebarLeft)$")
-            Hyprland.dispatch("keyword layerrule xray on,^(quickshell:sidebarRight)$")
+            Hyprland.dispatch("layerrule xray on,^(quickshell:sidebarLeft)$")
+            Hyprland.dispatch("layerrule xray on,^(quickshell:sidebarRight)$")
         } else {
-            Hyprland.dispatch("keyword layerrule xray off,^(quickshell:sidebarLeft)$")
-            Hyprland.dispatch("keyword layerrule xray off,^(quickshell:sidebarRight)$")
+            Hyprland.dispatch("layerrule xray off,^(quickshell:sidebarLeft)$")
+            Hyprland.dispatch("layerrule xray off,^(quickshell:sidebarRight)$")
         }
         Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     }
@@ -72,41 +79,95 @@ QtObject {
         Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     }
     onWeatherBlurAmountChanged: {
-        Hyprland.dispatch("keyword decoration:blur:enabled 1")
-        Hyprland.dispatch("keyword decoration:blur:size " + weatherBlurAmount)
-        Hyprland.dispatch("keyword layerrule blur,^(quickshell:weather:blur)$")
+        if (blurEnabled) {
+            Hyprland.dispatch("setvar decoration:blur:enabled 1")
+            Hyprland.dispatch("setvar decoration:blur:size " + weatherBlurAmount)
+            Hyprland.dispatch("layerrule blur,^(quickshell:weather:blur)$")
+        }
         Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     }
     onWeatherBlurPassesChanged: {
-        Hyprland.dispatch("keyword decoration:blur:passes " + weatherBlurPasses)
+        if (blurEnabled) {
+            Hyprland.dispatch("setvar decoration:blur:passes " + weatherBlurPasses)
+        }
         Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     }
     onWeatherXrayChanged: {
         if (weatherXray) {
-            Hyprland.dispatch("keyword layerrule xray on,^(quickshell:weather:blur)$")
+            Hyprland.dispatch("layerrule xray on,^(quickshell:weather:blur)$")
         } else {
-            Hyprland.dispatch("keyword layerrule xray off,^(quickshell:weather:blur)$")
+            Hyprland.dispatch("layerrule xray off,^(quickshell:weather:blur)$")
         }
         Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
     }
 
-    Component.onCompleted: {
-        // Apply initial settings
-        Hyprland.dispatch("keyword decoration:blur:enabled 1")
-        Hyprland.dispatch("keyword decoration:blur:size " + dockBlurAmount)
-        Hyprland.dispatch("keyword decoration:blur:passes " + dockBlurPasses)
-        Hyprland.dispatch("keyword layerrule blur,^(quickshell:dock:blur)$")
-        // Apply sidebar xray settings if enabled
-        if (sidebarXray) {
-            Hyprland.dispatch("keyword layerrule xray on,^(quickshell:sidebarLeft)$")
-            Hyprland.dispatch("keyword layerrule xray on,^(quickshell:sidebarRight)$")
+    function updateDockBlurSettings() {
+        if (!blurEnabled) {
+            // Potentially disable blur for this layer or globally if desired
+            // Hyprland.dispatch("setvar decoration:blur:enabled 0") // Global disable
+            Hyprland.dispatch("layerrule unset,^(quickshell:dock:blur)$")
+            return;
         }
-        // Apply weather widget settings
-        Hyprland.dispatch("keyword decoration:blur:size " + weatherBlurAmount)
-        Hyprland.dispatch("keyword decoration:blur:passes " + weatherBlurPasses)
-        Hyprland.dispatch("keyword layerrule blur,^(quickshell:weather:blur)$")
+        Hyprland.dispatch("setvar decoration:blur:enabled 1")
+        Hyprland.dispatch("setvar decoration:blur:size " + dockBlurAmount)
+        Hyprland.dispatch("setvar decoration:blur:passes " + dockBlurPasses)
+        Hyprland.dispatch("layerrule blur,^(quickshell:dock:blur)$")
+        if (dockXray) {
+            Hyprland.dispatch("layerrule xray on,^(quickshell:dock:blur)$")
+        } else {
+            Hyprland.dispatch("layerrule xray off,^(quickshell:dock:blur)$")
+        }
+    }
+
+    function updateWeatherBlurSettings() {
+        if (!blurEnabled) {
+            // Hyprland.dispatch("setvar decoration:blur:enabled 0") // Global disable
+            Hyprland.dispatch("layerrule unset,^(quickshell:weather:blur)$")
+            return;
+        }
+        Hyprland.dispatch("setvar decoration:blur:enabled 1")
+        Hyprland.dispatch("setvar decoration:blur:size " + weatherBlurAmount)
+        Hyprland.dispatch("setvar decoration:blur:passes " + weatherBlurPasses)
+        Hyprland.dispatch("layerrule blur,^(quickshell:weather:blur)$")
         if (weatherXray) {
-            Hyprland.dispatch("keyword layerrule xray on,^(quickshell:weather:blur)$")
+            Hyprland.dispatch("layerrule xray on,^(quickshell:weather:blur)$")
+        } else {
+            Hyprland.dispatch("layerrule xray off,^(quickshell:weather:blur)$")
+        }
+    }
+    
+    function updateBarBlurSettings() {
+        // Similar logic for bar if it has its own blur settings controlled here
+        // For now, bar settings seem to trigger a full reload via killall
+        // If direct Hyprland control is needed, it would be:
+        if (!blurEnabled) {
+            Hyprland.dispatch("layerrule unset,^(quickshell:bar:blur)$")
+            return;
+        }
+        Hyprland.dispatch("setvar decoration:blur:enabled 1") // Ensure blur is on
+        // Hyprland.dispatch("setvar decoration:blur:size " + barBlurAmount) // If applicable
+        // Hyprland.dispatch("setvar decoration:blur:passes " + barBlurPasses) // If applicable
+        Hyprland.dispatch("layerrule blur,^(quickshell:bar:blur)$")
+         if (barXray) {
+            Hyprland.dispatch("layerrule xray on,^(quickshell:bar:blur)$")
+        } else {
+            Hyprland.dispatch("layerrule xray off,^(quickshell:bar:blur)$")
+        }
+    }
+
+
+    // Apply initial settings
+    Component.onCompleted: {
+        updateDockBlurSettings()
+        updateWeatherBlurSettings()
+        updateBarBlurSettings() 
+        // XRay for sidebars, if they don't have separate blur controls like dock/weather/bar
+        if (sidebarXray) {
+            Hyprland.dispatch("layerrule xray on,^(quickshell:sidebarLeft)$")
+            Hyprland.dispatch("layerrule xray on,^(quickshell:sidebarRight)$")
+        } else {
+            Hyprland.dispatch("layerrule xray off,^(quickshell:sidebarLeft)$")
+            Hyprland.dispatch("layerrule xray off,^(quickshell:sidebarRight)$")
         }
     }
 } 

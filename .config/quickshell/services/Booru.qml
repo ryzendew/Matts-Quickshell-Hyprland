@@ -322,7 +322,7 @@ Singleton {
                     newResponse.message = response.length > 0 ? "" : root.failMessage
                     
                 } catch (e) {
-                    console.log("[Booru] Failed to parse response: " + e)
+                    // console.log("[Booru] Failed to parse response: " + e)
                     newResponse.message = root.failMessage
                 } finally {
                     root.runningRequests--;
@@ -330,7 +330,7 @@ Singleton {
                 }
             }
             else if (xhr.readyState === XMLHttpRequest.DONE) {
-                console.log("[Booru] Request failed with status: " + xhr.status)
+                // console.log("[Booru] Request failed with status: " + xhr.status)
             }
         }
 
@@ -346,7 +346,7 @@ Singleton {
             root.runningRequests++;
             xhr.send()
         } catch (error) {
-            console.log("Could not set User-Agent:", error)
+            // console.log("Could not set User-Agent:", error)
         } 
     }
 
@@ -375,11 +375,11 @@ Singleton {
                     // console.log("[Booru] Mapped response: " + JSON.stringify(response))
                     root.tagSuggestion(query, response)
                 } catch (e) {
-                    console.log("[Booru] Failed to parse response: " + e)
+                    // console.log("[Booru] Failed to parse response: " + e)
                 }
             }
             else if (xhr.readyState === XMLHttpRequest.DONE) {
-                console.log("[Booru] Request failed with status: " + xhr.status)
+                // console.log("[Booru] Request failed with status: " + xhr.status)
             }
         }
 
@@ -390,7 +390,7 @@ Singleton {
             }
             xhr.send()
         } catch (error) {
-            console.log("Could not set User-Agent:", error)
+            // console.log("Could not set User-Agent:", error)
         } 
     }
 }

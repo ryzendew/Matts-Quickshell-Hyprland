@@ -18,7 +18,7 @@ Item {
     // Get user's home directory from QML context using StandardPaths
     readonly property string homeDirectory: {
         var path = StandardPaths.writableLocation(StandardPaths.HomeLocation);
-        console.log("[SYSTEMICON DEBUG] Initialized homeDirectory:", path);
+        // console.log("[SYSTEMICON DEBUG] Initialized homeDirectory:", path);
         return path;
     }
     
@@ -47,7 +47,7 @@ Item {
                 var line = lines[i].trim()
                 if (line.startsWith('Icon=')) {
                     var iconValue = line.substring(5).trim()
-                    console.log("[SYSTEMICON DEBUG] Found icon in desktop file:", iconValue)
+                    // console.log("[SYSTEMICON DEBUG] Found icon in desktop file:", iconValue)
                     
                     if (iconValue.startsWith('/')) { // Absolute path
                         resolvedIconPath = iconValue
@@ -124,15 +124,15 @@ Item {
             sourcePath = resolvedIconPath;
         } else {
             var bestName = getBestIconNameToResolve();
-            console.log("[SYSTEMICON DEBUG] Calling IconTheme.getIconPath with bestName:", bestName, "homeDirectory:", homeDirectory);
+            // console.log("[SYSTEMICON DEBUG] Calling IconTheme.getIconPath with bestName:", bestName, "homeDirectory:", homeDirectory);
             sourcePath = IconTheme.getIconPath(bestName, homeDirectory);
-            console.log("[SYSTEMICON DEBUG] IconTheme.js returned path:", sourcePath, "for bestName:", bestName, "(original iconName:", iconName, ")");
+            // console.log("[SYSTEMICON DEBUG] IconTheme.js returned path:", sourcePath, "for bestName:", bestName, "(original iconName:", iconName, ")");
         }
 
         if (sourcePath && sourcePath !== "") {
             mainIcon.source = formatPathForImageSource(sourcePath);
         } else {
-            console.warn("[SYSTEMICON DEBUG] No valid icon path found for (updateIconSource):", iconName, ", attempting final fallback.");
+            // console.warn("[SYSTEMICON DEBUG] No valid icon path found for (updateIconSource):", iconName, ", attempting final fallback.");
             var fallbackPath = IconTheme.getIconPath(fallbackIcon, homeDirectory);
             mainIcon.source = formatPathForImageSource(fallbackPath); // Fallback icon
         }
@@ -140,11 +140,11 @@ Item {
     
     // Watch for iconName changes
     onIconNameChanged: {
-        console.log("[SYSTEMICON DEBUG] iconName changed to:", iconName)
+        // console.log("[SYSTEMICON DEBUG] iconName changed to:", iconName)
         resolvedIconPath = "" // Reset resolved path
         
         if (!iconName || iconName.trim() === "") {
-            console.log("[SYSTEMICON DEBUG] iconName is empty, using fallback directly.")
+            // console.log("[SYSTEMICON DEBUG] iconName is empty, using fallback directly.")
             mainIcon.source = formatPathForImageSource(IconTheme.getIconPath(fallbackIcon, homeDirectory));
             return
         }
@@ -152,7 +152,7 @@ Item {
         var nameToProcess = iconName.toString().trim()
         if (windowClassToDesktopFile[nameToProcess]) {
             nameToProcess = windowClassToDesktopFile[nameToProcess]
-            console.log("[SYSTEMICON DEBUG] Mapped window class", iconName, "to desktop file", nameToProcess)
+            // console.log("[SYSTEMICON DEBUG] Mapped window class", iconName, "to desktop file", nameToProcess)
         }
         
         if (nameToProcess.endsWith('.desktop')) {
@@ -190,7 +190,7 @@ Item {
     }
     
     Component.onCompleted: {
-        console.log("[SYSTEMICON DEBUG] Component.onCompleted for iconName:", iconName, "homeDirectory is:", homeDirectory);
+        // console.log("[SYSTEMICON DEBUG] Component.onCompleted for iconName:", iconName, "homeDirectory is:", homeDirectory);
         // mainIcon.source = "file:///usr/share/icons/hicolor/48x48/apps/utilities-terminal.png"; // REVERTED HARDCODED TEST
         
         if (iconName && iconName.trim() !== "") {
@@ -210,19 +210,19 @@ Item {
         onStatusChanged: {
             // Only log if source is set or status is not Image.Null (0), or if it's an error/ready state.
             if (source.toString() !== "" || status !== Image.Null || status === Image.Error || status === Image.Ready) {
-                console.log("[SYSTEMICON DEBUG] mainIcon.source:", source, "status:", status, "(original iconName:", root.iconName, ")");
+                // console.log("[SYSTEMICON DEBUG] mainIcon.source:", source, "status:", status, "(original iconName:", root.iconName, ")");
             }
             if (status === Image.Error) {
-                console.warn("[SYSTEMICON DEBUG] Icon FAILED to load:", source, "Original iconName:", root.iconName);
+                // console.warn("[SYSTEMICON DEBUG] Icon FAILED to load:", source, "Original iconName:", root.iconName);
                 tryFallbackIcons();
             } else if (status === Image.Ready) {
-                console.log("[SYSTEMICON DEBUG] Icon loaded successfully:", source, "(original iconName:", root.iconName, ")");
+                // console.log("[SYSTEMICON DEBUG] Icon loaded successfully:", source, "(original iconName:", root.iconName, ")");
             }
         }
     }
     
     function tryFallbackIcons() {
-        console.log("[SYSTEMICON DEBUG] tryFallbackIcons for original iconName:", root.iconName);
+        // console.log("[SYSTEMICON DEBUG] tryFallbackIcons for original iconName:", root.iconName);
         var fallbacks = [
             root.fallbackIcon, // User-defined fallback first
             "application-x-executable",
@@ -240,13 +240,13 @@ Item {
             var formattedFallbackPath = formatPathForImageSource(fallbackPath);
 
             if (formattedFallbackPath && formattedFallbackPath !== "" && formattedFallbackPath !== mainIcon.source) {
-                console.log("[SYSTEMICON DEBUG] Attempting fallback with:", fbName, "-> Path:", formattedFallbackPath);
+                // console.log("[SYSTEMICON DEBUG] Attempting fallback with:", fbName, "-> Path:", formattedFallbackPath);
                 mainIcon.source = formattedFallbackPath;
                 // Check status again for this new source if needed, or rely on onStatusChanged
                 return;
             }
         }
-        console.warn("[SYSTEMICON DEBUG] All fallback attempts ultimately FAILED for original iconName:", root.iconName);
+        // console.warn("[SYSTEMICON DEBUG] All fallback attempts ultimately FAILED for original iconName:", root.iconName);
         // As a last resort, use a known existing system icon directly if all else fails.
         mainIcon.source = formatPathForImageSource("/usr/share/icons/hicolor/48x48/apps/gnome-settings.png");
     }

@@ -127,17 +127,17 @@ Singleton {
                 maxId = Math.max(maxId, notif.id)
             })
 
-            console.log("[Notifications] File loaded")
+            // console.log("[Notifications] File loaded")
             root.idOffset = maxId
             root.initDone()
         }
         onLoadFailed: (error) => {
             if(error == FileViewError.FileNotFound) {
-                console.log("[Notifications] File not found, creating new file.")
+                // console.log("[Notifications] File not found, creating new file.")
                 root.list = []
                 notifFileView.setText(JSON.stringify(root.list))
             } else {
-                console.log("[Notifications] Error loading file: " + error)
+                // console.log("[Notifications] Error loading file: " + error)
             }
         }
     }

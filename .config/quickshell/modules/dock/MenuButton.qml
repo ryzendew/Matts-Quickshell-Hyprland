@@ -21,17 +21,17 @@ Button {
         readonly property color targetColor: {
             if (button.down && button.enabled) {
                 return Qt.rgba(
-                    Appearance.colors.colPrimary.r,
-                    Appearance.colors.colPrimary.g,
-                    Appearance.colors.colPrimary.b,
-                    0.2
+            Appearance.colors.colPrimary.r,
+            Appearance.colors.colPrimary.g,
+            Appearance.colors.colPrimary.b,
+            0.2
                 )
             } else if (button.hovered && button.enabled) {
                 return Qt.rgba(
-                    Appearance.colors.colPrimary.r,
-                    Appearance.colors.colPrimary.g,
-                    Appearance.colors.colPrimary.b,
-                    0.1
+            Appearance.colors.colPrimary.r,
+            Appearance.colors.colPrimary.g,
+            Appearance.colors.colPrimary.b,
+            0.1
                 )
             } else {
                 return "transparent"
@@ -59,11 +59,11 @@ Button {
                 return Appearance.colors.colOnLayer0
             } else {
                 return Qt.rgba(
-                    Appearance.colors.colOnLayer0.r,
-                    Appearance.colors.colOnLayer0.g,
-                    Appearance.colors.colOnLayer0.b,
-                    0.5
-                )
+            Appearance.colors.colOnLayer0.r,
+            Appearance.colors.colOnLayer0.g,
+            Appearance.colors.colOnLayer0.b,
+            0.5
+        )
             }
         }
         

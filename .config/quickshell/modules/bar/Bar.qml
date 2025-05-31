@@ -24,26 +24,32 @@ Scope {
     Connections {
         target: AppearanceSettingsState
         function onBarBlurAmountChanged() {
-            // Update Hyprland blur rules for bar
-            Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.barBlurPasses}`)
-            Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.barBlurAmount}`)
-            Hyprland.dispatch(`keyword layerrule blur,^(quickshell:bar:blur)$`)
-            // Reload Quickshell
+            if (AppearanceSettingsState.blurEnabled) {
+                Hyprland.dispatch(`setvar decoration:blur:size ${AppearanceSettingsState.barBlurAmount}`)
+            }
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
         function onBarBlurPassesChanged() {
-            Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.barBlurPasses}`)
-            Hyprland.dispatch(`keyword layerrule blur,^(quickshell:bar:blur)$`)
-            // Reload Quickshell
+            if (AppearanceSettingsState.blurEnabled) {
+                Hyprland.dispatch(`setvar decoration:blur:passes ${AppearanceSettingsState.barBlurPasses}`)
+            }
+            Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+        }
+        function onBarXrayChanged() {
+            // AppearanceSettingsState.updateBarBlurSettings() should handle the layerrule for xray
+            Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
+        }
+        function onBlurEnabledChanged() {
+            // This will call updateBarBlurSettings in AppearanceSettingsState, which handles unsetting/setting the layerrule
+            AppearanceSettingsState.updateBarBlurSettings()
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
     }
 
+    // Initial blur setup
     Component.onCompleted: {
-        // Apply initial blur settings
-        Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.barBlurPasses}`)
-        Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.barBlurAmount}`)
-        Hyprland.dispatch(`keyword layerrule blur,^(quickshell:bar:blur)$`)
+        // AppearanceSettingsState.updateBarBlurSettings() handles initial setup too
+        AppearanceSettingsState.updateBarBlurSettings()
     }
 
     Variants { // For each monitor

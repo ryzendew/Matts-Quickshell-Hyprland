@@ -16,7 +16,7 @@ Rectangle {
     color: Appearance.colors.colLayer1
 
     // Debug mode - prevent closing
-    property bool debugMode: true  // Set to true to prevent closing
+    property bool debugMode: false  // Set to true to prevent closing
 
     // Block ALL closing attempts while in debug mode
     Connections {

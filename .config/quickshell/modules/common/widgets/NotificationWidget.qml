@@ -26,6 +26,8 @@ Item {
     property string groupName: ""
     property int groupCount: 1
     property bool isGrouped: groupCount > 1
+    property var iconCache: ({})
+    property var imageCache: ({})
 
     property var notificationXAnimation: Appearance.animation.elementMoveEnter
 
@@ -346,15 +348,39 @@ Item {
                             anchors.fill: parent
                             sourceComponent: Item {
                                 anchors.fill: parent
+                                property string originalSource: notificationObject.image
+                                property string fallbackIconSource: Quickshell.iconPath("image-missing", "dialog-error")
+
                                 Image {
+                                    id: notificationActualImage
                                     anchors.fill: parent
                                     asynchronous: true
-                                    source: {
-                                        const imagePath = notificationObject.image
-                                        if (!imageCache[imagePath]) {
-                                            imageCache[imagePath] = true
+                                    source: parent.originalSource
+                                    smooth: true // Add smooth scaling
+                                    mipmap: true // Add mipmap for better downscaling
+
+                                    onStatusChanged: {
+                                        if (status === Image.Error) {
+                                            console.warn("[NotificationWidget] Failed to load image: " + parent.originalSource + ". Using fallback.");
+                                            // Store failure in imageCache to potentially avoid retrying or to use fallback immediately next time
+                                            root.imageCache[parent.originalSource] = { failed: true }; 
+                                            source = parent.fallbackIconSource;
+                                        } else if (status === Image.Ready) {
+                                            // Optionally, confirm success in cache, though not strictly needed if provider is reliable
+                                            root.imageCache[parent.originalSource] = { failed: false, path: source }; 
                                         }
-                                        return imagePath
+                                    }
+
+                                    Component.onCompleted: {
+                                        // Check cache on component completion for this specific source
+                                        if (root.imageCache[parent.originalSource] && root.imageCache[parent.originalSource].failed) {
+                                            console.log("[NotificationWidget] Image previously failed, using fallback immediately: " + parent.originalSource);
+                                            source = parent.fallbackIconSource;
+                                        } else if (root.imageCache[parent.originalSource] && !root.imageCache[parent.originalSource].failed && root.imageCache[parent.originalSource].path) {
+                                            // This part is tricky with image providers. If qsimage can return a direct path, this could work.
+                                            // For now, just rely on the provider or the error state.
+                                            // source = root.imageCache[parent.originalSource].path;
+                                        }
                                     }
                                 }
                             }
