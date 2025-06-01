@@ -19,6 +19,8 @@ function getIconPath(iconName, homeDir) {
         return "";
     }
     
+    // console.log("[ICON DEBUG] Getting icon for:", iconName, "with homeDir:", homeDir);
+    
     if (!iconName || iconName.trim() === "") {
         return "";
     }
@@ -29,8 +31,11 @@ function getIconPath(iconName, homeDir) {
     }
 
     if (!homeDir) {
+        // console.error("[ICON DEBUG] homeDir not provided to getIconPath!");
         return ""; // Cannot proceed without homeDir
     }
+    
+    // console.log("[ICON DEBUG] Getting icon for:", iconName, "with homeDir:", homeDir);
     
     // Icon variations to try (most specific first)
     var iconVariations = [iconName];
@@ -64,7 +69,10 @@ function getIconPath(iconName, homeDir) {
         }
     }
     
-    var themes = ["Tela-circle", "Adwaita"];
+    var themes = [
+        "Tela-circle", "Tela-circle-blue", "Tela-circle-grey", "Tela-circle-manjaro",
+        "Tela-circle-nord", "Tela-circle-black", "breeze-plus", "breeze-plus-dark", "breeze", "breeze-dark", "hicolor", "Adwaita"
+    ];
     var iconBasePaths = [
         homeDir + "/.local/share/icons",
         homeDir + "/.icons",
@@ -74,7 +82,6 @@ function getIconPath(iconName, homeDir) {
     var sizeDirs = ["scalable/apps", "48x48/apps", "64x64/apps", "apps/48", "128x128/apps"];
     var extensions = [".svg", ".png"];
 
-    // Try Tela-circle first, then fall back to Adwaita
     for (var t = 0; t < themes.length; t++) {
         var theme = themes[t];
         for (var b = 0; b < iconBasePaths.length; b++) {
@@ -86,17 +93,17 @@ function getIconPath(iconName, homeDir) {
                     for (var e = 0; e < extensions.length; e++) {
                         var ext = extensions[e];
                         var fullPath = basePath + "/" + theme + "/" + sizeDir + "/" + iconVar + ext;
-                        if (Qt.fileExists(fullPath)) {
-                            return fullPath;
-                        }
+                        // Let QML handle file existence check via Image.status
+                        // console.log("[ICON DEBUG] Returning candidate path:", fullPath);
+                        return fullPath; // Return raw path
                     }
                 }
             }
         }
     }
     
-    // If no icon found in either theme, return Adwaita's generic icon
-    return "/usr/share/icons/Adwaita/48x48/apps/applications-other.png";
+    // console.log("[ICON DEBUG] No specific icon found for:", iconName, ", trying generic fallback.");
+    return "/usr/share/icons/breeze/apps/48/applications-other.svg"; // Generic fallback raw path
 }
 
 function refreshThemes() {
