@@ -901,7 +901,7 @@ EOF
     print_status "Setting up theme directory structure..."
     mkdir -p ~/.config/hypr/assets/{themes,wallpapers}
     
-    # Install custom meta-packages from ArchPackages directory
+    # Install custom meta-packages from Arch-packages directory (match end-4 script exactly)
     print_status "Installing custom meta-packages from Arch-packages..."
     metapkgs=(illogical-impulse-{audio,backlight,basic,fonts-themes,kde,portal,python,screencapture,toolkit,widgets})
     metapkgs+=(illogical-impulse-hyprland)
@@ -912,24 +912,23 @@ EOF
 
     for pkg in "${metapkgs[@]}"; do
       found=false
+      # Try to install prebuilt package
       for file in ./Arch-packages/${pkg}-*.pkg.tar.*; do
         if [[ -f "$file" ]]; then
           print_status "Installing meta-package: $file"
           sudo pacman -U --noconfirm "$file"
           found=true
+          break
         fi
       done
-      if [[ "$found" = false ]]; then
-        print_warning "Meta-package not found: ./Arch-packages/${pkg}-*.pkg.tar.*"
+      # If not found, try to build from PKGBUILD
+      if [[ "$found" = false && -d ./Arch-packages/$pkg && -f ./Arch-packages/$pkg/PKGBUILD ]]; then
+        print_status "Building and installing meta-package from PKGBUILD: $pkg"
+        (cd "./Arch-packages/$pkg" && makepkg -si --noconfirm)
+        found=true
       fi
-    done
-
-    # Auto-build and install all PKGBUILDs in Arch-packages subdirectories
-    print_status "Building and installing all PKGBUILDs in Arch-packages (if any)..."
-    for dir in Arch-packages/*/; do
-      if [[ -f "$dir/PKGBUILD" ]]; then
-        print_status "Building and installing package in $dir"
-        (cd "$dir" && makepkg -si --noconfirm)
+      if [[ "$found" = false ]]; then
+        print_warning "Meta-package not found and no PKGBUILD to build: $pkg"
       fi
     done
 
