@@ -260,7 +260,7 @@ official_packages=(
     qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat qt6-shadertools qt6-languageserver qt6-charts qt6-webengine qt6-webchannel qt6-websockets qt6-connectivity qt6-serialport
     qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt5-wayland
     grim slurp wl-clipboard wtype brightnessctl ddcutil mako libnotify upower acpid htop btop fastfetch file-roller unzip zip 7zip gvfs gvfs-mtp gvfs-gphoto2 ptyxis nautilus geoclue gammastep fcitx5 gnome-keyring polkit-gnome easyeffects cliphist
-    ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme gtk3 gtk4 adwaita-icon-theme qt6ct qt5ct
+    ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme gtk3 gtk4 adwaita-icon-theme adwaita-icon-theme-legacy adwaita-cursors adwaita-fonts qt6ct qt5ct
     cmake ninja pkgconf make gcc git firefox
     jemalloc cli11 libdrm mesa vulkan-icd-loader vulkan-headers libxcb xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor libxkbcommon libxkbcommon-x11 libpipewire libglvnd syntax-highlighting
     xorg-xwayland xorg-xlsclients xorg-xrandr xorg-xinput xorg-xdpyinfo libx11 libxcomposite libxcursor libxdamage libxext libxfixes libxi libxinerama libxrandr libxrender libxss libxtst
@@ -269,6 +269,7 @@ official_packages=(
 aur_packages=(
     matugen-bin grimblast hyprswitch nwg-look swww hypridle hyprlock hyprpaper hyprpicker wlogout better-control easyeffects-bin google-breakpad nwg-displays dbus-update-activation-environment
     adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git
+    nautilus-open-in-ptyxis vesktop-bin
 )
 
 # Aggregate all depends and makedepends from PKGBUILDs
@@ -413,7 +414,7 @@ install_arch_packages() {
         qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat qt6-shadertools qt6-languageserver qt6-charts qt6-webengine qt6-webchannel qt6-websockets qt6-connectivity qt6-serialport
         qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt5-wayland
         grim slurp wl-clipboard wtype brightnessctl ddcutil mako libnotify upower acpid htop btop fastfetch file-roller unzip zip 7zip gvfs gvfs-mtp gvfs-gphoto2 ptyxis nautilus geoclue gammastep fcitx5 gnome-keyring polkit-gnome easyeffects cliphist
-        ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme gtk3 gtk4 adwaita-icon-theme qt6ct qt5ct
+        ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme gtk3 gtk4 adwaita-icon-theme adwaita-icon-theme-legacy adwaita-cursors adwaita-fonts qt6ct qt5ct
         cmake ninja pkgconf make gcc git jemalloc cli11 libdrm mesa vulkan-icd-loader vulkan-headers libxcb xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor libxkbcommon libxkbcommon-x11 libpipewire libglvnd syntax-highlighting
         xorg-xwayland xorg-xlsclients xorg-xrandr xorg-xinput xorg-xdpyinfo libx11 libxcomposite libxcursor libxdamage libxext libxfixes libxi libxinerama libxrandr libxrender libxss libxtst
         thunar thunar-volman thunar-archive-plugin lxqt-policykit
@@ -435,11 +436,42 @@ install_arch_packages() {
     # Install Tela Circle icon theme from GitHub
     print_status "Installing Tela Circle icon theme..."
     TEMP_TELA_DIR="/tmp/Tela-circle-icon-theme"
-    rm -rf "$TEMP_TELA_DIR" 2>/dev/null || true
-    git clone --depth=1 https://github.com/vinceliuice/Tela-circle-icon-theme.git "$TEMP_TELA_DIR" || { print_error "Failed to clone Tela icon theme repository."; exit 1; }
-    (cd "$TEMP_TELA_DIR" && sudo ./install.sh -a) || { print_error "Tela icon theme installation failed."; exit 1; }
-    rm -rf "$TEMP_TELA_DIR"
-    print_success "Tela Circle icon theme installed successfully."
+    if [ -d "$TEMP_TELA_DIR" ]; then
+        print_status "Cleaning up existing Tela directory..."
+        rm -rf "$TEMP_TELA_DIR"
+    fi
+
+    print_status "Cloning Tela Circle icon theme repository..."
+    if ! git clone --depth=1 https://github.com/vinceliuice/Tela-circle-icon-theme.git "$TEMP_TELA_DIR"; then
+        print_error "Failed to clone Tela icon theme repository."
+        print_error "Trying alternative repository..."
+        if ! git clone --depth=1 https://github.com/vinceliuice/Tela-icon-theme.git "$TEMP_TELA_DIR"; then
+            print_error "Failed to clone alternative repository."
+            print_error "Skipping Tela icon theme installation."
+        else
+            print_success "Successfully cloned alternative repository."
+        fi
+    else
+        print_success "Successfully cloned Tela Circle icon theme repository."
+    fi
+
+    if [ -d "$TEMP_TELA_DIR" ]; then
+        print_status "Installing Tela Circle icon theme..."
+        if ! (cd "$TEMP_TELA_DIR" && sudo ./install.sh -a); then
+            print_error "Failed to install Tela icon theme."
+            print_error "Trying alternative installation method..."
+            if ! (cd "$TEMP_TELA_DIR" && sudo ./install.sh -c green -a); then
+                print_error "Failed to install Tela icon theme with alternative method."
+                print_error "Skipping Tela icon theme installation."
+            else
+                print_success "Successfully installed Tela icon theme with alternative method."
+            fi
+        else
+            print_success "Successfully installed Tela Circle icon theme."
+        fi
+        print_status "Cleaning up temporary files..."
+        rm -rf "$TEMP_TELA_DIR"
+    fi
 
     # Enable essential system services
     print_status "Enabling essential system services..."
@@ -517,9 +549,43 @@ install_arch_packages() {
 XDG_CURRENT_DESKTOP=Hyprland
 XDG_SESSION_TYPE=wayland
 XDG_SESSION_DESKTOP=Hyprland
+GTK_THEME=Adwaita:dark
+GTK2_RC_FILES=/usr/share/themes/Adwaita-dark/gtk-2.0/gtkrc
 EOF
     fi
-    
+
+    # Force GTK dark mode
+    print_status "Setting up GTK dark mode..."
+    mkdir -p ~/.config/gtk-3.0
+    cat > ~/.config/gtk-3.0/settings.ini << EOF
+[Settings]
+gtk-application-prefer-dark-theme=true
+gtk-theme-name=Adwaita-dark
+gtk-icon-theme-name=Adwaita
+gtk-font-name=Sans 10
+gtk-cursor-theme-name=Adwaita
+gtk-toolbar-style=GTK_TOOLBAR_BOTH
+gtk-toolbar-icon-size=GTK_ICON_SIZE_LARGE_TOOLBAR
+gtk-button-images=1
+gtk-menu-images=1
+gtk-enable-animations=1
+EOF
+
+    mkdir -p ~/.config/gtk-4.0
+    cat > ~/.config/gtk-4.0/settings.ini << EOF
+[Settings]
+gtk-application-prefer-dark-theme=true
+gtk-theme-name=Adwaita-dark
+gtk-icon-theme-name=Adwaita
+gtk-font-name=Sans 10
+gtk-cursor-theme-name=Adwaita
+gtk-toolbar-style=GTK_TOOLBAR_BOTH
+gtk-toolbar-icon-size=GTK_ICON_SIZE_LARGE_TOOLBAR
+gtk-button-images=1
+gtk-menu-images=1
+gtk-enable-animations=1
+EOF
+
     # Set up Fish shell auto-start
     print_status "Setting up Fish shell auto-start..."
     if command -v fish &> /dev/null; then
