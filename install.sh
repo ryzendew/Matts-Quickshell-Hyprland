@@ -480,7 +480,16 @@ install_arch_packages() {
         htop btop fastfetch \
         file-roller unzip zip 7zip \
         gvfs gvfs-mtp gvfs-gphoto2 \
-        ptyxis nautilus
+        ptyxis nautilus \
+        geoclue-2.0 gammastep \
+        fcitx5 \
+        gnome-keyring \
+        polkit-gnome \
+        easyeffects \
+        cliphist \
+        bibata-cursor-theme \
+        hyprpm \
+        dbus-update-activation-environment
     then
         print_error "Failed to install essential system utilities"
         exit 1
@@ -619,6 +628,7 @@ install_arch_packages() {
         "hyprpicker"
         "wlogout"
         "better-control"
+        "easyeffects-bin"  # AUR version of easyeffects
     )
     
     failed_packages=()
@@ -728,6 +738,162 @@ install_arch_packages() {
     print_status "Updating icon cache..."
     gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
     gtk-update-icon-cache -f -t /usr/share/icons/Papirus 2>/dev/null || true
+    
+    # Set up clipboard history
+    print_status "Setting up clipboard history..."
+    mkdir -p ~/.local/share/cliphist
+    systemctl --user enable --now cliphist.service 2>/dev/null || true
+    
+    # Set up cursor theme
+    print_status "Setting up cursor theme..."
+    if [ -f /usr/share/icons/Bibata-Modern-Classic/cursors/left_ptr ]; then
+        gsettings set org.gnome.desktop.interface cursor-theme 'Bibata-Modern-Classic' 2>/dev/null || true
+    fi
+    
+    # Set up environment variables
+    print_status "Setting up environment variables..."
+    if [ ! -f ~/.config/environment.d/99-hyprland.conf ]; then
+        mkdir -p ~/.config/environment.d
+        cat > ~/.config/environment.d/99-hyprland.conf << EOF
+XDG_CURRENT_DESKTOP=Hyprland
+XDG_SESSION_TYPE=wayland
+XDG_SESSION_DESKTOP=Hyprland
+EOF
+    fi
+    
+    # Set up Fish shell auto-start
+    print_status "Setting up Fish shell auto-start..."
+    if command -v fish &> /dev/null; then
+        mkdir -p ~/.config/fish
+        cat > ~/.config/fish/auto-Hypr.fish << EOF
+# Auto start Hyprland on tty1
+if test -z "\$DISPLAY" ;and test "\$XDG_VTNR" -eq 1
+    mkdir -p ~/.cache
+    exec Hyprland > ~/.cache/hyprland.log ^&1
+end
+EOF
+    fi
+    
+    # Set up performance optimization
+    print_status "Setting up performance optimization..."
+    mkdir -p ~/.config/hypr
+    cat > ~/.config/hypr/performance.conf << EOF
+# Performance Settings
+monitor=,highres,auto,1
+env = WLR_DRM_NO_ATOMIC,1
+env = WLR_NO_HARDWARE_CURSORS,1
+env = WLR_RENDERER_ALLOW_SOFTWARE,1
+env = WLR_RENDERER,vulkan
+env = WLR_USE_LIBINPUT,1
+env = XDG_CURRENT_DESKTOP,Hyprland
+env = XDG_SESSION_TYPE,wayland
+env = XDG_SESSION_DESKTOP,Hyprland
+EOF
+
+    # Set up startup script
+    print_status "Setting up startup script..."
+    mkdir -p ~/.config/hypr/scripts
+    cat > ~/.config/hypr/scripts/startup.sh << EOF
+#!/bin/bash
+
+# Set environment variables
+export XDG_CURRENT_DESKTOP=Hyprland
+export XDG_SESSION_TYPE=wayland
+export XDG_SESSION_DESKTOP=Hyprland
+
+# Start system services
+systemctl --user start pipewire.service
+systemctl --user start pipewire-pulse.service
+systemctl --user start wireplumber.service
+
+# Start desktop components
+waybar &
+swww init
+swww img ~/.config/hypr/assets/wallpapers/default.jpg
+qs &
+
+# Start additional services
+nm-applet --indicator &
+blueman-applet &
+easyeffects --gapplication-service &
+fcitx5 &
+geoclue-2.0/demos/agent &
+gammastep &
+gnome-keyring-daemon --start --components=secrets &
+/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 || /usr/libexec/polkit-gnome-authentication-agent-1 &
+hypridle &
+dbus-update-activation-environment --all &
+sleep 0.1 && dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP &
+hyprpm reload &
+
+# Clipboard history
+wl-paste --type text --watch cliphist store &
+wl-paste --type image --watch cliphist store &
+
+# Set cursor
+hyprctl setcursor Bibata-Modern-Classic 24
+EOF
+    chmod +x ~/.config/hypr/scripts/startup.sh
+
+    # Set up shutdown script
+    print_status "Setting up shutdown script..."
+    cat > ~/.config/hypr/scripts/shutdown.sh << EOF
+#!/bin/bash
+
+# Stop desktop components
+killall waybar
+killall qs
+
+# Stop system services
+systemctl --user stop pipewire.service
+systemctl --user stop pipewire-pulse.service
+systemctl --user stop wireplumber.service
+systemctl --user stop cliphist.service
+
+# Cleanup
+rm -rf /tmp/hyprland-*
+EOF
+    chmod +x ~/.config/hypr/scripts/shutdown.sh
+
+    # Set up theme manager
+    print_status "Setting up theme manager..."
+    cat > ~/.config/hypr/scripts/theme-manager.sh << EOF
+#!/bin/bash
+
+# Function to apply theme
+apply_theme() {
+    local theme=\$1
+    
+    # Copy theme files
+    cp -r ~/.config/hypr/assets/themes/\$theme/* ~/.config/hypr/
+    
+    # Reload Hyprland
+    hyprctl reload
+}
+
+# Function to set wallpaper
+set_wallpaper() {
+    local wallpaper=\$1
+    
+    # Set wallpaper
+    swww img ~/.config/hypr/assets/wallpapers/\$wallpaper
+}
+
+# Function to update theme
+update_theme() {
+    local theme=\$1
+    local wallpaper=\$2
+    
+    # Apply theme and wallpaper
+    apply_theme \$theme
+    set_wallpaper \$wallpaper
+}
+EOF
+    chmod +x ~/.config/hypr/scripts/theme-manager.sh
+
+    # Create theme directory structure
+    print_status "Setting up theme directory structure..."
+    mkdir -p ~/.config/hypr/assets/{themes,wallpapers}
     
     print_success "Arch Linux package installation completed successfully!"
     print_status "Your system now has:"
