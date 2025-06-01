@@ -903,19 +903,24 @@ EOF
     
     # Install custom meta-packages from ArchPackages directory
     print_status "Installing custom meta-packages from Arch-packages..."
-    metapkgs=(./Arch-packages/illogical-impulse-{audio,backlight,basic,fonts-themes,kde,portal,python,screencapture,toolkit,widgets})
-    metapkgs+=(./Arch-packages/illogical-impulse-hyprland)
-    metapkgs+=(./Arch-packages/illogical-impulse-microtex-git)
-    # metapkgs+=(./Arch-packages/illogical-impulse-oneui4-icons-git)
+    metapkgs=(illogical-impulse-{audio,backlight,basic,fonts-themes,kde,portal,python,screencapture,toolkit,widgets})
+    metapkgs+=(illogical-impulse-hyprland)
+    metapkgs+=(illogical-impulse-microtex-git)
+    # metapkgs+=(illogical-impulse-oneui4-icons-git)
     [[ -f /usr/share/icons/Bibata-Modern-Classic/index.theme ]] || \
-      metapkgs+=(./Arch-packages/illogical-impulse-bibata-modern-classic-bin)
+      metapkgs+=(illogical-impulse-bibata-modern-classic-bin)
 
     for pkg in "${metapkgs[@]}"; do
-      if [[ -f "$pkg" ]]; then
-        print_status "Installing meta-package: $pkg"
-        sudo pacman -U --noconfirm "$pkg"
-      else
-        print_warning "Meta-package not found: $pkg"
+      found=false
+      for file in ./Arch-packages/${pkg}-*.pkg.tar.*; do
+        if [[ -f "$file" ]]; then
+          print_status "Installing meta-package: $file"
+          sudo pacman -U --noconfirm "$file"
+          found=true
+        fi
+      done
+      if [[ "$found" = false ]]; then
+        print_warning "Meta-package not found: ./Arch-packages/${pkg}-*.pkg.tar.*"
       fi
     done
 
