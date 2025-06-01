@@ -225,6 +225,22 @@ fi
 
 # --- Install critical AUR dependencies early ---
 print_status "Installing critical AUR dependencies early with yay..."
+
+# Ensure yay is installed first
+if ! command -v yay &> /dev/null; then
+    print_status "Installing yay AUR helper..."
+    cd /tmp
+    rm -rf yay-bin 2>/dev/null || true
+    git clone https://aur.archlinux.org/yay-bin.git
+    cd yay-bin
+    makepkg -si --noconfirm
+    cd ~
+    rm -rf /tmp/yay-bin
+    print_success "yay installed successfully"
+else
+    print_status "yay is already installed"
+fi
+
 yay -S --noconfirm --needed adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git
 
 # --- Install all required packages (official + AUR + meta-package PKGBUILD deps) ---
@@ -380,21 +396,6 @@ install_arch_packages() {
         sudo pacman -S --needed --noconfirm --overwrite "*" base-devel git
     else
         sudo pacman -S --needed --noconfirm base-devel git
-    fi
-
-    # Ensure yay is installed first
-    if ! command -v yay &> /dev/null; then
-        print_status "Installing yay AUR helper..."
-        cd /tmp
-        rm -rf yay-bin 2>/dev/null || true
-        git clone https://aur.archlinux.org/yay-bin.git
-        cd yay-bin
-        makepkg -si --noconfirm
-        cd ~
-        rm -rf /tmp/yay-bin
-        print_success "yay installed successfully"
-    else
-        print_status "yay is already installed"
     fi
 
     # Split packages into official repo and AUR packages
