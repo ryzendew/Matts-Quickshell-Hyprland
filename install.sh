@@ -328,44 +328,14 @@ install_arch_packages() {
         sudo pacman -S --needed --noconfirm base-devel git
     fi
 
-    # Install yay-bin if not present
-    if ! command -v yay &> /dev/null || [ "$FORCE_INSTALL" = true ]; then
+    # Ensure yay is installed first
+    if ! command -v yay &> /dev/null; then
         print_status "Installing yay AUR helper..."
         cd /tmp
-        
-        # Clean up any existing yay-bin directory
         rm -rf yay-bin 2>/dev/null || true
-        
-        # Clone with retry mechanism
-        retry_count=0
-        while [ $retry_count -lt 3 ]; do
-            if git clone https://aur.archlinux.org/yay-bin.git 2>/dev/null; then
-                break
-            else
-                retry_count=$((retry_count + 1))
-                print_warning "Git clone failed, attempt $retry_count/3"
-                if [ $retry_count -lt 3 ]; then
-                    sleep 2
-                fi
-            fi
-        done
-        
-        if [ $retry_count -eq 3 ]; then
-            print_error "Failed to clone yay-bin repository after 3 attempts"
-            exit 1
-        fi
-        
+        git clone https://aur.archlinux.org/yay-bin.git
         cd yay-bin
-        
-        # Build with error handling
-        if ! makepkg -si --noconfirm; then
-            print_error "Failed to build yay-bin. This could be due to:"
-            print_error "1. Missing base-devel packages"
-            print_error "2. Network issues during dependency download"
-            print_error "3. Compilation errors"
-            exit 1
-        fi
-        
+        makepkg -si --noconfirm
         cd ~
         rm -rf /tmp/yay-bin
         print_success "yay installed successfully"
@@ -373,372 +343,38 @@ install_arch_packages() {
         print_status "yay is already installed"
     fi
 
-    # Install meta-package dependencies (official + AUR)
-    meta_deps=(
-      adw-gtk-theme-git
-      breeze-plus
-      fish
-      kde-material-you-colors
-      starship
-      ttf-readex-pro
-      ttf-jetbrains-mono-nerd
-      ttf-material-symbols-variable-git
-      ttf-rubik-vf
-      ttf-gabarito-git
+    # Combine all official and AUR packages into a single array
+    all_packages=(
+        hyprland wayland wayland-protocols wayland-utils
+        xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-desktop-portal
+        xdg-utils xdg-user-dirs
+        pipewire wireplumber pipewire-alsa pipewire-pulse pipewire-jack
+        pamixer playerctl pavucontrol alsa-utils alsa-plugins pulseaudio-alsa
+        sddm qt6-svg qt6-declarative systemd polkit polkit-qt6
+        networkmanager nm-connection-editor dhcpcd wpa_supplicant bluez bluez-utils
+        qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat qt6-shadertools qt6-languageserver qt6-charts qt6-webengine qt6-webchannel qt6-websockets qt6-connectivity qt6-serialport
+        qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt5-wayland
+        grim slurp wl-clipboard wtype brightnessctl ddcutil mako libnotify upower acpid htop btop fastfetch file-roller unzip zip 7zip gvfs gvfs-mtp gvfs-gphoto2 ptyxis nautilus geoclue gammastep fcitx5 gnome-keyring polkit-gnome easyeffects cliphist
+        ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme gtk3 gtk4 adwaita-icon-theme qt6ct qt5ct
+        cmake ninja pkgconf make gcc git jemalloc cli11 libdrm mesa vulkan-icd-loader vulkan-headers libxcb xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor libxkbcommon libxkbcommon-x11 libpipewire libglvnd syntax-highlighting
+        xorg-xwayland xorg-xlsclients xorg-xrandr xorg-xinput xorg-xdpyinfo libx11 libxcomposite libxcursor libxdamage libxext libxfixes libxi libxinerama libxrandr libxrender libxss libxtst
+        thunar thunar-volman thunar-archive-plugin wofi rofi-wayland lxqt-policykit
+        matugen-bin grimblast hyprswitch nwg-look swww hypridle hyprlock hyprpaper hyprpicker wlogout better-control easyeffects-bin google-breakpad nwg-displays bibata-cursor-theme hyprpm dbus-update-activation-environment
+        adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git
     )
-    print_status "Installing meta-package dependencies with yay..."
-    yay -S --noconfirm --needed "${meta_deps[@]}"
-
-    # COMPREHENSIVE PACKAGE INSTALLATION FOR VANILLA ARCH + HYPRLAND
-    print_status "Installing comprehensive package set for complete Hyprland desktop environment..."
-    
-    # CORE HYPRLAND AND WAYLAND FOUNDATION
-    print_status "Installing core Hyprland and Wayland components..."
-    if [ "$FORCE_INSTALL" = true ]; then
-        if ! sudo pacman -S --needed --noconfirm --overwrite "*" \
-            hyprland wayland wayland-protocols wayland-utils \
-            xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-desktop-portal \
-            xdg-utils xdg-user-dirs; then
-            print_error "Failed to install core Hyprland/Wayland packages"
-            exit 1
-        fi
-    else
-        if ! sudo pacman -S --needed --noconfirm \
-            hyprland wayland wayland-protocols wayland-utils \
-            xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-desktop-portal \
-            xdg-utils xdg-user-dirs; then
-            print_error "Failed to install core Hyprland/Wayland packages"
-            exit 1
-        fi
-    fi
-
-    # AUDIO SYSTEM - Complete PipeWire setup
-    print_status "Installing complete audio system (PipeWire)..."
-    
-    # Handle JACK conflict - remove jack2 and related packages if they exist
-    if pacman -Q jack2 &>/dev/null; then
-        print_status "Removing conflicting JACK packages..."
-        # Remove jack2 and any packages that depend on it
-        sudo pacman -Rdd --noconfirm jack2 2>/dev/null || true
-        # Also check for other JACK-related packages
-        sudo pacman -Rdd --noconfirm jack 2>/dev/null || true
-    fi
-    
-    # Install PipeWire core first
-    if ! sudo pacman -S --needed --noconfirm \
-        pipewire wireplumber; then
-        print_error "Failed to install PipeWire core"
-        exit 1
-    fi
-    
-    # Install PipeWire compatibility layers
-    if ! sudo pacman -S --needed --noconfirm \
-        pipewire-alsa pipewire-pulse pipewire-jack; then
-        print_error "Failed to install PipeWire compatibility layers"
-        exit 1
-    fi
-    
-    # Install audio utilities
-    if ! sudo pacman -S --needed --noconfirm \
-        pamixer playerctl pavucontrol \
-        alsa-utils alsa-plugins pulseaudio-alsa; then
-        print_error "Failed to install audio utilities"
-        exit 1
-    fi
-
-    # DISPLAY MANAGER AND SESSION MANAGEMENT
-    print_status "Installing display manager and session components..."
-    if ! sudo pacman -S --needed --noconfirm \
-        sddm qt6-svg qt6-declarative \
-        systemd polkit polkit-qt6; then
-        print_error "Failed to install display manager packages"
-        exit 1
-    fi
-
-    # NETWORK MANAGEMENT
-    print_status "Installing network management..."
-    if ! sudo pacman -S --needed --noconfirm \
-        networkmanager nm-connection-editor \
-        dhcpcd wpa_supplicant \
-        bluez bluez-utils; then
-        print_error "Failed to install network management packages"
-        exit 1
-    fi
-
-    # QT6 FRAMEWORK - Complete Qt6 installation for Quickshell
-    print_status "Installing complete Qt6 framework..."
-    if ! sudo pacman -S --needed --noconfirm \
-        qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats \
-        qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors \
-        qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat \
-        qt6-shadertools qt6-languageserver qt6-charts qt6-webengine \
-        qt6-webchannel qt6-websockets qt6-connectivity qt6-serialport; then
-        print_error "Failed to install Qt6 framework packages"
-        exit 1
-    fi
-
-    # QT5 COMPATIBILITY (some apps still need it)
-    print_status "Installing Qt5 compatibility packages..."
-    if ! sudo pacman -S --needed --noconfirm \
-        qt5-base qt5-declarative qt5-graphicaleffects \
-        qt5-imageformats qt5-svg qt5-translations qt5-wayland; then
-        print_error "Failed to install Qt5 compatibility packages"
-        exit 1
-    fi
-
-    # ESSENTIAL SYSTEM UTILITIES
-    print_status "Installing essential system utilities..."
-    if ! sudo pacman -S --needed --noconfirm \
-        grim slurp wl-clipboard wtype \
-        brightnessctl ddcutil \
-        mako libnotify \
-        upower acpid \
-        htop btop fastfetch \
-        file-roller unzip zip 7zip \
-        gvfs gvfs-mtp gvfs-gphoto2 \
-        ptyxis nautilus \
-        geoclue gammastep \
-        fcitx5 \
-        gnome-keyring \
-        polkit-gnome \
-        easyeffects \
-        cliphist
-    then
-        print_error "Failed to install essential system utilities"
-        exit 1
-    fi
-
-    # Install essential fonts and icon themes to prevent GUI rendering issues
-    print_status "Installing essential fonts and icon themes (prevents missing icons and text overlap in GUI)..."
-    # ttf-material-icons may not be in all Arch repos; comment if not available
-    if pacman -Si ttf-material-icons &>/dev/null; then
-        sudo pacman -S --needed --noconfirm ttf-dejavu noto-fonts ttf-font-awesome ttf-material-icons papirus-icon-theme
-    else
-        sudo pacman -S --needed --noconfirm ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme
-        print_status "ttf-material-icons not found in repo. If you experience missing icons, install it from AUR or another source."
-    fi
-
-    # Update font and icon cache
-    print_status "Updating font and icon cache..."
-    fc-cache -fv
-    sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
-    sudo gtk-update-icon-cache -f -t /usr/share/icons/Papirus || true
-
-    # DEVELOPMENT TOOLS AND BUILD DEPENDENCIES FOR QUICKSHELL
-    print_status "Installing development tools and Quickshell build dependencies..."
-    if ! sudo pacman -S --needed --noconfirm \
-        cmake ninja pkgconf make gcc \
-        git jemalloc cli11 \
-        libdrm mesa vulkan-icd-loader vulkan-headers \
-        libxcb xcb-util xcb-util-wm xcb-util-image \
-        xcb-util-keysyms xcb-util-renderutil xcb-util-cursor \
-        libxkbcommon libxkbcommon-x11 \
-        libpipewire libglvnd \
-        syntax-highlighting; then
-        print_error "Failed to install development tools"
-        exit 1
-    fi
-
-    # X11 COMPATIBILITY AND XWAYLAND
-    print_status "Installing X11 compatibility layer..."
-    if ! sudo pacman -S --needed --noconfirm \
-        xorg-xwayland xorg-xlsclients xorg-xrandr \
-        xorg-xinput xorg-xdpyinfo \
-        libx11 libxcomposite libxcursor libxdamage \
-        libxext libxfixes libxi libxinerama \
-        libxrandr libxrender libxss libxtst; then
-        print_error "Failed to install X11 compatibility packages"
-        exit 1
-    fi
-
-    # ESSENTIAL DESKTOP UTILITIES - Let user choose apps
-    print_status "Installing essential desktop utilities..."
-    if ! sudo pacman -S --needed --noconfirm \
-        thunar thunar-volman thunar-archive-plugin \
-        wofi rofi-wayland \
-        lxqt-policykit; then
-        print_error "Failed to install desktop utilities"
-        exit 1
-    fi
-
-    print_success "Official packages installed successfully"
-
-    # Install critical AUR dependencies first
-    print_status "Installing critical AUR dependencies..."
-    if [ "$FORCE_INSTALL" = true ]; then
-        if ! yay -S --needed --noconfirm --overwrite "*" google-breakpad nwg-displays; then
-            print_warning "Failed to install google-breakpad or nwg-displays, trying to continue anyway..."
-        fi
-    else
-        if ! yay -S --needed --noconfirm google-breakpad nwg-displays; then
-            print_warning "Failed to install google-breakpad or nwg-displays, trying to continue anyway..."
-        fi
-    fi
-
-    # Install Quickshell from AUR with fallback to prebuilt package
-    print_status "Installing Quickshell from AUR..."
-    quickshell_installed=false
-    
-    if [ "$FORCE_INSTALL" = true ]; then
-        if yay -S --needed --noconfirm --overwrite "*" quickshell; then
-            print_success "Quickshell installed successfully from AUR"
-            quickshell_installed=true
-        else
-            print_warning "AUR installation failed, trying prebuilt package..."
-            if [ -d "ArchPackages" ] && [ -n "$(ls ArchPackages/*.pkg.tar.* 2>/dev/null)" ]; then
-                print_status "Installing prebuilt Quickshell package..."
-                print_status "Found packages: $(ls ArchPackages/*.pkg.tar.*)"
-                if sudo pacman -U --needed --noconfirm --overwrite "*" ArchPackages/quickshell*.pkg.tar.*; then
-                    print_success "Quickshell installed successfully from prebuilt package"
-                    quickshell_installed=true
-                else
-                    print_warning "Failed to install prebuilt package"
-                fi
-            fi
-        fi
-    else
-        if yay -S --needed --noconfirm quickshell; then
-            print_success "Quickshell installed successfully from AUR"
-            quickshell_installed=true
-        else
-            print_warning "AUR installation failed, trying prebuilt package..."
-            if [ -d "ArchPackages" ] && [ -n "$(ls ArchPackages/*.pkg.tar.* 2>/dev/null)" ]; then
-                print_status "Installing prebuilt Quickshell package..."
-                print_status "Found packages: $(ls ArchPackages/*.pkg.tar.*)"
-                if sudo pacman -U --needed --noconfirm ArchPackages/quickshell*.pkg.tar.*; then
-                    print_success "Quickshell installed successfully from prebuilt package"
-                    quickshell_installed=true
-                else
-                    print_warning "Failed to install prebuilt package"
-                fi
-            fi
-        fi
-    fi
-    
-    # Final check
-    if [ "$quickshell_installed" = false ]; then
-        print_error "Failed to install Quickshell from both AUR and prebuilt packages"
-        print_error "This could be due to:"
-        print_error "1. Missing build dependencies (cmake, ninja, qt6 dev packages)"
-        print_error "2. Network issues during git clone"
-        print_error "3. Compilation errors"
-        print_error "4. No prebuilt packages available"
-        print_error ""
-        print_error "Manual solutions:"
-        print_error "1. Add a prebuilt quickshell package to ArchPackages/ folder"
-        print_error "2. Try building from source manually"
-        print_error "3. Check AUR for alternative quickshell packages"
-        exit 1
-    fi
-
-    # Install remaining AUR packages
-    print_status "Installing additional AUR packages..."
-    declare -a aur_packages=(
-        "matugen-bin"
-        "grimblast"
-        "hyprswitch"
-        "nwg-look"
-        "swww"
-        "hypridle"
-        "hyprlock"
-        "hyprpaper"
-        "hyprpicker"
-        "wlogout"
-        "better-control"
-        "easyeffects-bin"  # AUR version of easyeffects
-        "google-breakpad"
-        "nwg-displays"
-        "bibata-cursor-theme"
-        "hyprpm"
-        "dbus-update-activation-environment"
-    )
-    
-    failed_packages=()
-    for package in "${aur_packages[@]}"; do
-        print_status "Installing $package..."
-        if [ "$FORCE_INSTALL" = true ]; then
-            if ! yay -S --needed --noconfirm --overwrite "*" "$package"; then
-                print_warning "Failed to install $package"
-                failed_packages+=("$package")
-            else
-                print_success "$package installed successfully"
-            fi
-        else
-            if ! yay -S --needed --noconfirm "$package"; then
-                print_warning "Failed to install $package"
-                failed_packages+=("$package")
-            else
-                print_success "$package installed successfully"
-            fi
-        fi
-    done
-    
-    if [ ${#failed_packages[@]} -gt 0 ]; then
-        print_warning "The following AUR packages failed to install:"
-        for pkg in "${failed_packages[@]}"; do
-            print_warning "  - $pkg"
-        done
-        print_warning "You can try installing these packages manually later:"
-        printf 'yay -S %s\n' "${failed_packages[@]}"
-        
-        read -p "Continue anyway? [y/N]: " continue_choice
-        if [[ ! $continue_choice =~ ^[Yy]$ ]]; then
-            exit 1
-        fi
-    else
-        print_success "All AUR packages installed successfully"
-    fi
+    print_status "Installing all required packages (official + AUR) with yay..."
+    yay -S --noconfirm --needed "${all_packages[@]}"
 
     # --- Meta-Package Installation: Build all PKGBUILDs, then install all built packages ---
-    # Stage 1: Build all PKGBUILDs found in Arch-packages subdirectories using yay
-    print_status "Building all PKGBUILDs in Arch-packages subdirectories using yay..."
-    PKGBUILDS_FOUND=false
-    if compgen -G "./Arch-packages/*/" > /dev/null; then # Check if any subdirectories exist
+    print_status "Building and installing all meta-packages from PKGBUILDs using yay..."
+    if compgen -G "./Arch-packages/*/" > /dev/null; then
         for dir in ./Arch-packages/*/; do
-            if [[ -d "$dir" && -f "$dir/PKGBUILD" ]]; then
-                PKGBUILDS_FOUND=true
-                print_status "Building and installing package in $dir using yay (to handle AUR dependencies)..."
-                current_dir_for_makepkg=$(pwd)
-                # Use yay to build and install the package from the PKGBUILD directory
-                # yay will also handle its dependencies (official and AUR)
-                (cd "$dir" && yay -S --noconfirm --needed --asdeps ./*.PKGSRC) || print_warning "Failed to build/install from $dir using yay. Make sure a .PKGSRC file or PKGBUILD is present."
-                # The ./* above was too broad and could pick up other files.
-                # Using ./*.PKGSRC assumes you might have a .PKGSRC file as some do, or it falls back to PKGBUILD if ./* is used.
-                # For safety and typical PKGBUILD usage, if PKGBUILD is the source, `yay -S --noconfirm .` is usually enough, 
-                # or specify the PKGBUILD if multiple conflicting sources. Let's try with PKGBUILD directly:
-                # (cd "$dir" && yay -S --noconfirm --needed --asdeps .) # This should pick up the PKGBUILD
-                # Reverted to a safer version assuming a PKGBUILD, if that fails, user may need to refine glob for PKGSRC if they use that pattern
-                cd "$current_dir_for_makepkg"
+            if [[ -f "$dir/PKGBUILD" ]]; then
+                print_status "Building and installing $dir with yay"
+                (cd "$dir" && yay -S --noconfirm --needed .)
             fi
         done
     fi
-    if ! $PKGBUILDS_FOUND; then
-        print_status "No PKGBUILDs found in Arch-packages subdirectories to build."
-    fi
-
-    # Stage 2: Install all .pkg.tar.* files from the Arch-packages directory
-    # This stage can serve as a fallback for pre-built packages not from PKGBUILDs,
-    # or for packages built by a different process if yay above is modified not to install.
-    # The --needed flag in pacman -U should prevent reinstallation if already installed by yay.
-    print_status "Installing all built/pre-existing meta-packages from Arch-packages directory (if any)..."
-    installed_any_meta_pkg=false
-    if compgen -G "./Arch-packages/*.pkg.tar.*" > /dev/null; then # Check if any .pkg.tar.* files exist
-        for file_to_install in ./Arch-packages/*.pkg.tar.*; do
-            if [[ -f "$file_to_install" ]]; then
-                print_status "Installing meta-package: $file_to_install"
-                sudo pacman -U --needed --noconfirm "$file_to_install"
-                installed_any_meta_pkg=true
-            fi
-        done
-    fi
-    if ! $installed_any_meta_pkg && ! $PKGBUILDS_FOUND ; then # Only warn if no PKGBUILDs were found AND no prebuilts were found
-        print_warning "No .pkg.tar.* meta-packages found in Arch-packages directory to install, and no PKGBUILDs were processed."
-        print_warning "Ensure PKGBUILDs exist in subdirectories or prebuilt packages exist in Arch-packages."
-    elif ! $installed_any_meta_pkg && $PKGBUILDS_FOUND; then # Warn if PKGBUILDs were processed but no .pkg.tar files resulted or were installed
-        print_warning "No .pkg.tar.* meta-packages were installed from Arch-packages directory."
-        print_warning "This could be if PKGBUILDs were built but not moved, or yay installed them and they were not in the root for this stage."
-    fi
-    # --- End of Meta-Package Installation ---
 
     # Install Tela Circle icon theme from official repository if not already installed
     print_status "Checking Tela Circle icon theme..."
