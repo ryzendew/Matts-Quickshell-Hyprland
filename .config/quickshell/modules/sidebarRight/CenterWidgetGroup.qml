@@ -5,6 +5,7 @@ import "./calendar"
 import "./notifications"
 import "./todo"
 import "./volumeMixer"
+import "./performance"
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -48,7 +49,8 @@ Rectangle {
     property var tabButtonList: [
         {"icon": "notifications", "name": qsTr("Notifications")},
         {"icon": "volume_up", "name": qsTr("Volume mixer")},
-        {"icon": "cloud", "name": qsTr("Weather")}
+        {"icon": "cloud", "name": qsTr("Weather")},
+        {"icon": "speed", "name": qsTr("Performance")}
     ]
 
     // Intercept the close signal
@@ -101,11 +103,20 @@ Rectangle {
             Layout.topMargin: 5
             Layout.fillWidth: true
             Layout.fillHeight: true
-            sourceComponent: root.selectedTab === 0 ? notificationComponent : root.selectedTab === 1 ? volumeMixerComponent : weatherComponent
+            sourceComponent: {
+                switch(root.selectedTab) {
+                    case 0: return notificationComponent;
+                    case 1: return volumeMixerComponent;
+                    case 2: return weatherComponent;
+                    case 3: return performanceComponent;
+                    default: return notificationComponent;
+                }
+            }
         }
 
         Component { id: notificationComponent; NotificationList {} }
         Component { id: volumeMixerComponent; VolumeMixer {} }
         Component { id: weatherComponent; WeatherSidebarPage {} }
+        Component { id: performanceComponent; PerformanceTab {} }
     }
 }
