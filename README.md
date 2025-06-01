@@ -19,7 +19,6 @@ A comprehensive Quickshell-based Hyprland configuration converted from end-4's o
 - **🪟 Window Management** - Intelligent Hyprland window controls and workspace switching
 - **🎨 Material Design Theming** - Beautiful animations and modern UI components
 - **🎮 Gaming Ready** - Optimized for gaming performance
-- **📱 Mobile-Inspired Design** - Touch-friendly interface with smooth animations
 
 ## 🚀 Quick Installation
 
@@ -29,9 +28,6 @@ A comprehensive Quickshell-based Hyprland configuration converted from end-4's o
 ```bash
 # Normal installation
 curl -fsSL https://raw.githubusercontent.com/ryzendew/Matts-Quickshell-Hyprland/main/install.sh | bash
-
-# Force reinstall all packages
-curl -fsSL https://raw.githubusercontent.com/ryzendew/Matts-Quickshell-Hyprland/main/install.sh | bash -- --force
 ```
 
 ### Manual Installation
@@ -49,7 +45,7 @@ chmod +x install.sh
 
 ## 🛠️ System Requirements
 
-### Arch Linux
+### Arch Linux/CachyOS
 - Fresh Arch Linux installation
 - Internet connection
 - At least 2GB free disk space
@@ -77,7 +73,7 @@ yay -S quickshell matugen-bin grimblast hyprswitch nwg-displays nwg-look
 
 ## 🖥️ Supported Distributions
 
-### Arch Linux
+### Arch Linux | CachyOS | Endevour OS |
 - Full support with automatic yay installation
 - AUR packages for extended functionality
 - SDDM display manager setup
