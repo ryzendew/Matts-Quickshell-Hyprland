@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Matt's Quickshell Hyprland Configuration Installer
-# Automated installer for Arch Linux and PikaOS 4 systems
+# Automated installer for Arch Linux systems
 
 set -e  # Exit on any error
 
@@ -68,10 +68,6 @@ detect_distribution() {
     if [ -f /etc/os-release ]; then
         source /etc/os-release
         case $ID in
-            "pikaos")
-                DISTRO="pikaos"
-                print_status "Detected: PikaOS 4"
-                ;;
             "arch"|"cachyos"|"endeavouros"|"artix"|"archcraft"|"arcolinux"|"archbang"|"archlabs"|"archmerge"|"archstrike"|"blackarch"|"archman"|"archlinux"|"archlinuxarm"|"archlinuxcn"|"archlinuxfr"|"archlinuxgr"|"archlinuxjp"|"archlinuxkr"|"archlinuxpl"|"archlinuxru"|"archlinuxtr"|"archlinuxvn"|"archlinuxzh"|"archlinuxzhcn"|"archlinuxzhtw"|"archlinuxzhhk"|"archlinuxzhmo"|"archlinuxzhsg"|"archlinuxzhtw"|"archlinuxzhcn"|"archlinuxzhtw"|"archlinuxzhhk"|"archlinuxzhmo"|"archlinuxzhsg")
                 DISTRO="arch"
                 print_status "Detected: $PRETTY_NAME (Arch-based)"
@@ -90,7 +86,6 @@ detect_distribution() {
                     print_error "Unsupported distribution: $PRETTY_NAME"
                     print_error "This script supports:"
                     print_error "- Arch Linux and most Arch-based distributions"
-                    print_error "- PikaOS 4 (Debian-based)"
                     exit 1
                 fi
                 ;;
@@ -102,7 +97,6 @@ detect_distribution() {
         print_error "Unable to detect supported distribution"
         print_error "This script supports:"
         print_error "- Arch Linux and most Arch-based distributions"
-        print_error "- PikaOS 4 (Debian-based)"
         exit 1
     fi
 }
@@ -114,11 +108,6 @@ check_distribution() {
     if [[ "$DISTRO" == "arch" ]]; then
         if ! command -v pacman &> /dev/null; then
             print_error "Arch-based distribution detected but pacman not found"
-            exit 1
-        fi
-    elif [[ "$DISTRO" == "pikaos" ]]; then
-        if ! command -v apt &> /dev/null; then
-            print_error "PikaOS detected but apt not found"
             exit 1
         fi
     fi
@@ -135,7 +124,6 @@ fi
 if ! command -v git &> /dev/null; then
     print_error "Git is not installed. Please install git and try again."
     print_error "On Arch: sudo pacman -S git"
-    print_error "On PikaOS: sudo apt install git"
     exit 1
 fi
 
@@ -695,61 +683,11 @@ EOF
     print_status "  ✓ Network and Bluetooth support"
 }
 
-install_pikaos_packages() {
-    # Update system
-    print_status "Updating system packages..."
-    sudo apt update && sudo apt upgrade -y
-
-    # Install git if not present
-    print_status "Installing git..."
-    sudo apt install -y git
-
-    # Check if Quickshell is already available
-    if command -v quickshell &> /dev/null || command -v qs &> /dev/null || dpkg -l 2>/dev/null | grep -q quickshell; then
-        print_success "Quickshell is already available on PikaOS"
-    else
-        print_warning "Quickshell not found. Installing via pikman (if available)..."
-        if command -v pikman &> /dev/null; then
-            if ! pikman install quickshell; then
-                print_warning "Failed to install quickshell via pikman"
-            fi
-        else
-            print_error "Quickshell not available and pikman not found"
-            print_error "Please ensure you're using PikaOS Hyprland Edition"
-            exit 1
-        fi
-    fi
-
-    # Install required packages that might not be present
-    print_status "Installing additional required packages..."
-    sudo apt install -y \
-        grim slurp wl-clipboard wtype brightnessctl \
-        fonts-dejavu fonts-noto
-
-    # Install optional utility packages that might be missing
-    print_status "Installing optional utility packages..."
-    if command -v pikman &> /dev/null; then
-        print_status "Using pikman for additional packages..."
-        pikman install matugen || print_warning "matugen not available via pikman"
-        pikman install grimblast || print_warning "grimblast not available via pikman"
-        pikman install hyprswitch || print_warning "hyprswitch not available via pikman"
-        pikman install nwg-displays || print_warning "nwg-displays not available via pikman"
-        pikman install nwg-look || print_warning "nwg-look not available via pikman"
-    else
-        print_warning "pikman not available - some optional packages may be missing"
-    fi
-
-    print_success "PikaOS packages installation completed"
-    print_status "Note: Some packages may already be pre-installed on PikaOS Hyprland Edition"
-}
-
 # Main installation process
 print_status "Starting installation process..."
 
 if [[ "$DISTRO" == "arch" ]]; then
     install_arch_packages
-elif [[ "$DISTRO" == "pikaos" ]]; then
-    install_pikaos_packages
 fi
 
 print_success "Installation completed successfully!"

@@ -64,7 +64,7 @@ Let's break down why each piece is important:
 Before we start, you'll need:
 
 1. **Operating System**:
-   - Arch Linux (recommended) or PikaOS 4
+   - Arch Linux (recommended)
    - At least 2GB of free disk space
    - An internet connection
 

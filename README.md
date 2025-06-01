@@ -18,7 +18,7 @@ A comprehensive Quickshell-based Hyprland configuration converted from end-4's o
 - **🔊 Audio Controls** - PipeWire integration with volume controls and media management
 - **🪟 Window Management** - Intelligent Hyprland window controls and workspace switching
 - **🎨 Material Design Theming** - Beautiful animations and modern UI components
-- **🎮 Gaming Ready** - Optimized for gaming performance (especially on PikaOS)
+- **🎮 Gaming Ready** - Optimized for gaming performance
 - **📱 Mobile-Inspired Design** - Touch-friendly interface with smooth animations
 
 ## 🚀 Quick Installation
@@ -55,12 +55,6 @@ chmod +x install.sh
 - At least 2GB free disk space
 - Base system with sudo configured
 
-### PikaOS 4
-- PikaOS 4 Hyprland Edition (recommended)
-- Internet connection
-- At least 1GB free disk space
-- Quickshell pre-installed (automatic on Hyprland edition)
-
 ## 📋 Essential Dependencies
 
 ### Required Packages
@@ -87,13 +81,6 @@ yay -S quickshell matugen-bin grimblast hyprswitch nwg-displays nwg-look
 - Full support with automatic yay installation
 - AUR packages for extended functionality
 - SDDM display manager setup
-
-### PikaOS 4
-The installer will:
-- Utilize pre-installed Quickshell and Hyprland
-- Install minimal additional dependencies
-- Use pikman for AUR-like packages when available
-- Work with existing gaming optimizations
 
 ## ⚙️ Interactive Configuration
 
@@ -186,7 +173,6 @@ pacman -Qs curl jq
 **Distribution Detection Issues:**
 The script automatically detects your distribution. If detection fails:
 - Ensure `/etc/os-release` exists and is readable
-- For PikaOS: Verify you're using PikaOS 4
 - For Arch: Verify pacman is available
 
 ## 📖 Documentation
