@@ -242,7 +242,7 @@ official_packages=(
     pipewire wireplumber pipewire-alsa pipewire-pulse pipewire-jack
     pamixer playerctl pavucontrol alsa-utils alsa-plugins pulseaudio-alsa
     sddm qt6-svg qt6-declarative systemd polkit polkit-qt6
-    networkmanager nm-connection-editor dhcpcd wpa_supplicant bluez bluez-utils
+    networkmanager nm-connection-editor dhcpcd bluez bluez-utils
     qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat qt6-shadertools qt6-languageserver qt6-charts qt6-webengine qt6-webchannel qt6-websockets qt6-connectivity qt6-serialport
     qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt5-wayland
     grim slurp wl-clipboard wtype brightnessctl ddcutil mako libnotify upower acpid htop btop fastfetch file-roller unzip zip 7zip gvfs gvfs-mtp gvfs-gphoto2 ptyxis nautilus geoclue gammastep fcitx5 gnome-keyring polkit-gnome easyeffects cliphist
@@ -250,7 +250,7 @@ official_packages=(
     cmake ninja pkgconf make gcc git firefox
     jemalloc cli11 libdrm mesa vulkan-icd-loader vulkan-headers libxcb xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor libxkbcommon libxkbcommon-x11 libpipewire libglvnd syntax-highlighting
     xorg-xwayland xorg-xlsclients xorg-xrandr xorg-xinput xorg-xdpyinfo libx11 libxcomposite libxcursor libxdamage libxext libxfixes libxi libxinerama libxrandr libxrender libxss libxtst
-    thunar thunar-volman thunar-archive-plugin wofi rofi-wayland lxqt-policykit
+    thunar thunar-volman thunar-archive-plugin lxqt-policykit
 )
 aur_packages=(
     matugen-bin grimblast hyprswitch nwg-look swww hypridle hyprlock hyprpaper hyprpicker wlogout better-control easyeffects-bin google-breakpad nwg-displays dbus-update-activation-environment
@@ -395,14 +395,14 @@ install_arch_packages() {
         pipewire wireplumber pipewire-alsa pipewire-pulse pipewire-jack
         pamixer playerctl pavucontrol alsa-utils alsa-plugins pulseaudio-alsa
         sddm qt6-svg qt6-declarative systemd polkit polkit-qt6
-        networkmanager nm-connection-editor dhcpcd wpa_supplicant bluez bluez-utils
+        networkmanager nm-connection-editor dhcpcd bluez bluez-utils
         qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat qt6-shadertools qt6-languageserver qt6-charts qt6-webengine qt6-webchannel qt6-websockets qt6-connectivity qt6-serialport
         qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt5-wayland
         grim slurp wl-clipboard wtype brightnessctl ddcutil mako libnotify upower acpid htop btop fastfetch file-roller unzip zip 7zip gvfs gvfs-mtp gvfs-gphoto2 ptyxis nautilus geoclue gammastep fcitx5 gnome-keyring polkit-gnome easyeffects cliphist
         ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme gtk3 gtk4 adwaita-icon-theme qt6ct qt5ct
         cmake ninja pkgconf make gcc git jemalloc cli11 libdrm mesa vulkan-icd-loader vulkan-headers libxcb xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor libxkbcommon libxkbcommon-x11 libpipewire libglvnd syntax-highlighting
         xorg-xwayland xorg-xlsclients xorg-xrandr xorg-xinput xorg-xdpyinfo libx11 libxcomposite libxcursor libxdamage libxext libxfixes libxi libxinerama libxrandr libxrender libxss libxtst
-        thunar thunar-volman thunar-archive-plugin wofi rofi-wayland lxqt-policykit
+        thunar thunar-volman thunar-archive-plugin lxqt-policykit
     )
     print_status "Installing all required packages (official + AUR) with yay..."
     yay -S --noconfirm --needed "${all_packages[@]}"
