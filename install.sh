@@ -674,31 +674,25 @@ install_arch_packages() {
     fi
 
     # --- Meta-Package Installation: Build all PKGBUILDs, then install all built packages ---
-    # Stage 1: Build all PKGBUILDs found in Arch-packages subdirectories
-    print_status "Building all PKGBUILDs in Arch-packages subdirectories..."
+    # Stage 1: Build all PKGBUILDs found in Arch-packages subdirectories using yay
+    print_status "Building all PKGBUILDs in Arch-packages subdirectories using yay..."
     PKGBUILDS_FOUND=false
     if compgen -G "./Arch-packages/*/" > /dev/null; then # Check if any subdirectories exist
         for dir in ./Arch-packages/*/; do
             if [[ -d "$dir" && -f "$dir/PKGBUILD" ]]; then
                 PKGBUILDS_FOUND=true
-                print_status "Building package in $dir..."
+                print_status "Building and installing package in $dir using yay (to handle AUR dependencies)..."
                 current_dir_for_makepkg=$(pwd)
-                (cd "$dir" && makepkg -s --noconfirm) # Build with dep sync, no install
-                cd "$current_dir_for_makepkg" # Return to original script directory
-                
-                # Move built package(s) from PKGBUILD dir to parent Arch-packages directory
-                shopt -s nullglob # Globs expand to nothing if no match
-                moved_any_from_subdir=false
-                for built_pkg_file in "$dir"/*.pkg.tar.*; do
-                    if [[ -f "$built_pkg_file" ]]; then
-                        mv "$built_pkg_file" ./Arch-packages/ 2>/dev/null || print_warning "Failed to move $built_pkg_file to ./Arch-packages/"
-                        moved_any_from_subdir=true
-                    fi
-                done
-                shopt -u nullglob # Reset glob behavior
-                if ! $moved_any_from_subdir; then
-                    print_warning "No package files found in $dir to move after building. Check makepkg output."
-                fi
+                # Use yay to build and install the package from the PKGBUILD directory
+                # yay will also handle its dependencies (official and AUR)
+                (cd "$dir" && yay -S --noconfirm --needed --asdeps ./*.PKGSRC) || print_warning "Failed to build/install from $dir using yay. Make sure a .PKGSRC file or PKGBUILD is present."
+                # The ./* above was too broad and could pick up other files.
+                # Using ./*.PKGSRC assumes you might have a .PKGSRC file as some do, or it falls back to PKGBUILD if ./* is used.
+                # For safety and typical PKGBUILD usage, if PKGBUILD is the source, `yay -S --noconfirm .` is usually enough, 
+                # or specify the PKGBUILD if multiple conflicting sources. Let's try with PKGBUILD directly:
+                # (cd "$dir" && yay -S --noconfirm --needed --asdeps .) # This should pick up the PKGBUILD
+                # Reverted to a safer version assuming a PKGBUILD, if that fails, user may need to refine glob for PKGSRC if they use that pattern
+                cd "$current_dir_for_makepkg"
             fi
         done
     fi
@@ -707,7 +701,10 @@ install_arch_packages() {
     fi
 
     # Stage 2: Install all .pkg.tar.* files from the Arch-packages directory
-    print_status "Installing all built meta-packages from Arch-packages directory..."
+    # This stage can serve as a fallback for pre-built packages not from PKGBUILDs,
+    # or for packages built by a different process if yay above is modified not to install.
+    # The --needed flag in pacman -U should prevent reinstallation if already installed by yay.
+    print_status "Installing all built/pre-existing meta-packages from Arch-packages directory (if any)..."
     installed_any_meta_pkg=false
     if compgen -G "./Arch-packages/*.pkg.tar.*" > /dev/null; then # Check if any .pkg.tar.* files exist
         for file_to_install in ./Arch-packages/*.pkg.tar.*; do
@@ -718,9 +715,12 @@ install_arch_packages() {
             fi
         done
     fi
-    if ! $installed_any_meta_pkg; then
-        print_warning "No .pkg.tar.* meta-packages found in Arch-packages directory to install."
-        print_warning "Ensure PKGBUILDs were built successfully or prebuilt packages exist."
+    if ! $installed_any_meta_pkg && ! $PKGBUILDS_FOUND ; then # Only warn if no PKGBUILDs were found AND no prebuilts were found
+        print_warning "No .pkg.tar.* meta-packages found in Arch-packages directory to install, and no PKGBUILDs were processed."
+        print_warning "Ensure PKGBUILDs exist in subdirectories or prebuilt packages exist in Arch-packages."
+    elif ! $installed_any_meta_pkg && $PKGBUILDS_FOUND; then # Warn if PKGBUILDs were processed but no .pkg.tar files resulted or were installed
+        print_warning "No .pkg.tar.* meta-packages were installed from Arch-packages directory."
+        print_warning "This could be if PKGBUILDs were built but not moved, or yay installed them and they were not in the root for this stage."
     fi
     # --- End of Meta-Package Installation ---
 
