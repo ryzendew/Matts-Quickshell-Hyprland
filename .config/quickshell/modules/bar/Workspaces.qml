@@ -71,7 +71,7 @@ Item {
             Appearance.colors.colLayer1.r,
             Appearance.colors.colLayer1.g,
             Appearance.colors.colLayer1.b,
-            0.2 // 80% opacity to match bar
+            0.4 // 80% opacity to match bar
         )
     }
 

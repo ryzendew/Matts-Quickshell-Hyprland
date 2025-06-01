@@ -123,7 +123,7 @@ fi
 
 if ! pacman -Qs jack >/dev/null; then
     print_status "Installing jack..."
-    sudo pacman -S --noconfirm jack git
+    sudo pacman -S --noconfirm piprewire-jack git
     print_success "jack installed successfully"
 fi
 
