@@ -221,7 +221,7 @@ This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) 
 
 - **Issues**: [GitHub Issues](https://github.com/ryzendew/Matts-Quickshell-Hyprland/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/ryzendew/Matts-Quickshell-Hyprland/discussions)
-- **PikaOS Community**: Join the PikaOS Discord for distribution-specific help
+
 
 ---
 
