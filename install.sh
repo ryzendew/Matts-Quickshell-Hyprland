@@ -259,7 +259,8 @@ official_packages=(
     qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt5-wayland
     grim slurp wl-clipboard wtype brightnessctl ddcutil mako libnotify upower acpid htop btop fastfetch file-roller unzip zip 7zip gvfs gvfs-mtp gvfs-gphoto2 ptyxis nautilus geoclue gammastep fcitx5 gnome-keyring polkit-gnome easyeffects cliphist
     ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme gtk3 gtk4 adwaita-icon-theme qt6ct qt5ct
-    cmake ninja pkgconf make gcc git jemalloc cli11 libdrm mesa vulkan-icd-loader vulkan-headers libxcb xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor libxkbcommon libxkbcommon-x11 libpipewire libglvnd syntax-highlighting
+    cmake ninja pkgconf make gcc git firefox
+    jemalloc cli11 libdrm mesa vulkan-icd-loader vulkan-headers libxcb xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor libxkbcommon libxkbcommon-x11 libpipewire libglvnd syntax-highlighting
     xorg-xwayland xorg-xlsclients xorg-xrandr xorg-xinput xorg-xdpyinfo libx11 libxcomposite libxcursor libxdamage libxext libxfixes libxi libxinerama libxrandr libxrender libxss libxtst
     thunar thunar-volman thunar-archive-plugin wofi rofi-wayland lxqt-policykit
 )
@@ -429,29 +430,14 @@ install_arch_packages() {
         done
     fi
 
-    # Install Tela Circle icon theme from official repository if not already installed
-    print_status "Checking Tela Circle icon theme..."
-    if [ ! -d "/usr/share/icons/Tela-circle" ]; then
-        print_status "Tela Circle icon theme not found. Installing..."
-        TEMP_TELA_DIR="/tmp/Tela-circle-icon-theme"
-
-        if [ ! -d "$TEMP_TELA_DIR" ]; then
-            print_status "Cloning Tela Circle icon theme repository..."
-            git clone --depth=1 https://github.com/vinceliuice/Tela-circle-icon-theme.git "$TEMP_TELA_DIR" || { print_error "Failed to clone Tela icon theme repository."; exit 1; }
-        else
-            print_status "Temporary Tela Circle icon theme directory found. Updating and using it..."
-            (cd "$TEMP_TELA_DIR" && git pull) || print_warning "Failed to update temporary Tela icon theme repo."
-        fi
-        
-        print_status "Running Tela Circle icon theme installer..."
-        (cd "$TEMP_TELA_DIR" && sudo ./install.sh -a) || { print_error "Tela icon theme installation failed."; exit 1; }
-        
-        print_success "Tela Circle icon theme installed successfully."
-        # print_status "Cleaning up temporary Tela icon theme directory..."
-        # rm -rf "$TEMP_TELA_DIR"
-    else
-        print_status "Tela Circle icon theme is already installed. Skipping."
-    fi
+    # Install Tela Circle icon theme from GitHub
+    print_status "Installing Tela Circle icon theme..."
+    TEMP_TELA_DIR="/tmp/Tela-circle-icon-theme"
+    rm -rf "$TEMP_TELA_DIR" 2>/dev/null || true
+    git clone --depth=1 https://github.com/vinceliuice/Tela-circle-icon-theme.git "$TEMP_TELA_DIR" || { print_error "Failed to clone Tela icon theme repository."; exit 1; }
+    (cd "$TEMP_TELA_DIR" && sudo ./install.sh -a) || { print_error "Tela icon theme installation failed."; exit 1; }
+    rm -rf "$TEMP_TELA_DIR"
+    print_success "Tela Circle icon theme installed successfully."
 
     # Enable essential system services
     print_status "Enabling essential system services..."
