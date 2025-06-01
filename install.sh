@@ -924,13 +924,12 @@ EOF
       fi
     done
 
-    # Auto-build all PKGBUILDs in Arch-packages subdirectories
-    print_status "Building all PKGBUILDs in Arch-packages (if any)..."
+    # Auto-build and install all PKGBUILDs in Arch-packages subdirectories
+    print_status "Building and installing all PKGBUILDs in Arch-packages (if any)..."
     for dir in Arch-packages/*/; do
       if [[ -f "$dir/PKGBUILD" ]]; then
-        print_status "Building package in $dir"
-        (cd "$dir" && makepkg --noconfirm)
-        mv "$dir"/*.pkg.tar.* Arch-packages/ 2>/dev/null || true
+        print_status "Building and installing package in $dir"
+        (cd "$dir" && makepkg -si --noconfirm)
       fi
     done
 
