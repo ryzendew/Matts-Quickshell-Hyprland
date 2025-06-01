@@ -223,6 +223,56 @@ if [ -d "$HOME/.config" ]; then
     echo
 fi
 
+# --- Install all required packages (official + AUR + meta-package PKGBUILD deps) ---
+print_status "Aggregating all dependencies from meta-package PKGBUILDs..."
+
+# Main package arrays (from previous logic)
+official_packages=(
+    hyprland wayland wayland-protocols wayland-utils
+    xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-desktop-portal
+    xdg-utils xdg-user-dirs
+    pipewire wireplumber pipewire-alsa pipewire-pulse pipewire-jack
+    pamixer playerctl pavucontrol alsa-utils alsa-plugins pulseaudio-alsa
+    sddm qt6-svg qt6-declarative systemd polkit polkit-qt6
+    networkmanager nm-connection-editor dhcpcd wpa_supplicant bluez bluez-utils
+    qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat qt6-shadertools qt6-languageserver qt6-charts qt6-webengine qt6-webchannel qt6-websockets qt6-connectivity qt6-serialport
+    qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt5-wayland
+    grim slurp wl-clipboard wtype brightnessctl ddcutil mako libnotify upower acpid htop btop fastfetch file-roller unzip zip 7zip gvfs gvfs-mtp gvfs-gphoto2 ptyxis nautilus geoclue gammastep fcitx5 gnome-keyring polkit-gnome easyeffects cliphist
+    ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme gtk3 gtk4 adwaita-icon-theme qt6ct qt5ct
+    cmake ninja pkgconf make gcc git jemalloc cli11 libdrm mesa vulkan-icd-loader vulkan-headers libxcb xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor libxkbcommon libxkbcommon-x11 libpipewire libglvnd syntax-highlighting
+    xorg-xwayland xorg-xlsclients xorg-xrandr xorg-xinput xorg-xdpyinfo libx11 libxcomposite libxcursor libxdamage libxext libxfixes libxi libxinerama libxrandr libxrender libxss libxtst
+    thunar thunar-volman thunar-archive-plugin wofi rofi-wayland lxqt-policykit
+)
+aur_packages=(
+    matugen-bin grimblast hyprswitch nwg-look swww hypridle hyprlock hyprpaper hyprpicker wlogout better-control easyeffects-bin google-breakpad nwg-displays bibata-cursor-theme hyprpm dbus-update-activation-environment
+    adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git
+)
+
+# Aggregate all depends and makedepends from PKGBUILDs
+for pkgdir in Arch-packages/*/; do
+    if [[ -f "$pkgdir/PKGBUILD" ]]; then
+        # Extract depends and makedepends
+        deps=$(awk '/depends=\(/,/
+\)/ {if ($0 !~ /depends=\(/ && $0 !~ /\)/) print $0}' "$pkgdir/PKGBUILD" | tr -d '"' | tr -d "'" | tr -d ' ')
+        makedeps=$(awk '/makedepends=\(/,/
+\)/ {if ($0 !~ /makedepends=\(/ && $0 !~ /\)/) print $0}' "$pkgdir/PKGBUILD" | tr -d '"' | tr -d "'" | tr -d ' ')
+        for dep in $deps $makedeps; do
+            # Only add if not already in either array
+            if ! [[ " ${official_packages[@]} " =~ " $dep " ]] && ! [[ " ${aur_packages[@]} " =~ " $dep " ]]; then
+                aur_packages+=("$dep")
+            fi
+        done
+    fi
+done
+# De-duplicate aur_packages
+readarray -t aur_packages < <(printf '%s
+' "${aur_packages[@]}" | awk '!seen[$0]++')
+
+print_status "Installing official repo packages with pacman..."
+sudo pacman -S --noconfirm --needed "${official_packages[@]}"
+print_status "Installing AUR packages with yay..."
+yay -S --noconfirm --needed "${aur_packages[@]}"
+
 # Copy configuration files, backing up any overwritten files/folders
 print_status "Copying configuration files..."
 if [ -d ".config" ]; then
@@ -343,7 +393,7 @@ install_arch_packages() {
         print_status "yay is already installed"
     fi
 
-    # Combine all official and AUR packages into a single array
+    # Split packages into official repo and AUR packages
     all_packages=(
         hyprland wayland wayland-protocols wayland-utils
         xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-desktop-portal
@@ -359,8 +409,6 @@ install_arch_packages() {
         cmake ninja pkgconf make gcc git jemalloc cli11 libdrm mesa vulkan-icd-loader vulkan-headers libxcb xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor libxkbcommon libxkbcommon-x11 libpipewire libglvnd syntax-highlighting
         xorg-xwayland xorg-xlsclients xorg-xrandr xorg-xinput xorg-xdpyinfo libx11 libxcomposite libxcursor libxdamage libxext libxfixes libxi libxinerama libxrandr libxrender libxss libxtst
         thunar thunar-volman thunar-archive-plugin wofi rofi-wayland lxqt-policykit
-        matugen-bin grimblast hyprswitch nwg-look swww hypridle hyprlock hyprpaper hyprpicker wlogout better-control easyeffects-bin google-breakpad nwg-displays bibata-cursor-theme hyprpm dbus-update-activation-environment
-        adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git
     )
     print_status "Installing all required packages (official + AUR) with yay..."
     yay -S --noconfirm --needed "${all_packages[@]}"
