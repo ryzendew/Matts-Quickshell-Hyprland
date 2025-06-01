@@ -496,9 +496,9 @@ install_arch_packages() {
     print_status "Installing essential fonts and icon themes (prevents missing icons and text overlap in GUI)..."
     # ttf-material-icons may not be in all Arch repos; comment if not available
     if pacman -Si ttf-material-icons &>/dev/null; then
-        sudo pacman -S --needed --noconfirm ttf-dejavu noto-fonts ttf-font-awesome ttf-material-icons papirus-icon-theme bibata-cursor-theme
+        sudo pacman -S --needed --noconfirm ttf-dejavu noto-fonts ttf-font-awesome ttf-material-icons papirus-icon-theme
     else
-        sudo pacman -S --needed --noconfirm ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme bibata-cursor-theme
+        sudo pacman -S --needed --noconfirm ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme
         print_status "ttf-material-icons not found in repo. If you experience missing icons, install it from AUR or another source."
     fi
 
