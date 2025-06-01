@@ -123,7 +123,7 @@ fi
 
 if ! pacman -Qs jack >/dev/null; then
     print_status "Installing jack..."
-    sudo pacman -S --noconfirm jack
+    sudo pacman -S --noconfirm jack git
     print_success "jack installed successfully"
 fi
 
