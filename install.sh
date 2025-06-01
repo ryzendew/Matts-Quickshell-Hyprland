@@ -373,6 +373,22 @@ install_arch_packages() {
         print_status "yay is already installed"
     fi
 
+    # Install meta-package dependencies (official + AUR)
+    meta_deps=(
+      adw-gtk-theme-git
+      breeze-plus
+      fish
+      kde-material-you-colors
+      starship
+      ttf-readex-pro
+      ttf-jetbrains-mono-nerd
+      ttf-material-symbols-variable-git
+      ttf-rubik-vf
+      ttf-gabarito-git
+    )
+    print_status "Installing meta-package dependencies with yay..."
+    yay -S --noconfirm --needed "${meta_deps[@]}"
+
     # COMPREHENSIVE PACKAGE INSTALLATION FOR VANILLA ARCH + HYPRLAND
     print_status "Installing comprehensive package set for complete Hyprland desktop environment..."
     
