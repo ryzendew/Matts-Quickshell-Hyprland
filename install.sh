@@ -579,7 +579,7 @@ systemctl --user start wireplumber.service
 # Start desktop components
 waybar &
 swww init
-swww img ~/.config/hypr/assets/wallpapers/default.jpg
+swww img ~/.config/hypr/assets/wallpapers/Fantasy-Landscape2.png
 qs &
 
 # Start additional services
