@@ -113,6 +113,20 @@ check_distribution() {
     fi
 }
 
+# Remove jack2 and install jack for CachyOS compatibility
+print_status "Checking for jack2 and replacing with jack..."
+if pacman -Qs jack2 >/dev/null; then
+    print_status "Removing jack2..."
+    sudo pacman -Rd --nodeps --noconfirm jack2
+    print_success "jack2 removed successfully"
+fi
+
+if ! pacman -Qs jack >/dev/null; then
+    print_status "Installing jack..."
+    sudo pacman -S --noconfirm jack
+    print_success "jack installed successfully"
+fi
+
 # Check internet connectivity
 print_status "Checking internet connectivity..."
 if ! ping -c 1 8.8.8.8 &> /dev/null; then
