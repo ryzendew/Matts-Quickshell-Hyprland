@@ -223,6 +223,10 @@ if [ -d "$HOME/.config" ]; then
     echo
 fi
 
+# --- Install critical AUR dependencies early ---
+print_status "Installing critical AUR dependencies early with yay..."
+yay -S --noconfirm --needed adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git
+
 # --- Install all required packages (official + AUR + meta-package PKGBUILD deps) ---
 print_status "Aggregating all dependencies from meta-package PKGBUILDs..."
 
@@ -244,7 +248,7 @@ official_packages=(
     thunar thunar-volman thunar-archive-plugin wofi rofi-wayland lxqt-policykit
 )
 aur_packages=(
-    matugen-bin grimblast hyprswitch nwg-look swww hypridle hyprlock hyprpaper hyprpicker wlogout better-control easyeffects-bin google-breakpad nwg-displays bibata-cursor-theme hyprpm dbus-update-activation-environment
+    matugen-bin grimblast hyprswitch nwg-look swww hypridle hyprlock hyprpaper hyprpicker wlogout better-control easyeffects-bin google-breakpad nwg-displays dbus-update-activation-environment
     adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git
 )
 
