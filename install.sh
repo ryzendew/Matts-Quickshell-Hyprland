@@ -901,6 +901,24 @@ EOF
     print_status "Setting up theme directory structure..."
     mkdir -p ~/.config/hypr/assets/{themes,wallpapers}
     
+    # Install custom meta-packages from ArchPackages directory
+    print_status "Installing custom meta-packages from ArchPackages..."
+    metapkgs=(./ArchPackages/illogical-impulse-{audio,backlight,basic,fonts-themes,kde,portal,python,screencapture,toolkit,widgets})
+    metapkgs+=(./ArchPackages/illogical-impulse-hyprland)
+    metapkgs+=(./ArchPackages/illogical-impulse-microtex-git)
+    # metapkgs+=(./ArchPackages/illogical-impulse-oneui4-icons-git)
+    [[ -f /usr/share/icons/Bibata-Modern-Classic/index.theme ]] || \
+      metapkgs+=(./ArchPackages/illogical-impulse-bibata-modern-classic-bin)
+
+    for pkg in "${metapkgs[@]}"; do
+      if [[ -f "$pkg" ]]; then
+        print_status "Installing meta-package: $pkg"
+        sudo pacman -U --noconfirm "$pkg"
+      else
+        print_warning "Meta-package not found: $pkg"
+      fi
+    done
+
     print_success "Arch Linux package installation completed successfully!"
     print_status "Your system now has:"
     print_status "  ✓ Complete Hyprland + Wayland setup"
