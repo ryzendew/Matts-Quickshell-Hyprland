@@ -495,17 +495,21 @@ install_arch_packages() {
         exit 1
     fi
 
-    # MINIMAL FONTS AND THEMING
-    print_status "Installing minimal fonts and theming..."
-    if ! sudo pacman -S --needed --noconfirm \
-        ttf-dejavu noto-fonts \
-        papirus-icon-theme \
-        gtk3 gtk4 adwaita-icon-theme \
-        qt6ct qt5ct
-    then
-        print_error "Failed to install minimal theming packages"
-        exit 1
+    # Install essential fonts and icon themes to prevent GUI rendering issues
+    print_status "Installing essential fonts and icon themes (prevents missing icons and text overlap in GUI)..."
+    # ttf-material-icons may not be in all Arch repos; comment if not available
+    if pacman -Si ttf-material-icons &>/dev/null; then
+        sudo pacman -S --needed --noconfirm ttf-dejavu noto-fonts ttf-font-awesome ttf-material-icons papirus-icon-theme bibata-cursor-theme
+    else
+        sudo pacman -S --needed --noconfirm ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme bibata-cursor-theme
+        print_status "ttf-material-icons not found in repo. If you experience missing icons, install it from AUR or another source."
     fi
+
+    # Update font and icon cache
+    print_status "Updating font and icon cache..."
+    fc-cache -fv
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor
+    gtk-update-icon-cache -f -t /usr/share/icons/Papirus
 
     # DEVELOPMENT TOOLS AND BUILD DEPENDENCIES FOR QUICKSHELL
     print_status "Installing development tools and Quickshell build dependencies..."
