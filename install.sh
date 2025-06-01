@@ -654,7 +654,7 @@ install_arch_packages() {
             else
                 print_success "$package installed successfully"
             fi
-        done
+        fi
     done
     
     if [ ${#failed_packages[@]} -gt 0 ]; then
