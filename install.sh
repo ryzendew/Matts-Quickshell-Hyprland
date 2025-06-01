@@ -924,6 +924,16 @@ EOF
       fi
     done
 
+    # Auto-build all PKGBUILDs in Arch-packages subdirectories
+    print_status "Building all PKGBUILDs in Arch-packages (if any)..."
+    for dir in Arch-packages/*/; do
+      if [[ -f "$dir/PKGBUILD" ]]; then
+        print_status "Building package in $dir"
+        (cd "$dir" && makepkg --noconfirm)
+        mv "$dir"/*.pkg.tar.* Arch-packages/ 2>/dev/null || true
+      fi
+    done
+
     print_success "Arch Linux package installation completed successfully!"
     print_status "Your system now has:"
     print_status "  ✓ Complete Hyprland + Wayland setup"
