@@ -505,8 +505,8 @@ install_arch_packages() {
     # Update font and icon cache
     print_status "Updating font and icon cache..."
     fc-cache -fv
-    gtk-update-icon-cache -f -t /usr/share/icons/hicolor
-    gtk-update-icon-cache -f -t /usr/share/icons/Papirus
+    sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor
+    sudo gtk-update-icon-cache -f -t /usr/share/icons/Papirus
 
     # DEVELOPMENT TOOLS AND BUILD DEPENDENCIES FOR QUICKSHELL
     print_status "Installing development tools and Quickshell build dependencies..."
