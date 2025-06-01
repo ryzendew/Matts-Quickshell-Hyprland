@@ -481,15 +481,12 @@ install_arch_packages() {
         file-roller unzip zip 7zip \
         gvfs gvfs-mtp gvfs-gphoto2 \
         ptyxis nautilus \
-        geoclue-2.0 gammastep \
+        geoclue gammastep \
         fcitx5 \
         gnome-keyring \
         polkit-gnome \
         easyeffects \
-        cliphist \
-        bibata-cursor-theme \
-        hyprpm \
-        dbus-update-activation-environment
+        cliphist
     then
         print_error "Failed to install essential system utilities"
         exit 1
@@ -633,6 +630,11 @@ install_arch_packages() {
         "wlogout"
         "better-control"
         "easyeffects-bin"  # AUR version of easyeffects
+        "google-breakpad"
+        "nwg-displays"
+        "bibata-cursor-theme"
+        "hyprpm"
+        "dbus-update-activation-environment"
     )
     
     failed_packages=()
