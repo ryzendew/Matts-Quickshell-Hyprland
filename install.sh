@@ -902,13 +902,13 @@ EOF
     mkdir -p ~/.config/hypr/assets/{themes,wallpapers}
     
     # Install custom meta-packages from ArchPackages directory
-    print_status "Installing custom meta-packages from ArchPackages..."
-    metapkgs=(./ArchPackages/illogical-impulse-{audio,backlight,basic,fonts-themes,kde,portal,python,screencapture,toolkit,widgets})
-    metapkgs+=(./ArchPackages/illogical-impulse-hyprland)
-    metapkgs+=(./ArchPackages/illogical-impulse-microtex-git)
-    # metapkgs+=(./ArchPackages/illogical-impulse-oneui4-icons-git)
+    print_status "Installing custom meta-packages from Arch-packages..."
+    metapkgs=(./Arch-packages/illogical-impulse-{audio,backlight,basic,fonts-themes,kde,portal,python,screencapture,toolkit,widgets})
+    metapkgs+=(./Arch-packages/illogical-impulse-hyprland)
+    metapkgs+=(./Arch-packages/illogical-impulse-microtex-git)
+    # metapkgs+=(./Arch-packages/illogical-impulse-oneui4-icons-git)
     [[ -f /usr/share/icons/Bibata-Modern-Classic/index.theme ]] || \
-      metapkgs+=(./ArchPackages/illogical-impulse-bibata-modern-classic-bin)
+      metapkgs+=(./Arch-packages/illogical-impulse-bibata-modern-classic-bin)
 
     for pkg in "${metapkgs[@]}"; do
       if [[ -f "$pkg" ]]; then
