@@ -241,7 +241,7 @@ else
     print_status "yay is already installed"
 fi
 
-yay -S --noconfirm --needed adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git
+yay -S --noconfirm --needed adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git quickshell fuzzel
 
 # --- Install all required packages (official + AUR + meta-package PKGBUILD deps) ---
 print_status "Aggregating all dependencies from meta-package PKGBUILDs..."
