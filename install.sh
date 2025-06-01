@@ -505,8 +505,8 @@ install_arch_packages() {
     # Update font and icon cache
     print_status "Updating font and icon cache..."
     fc-cache -fv
-    sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor
-    sudo gtk-update-icon-cache -f -t /usr/share/icons/Papirus
+    sudo gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
+    sudo gtk-update-icon-cache -f -t /usr/share/icons/Papirus || true
 
     # DEVELOPMENT TOOLS AND BUILD DEPENDENCIES FOR QUICKSHELL
     print_status "Installing development tools and Quickshell build dependencies..."
@@ -742,8 +742,8 @@ install_arch_packages() {
     
     # Update icon cache
     print_status "Updating icon cache..."
-    gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
-    gtk-update-icon-cache -f -t /usr/share/icons/Papirus 2>/dev/null || true
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
+    gtk-update-icon-cache -f -t /usr/share/icons/Papirus || true
     
     # Set up clipboard history
     print_status "Setting up clipboard history..."
