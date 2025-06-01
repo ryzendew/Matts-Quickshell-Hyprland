@@ -217,7 +217,7 @@ Contributions are welcome! Please feel free to submit:
 
 This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
-## 📞 Support
+## 📞 Support!!
 
 - **Issues**: [GitHub Issues](https://github.com/ryzendew/Matts-Quickshell-Hyprland/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/ryzendew/Matts-Quickshell-Hyprland/discussions)
