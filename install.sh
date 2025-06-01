@@ -654,24 +654,9 @@ install_arch_packages() {
             else
                 print_success "$package installed successfully"
             fi
-        fi
+        done
     done
     
-    # Install Tela Circle icon theme from official repository
-    print_status "Installing Tela Circle icon theme from official repository..."
-    if [ ! -d "/tmp/Tela-circle-icon-theme" ]; then
-        git clone --depth=1 https://github.com/vinceliuice/Tela-circle-icon-theme.git /tmp/Tela-circle-icon-theme
-    else
-        print_status "Tela-circle-icon-theme already cloned, pulling latest changes..."
-        cd /tmp/Tela-circle-icon-theme
-        git pull
-    fi
-    cd /tmp/Tela-circle-icon-theme
-    ./install.sh -a
-    print_success "Tela Circle icon theme installed from source."
-    # Optionally clean up
-    # rm -rf /tmp/Tela-circle-icon-theme
-
     if [ ${#failed_packages[@]} -gt 0 ]; then
         print_warning "The following AUR packages failed to install:"
         for pkg in "${failed_packages[@]}"; do
@@ -686,6 +671,81 @@ install_arch_packages() {
         fi
     else
         print_success "All AUR packages installed successfully"
+    fi
+
+    # --- Meta-Package Installation: Build all PKGBUILDs, then install all built packages ---
+    # Stage 1: Build all PKGBUILDs found in Arch-packages subdirectories
+    print_status "Building all PKGBUILDs in Arch-packages subdirectories..."
+    PKGBUILDS_FOUND=false
+    if compgen -G "./Arch-packages/*/" > /dev/null; then # Check if any subdirectories exist
+        for dir in ./Arch-packages/*/; do
+            if [[ -d "$dir" && -f "$dir/PKGBUILD" ]]; then
+                PKGBUILDS_FOUND=true
+                print_status "Building package in $dir..."
+                current_dir_for_makepkg=$(pwd)
+                (cd "$dir" && makepkg -s --noconfirm) # Build with dep sync, no install
+                cd "$current_dir_for_makepkg" # Return to original script directory
+                
+                # Move built package(s) from PKGBUILD dir to parent Arch-packages directory
+                shopt -s nullglob # Globs expand to nothing if no match
+                moved_any_from_subdir=false
+                for built_pkg_file in "$dir"/*.pkg.tar.*; do
+                    if [[ -f "$built_pkg_file" ]]; then
+                        mv "$built_pkg_file" ./Arch-packages/ 2>/dev/null || print_warning "Failed to move $built_pkg_file to ./Arch-packages/"
+                        moved_any_from_subdir=true
+                    fi
+                done
+                shopt -u nullglob # Reset glob behavior
+                if ! $moved_any_from_subdir; then
+                    print_warning "No package files found in $dir to move after building. Check makepkg output."
+                fi
+            fi
+        done
+    fi
+    if ! $PKGBUILDS_FOUND; then
+        print_status "No PKGBUILDs found in Arch-packages subdirectories to build."
+    fi
+
+    # Stage 2: Install all .pkg.tar.* files from the Arch-packages directory
+    print_status "Installing all built meta-packages from Arch-packages directory..."
+    installed_any_meta_pkg=false
+    if compgen -G "./Arch-packages/*.pkg.tar.*" > /dev/null; then # Check if any .pkg.tar.* files exist
+        for file_to_install in ./Arch-packages/*.pkg.tar.*; do
+            if [[ -f "$file_to_install" ]]; then
+                print_status "Installing meta-package: $file_to_install"
+                sudo pacman -U --needed --noconfirm "$file_to_install"
+                installed_any_meta_pkg=true
+            fi
+        done
+    fi
+    if ! $installed_any_meta_pkg; then
+        print_warning "No .pkg.tar.* meta-packages found in Arch-packages directory to install."
+        print_warning "Ensure PKGBUILDs were built successfully or prebuilt packages exist."
+    fi
+    # --- End of Meta-Package Installation ---
+
+    # Install Tela Circle icon theme from official repository if not already installed
+    print_status "Checking Tela Circle icon theme..."
+    if [ ! -d "/usr/share/icons/Tela-circle" ]; then
+        print_status "Tela Circle icon theme not found. Installing..."
+        TEMP_TELA_DIR="/tmp/Tela-circle-icon-theme"
+
+        if [ ! -d "$TEMP_TELA_DIR" ]; then
+            print_status "Cloning Tela Circle icon theme repository..."
+            git clone --depth=1 https://github.com/vinceliuice/Tela-circle-icon-theme.git "$TEMP_TELA_DIR" || { print_error "Failed to clone Tela icon theme repository."; exit 1; }
+        else
+            print_status "Temporary Tela Circle icon theme directory found. Updating and using it..."
+            (cd "$TEMP_TELA_DIR" && git pull) || print_warning "Failed to update temporary Tela icon theme repo."
+        fi
+        
+        print_status "Running Tela Circle icon theme installer..."
+        (cd "$TEMP_TELA_DIR" && sudo ./install.sh -a) || { print_error "Tela icon theme installation failed."; exit 1; }
+        
+        print_success "Tela Circle icon theme installed successfully."
+        # print_status "Cleaning up temporary Tela icon theme directory..."
+        # rm -rf "$TEMP_TELA_DIR"
+    else
+        print_status "Tela Circle icon theme is already installed. Skipping."
     fi
 
     # Enable essential system services
