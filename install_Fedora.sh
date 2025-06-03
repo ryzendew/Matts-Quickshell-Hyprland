@@ -63,40 +63,21 @@ if [[ $EUID -eq 0 ]]; then
    exit 1
 fi
 
-# Detect distribution
+# Detect distribution (Fedora only)
 detect_distribution() {
     if [ -f /etc/os-release ]; then
         source /etc/os-release
-        case $ID in
-            "arch"|"cachyos"|"endeavouros"|"artix"|"archcraft"|"arcolinux"|"archbang"|"archlabs"|"archmerge"|"archstrike"|"blackarch"|"archman"|"archlinux"|"archlinuxarm"|"archlinuxcn"|"archlinuxfr"|"archlinuxgr"|"archlinuxjp"|"archlinuxkr"|"archlinuxpl"|"archlinuxru"|"archlinuxtr"|"archlinuxvn"|"archlinuxzh"|"archlinuxzhcn"|"archlinuxzhtw"|"archlinuxzhhk"|"archlinuxzhmo"|"archlinuxzhsg"|"archlinuxzhtw"|"archlinuxzhcn"|"archlinuxzhtw"|"archlinuxzhhk"|"archlinuxzhmo"|"archlinuxzhsg")
-                DISTRO="arch"
-                print_status "Detected: $PRETTY_NAME (Arch-based)"
-                ;;
-            "garuda"|"manjaro")
-                print_error "Unsupported distribution: $PRETTY_NAME"
-                print_error "This script does not support Garuda Linux or Manjaro Linux"
-                print_error "Please use a different Arch-based distribution"
-                exit 1
-                ;;
-            *)
-                if command -v pacman &> /dev/null; then
-                    DISTRO="arch"
-                    print_status "Detected: $PRETTY_NAME (Arch-based)"
-                else
-                    print_error "Unsupported distribution: $PRETTY_NAME"
-                    print_error "This script supports:"
-                    print_error "- Arch Linux and most Arch-based distributions"
-                    exit 1
-                fi
-                ;;
-        esac
-    elif command -v pacman &> /dev/null; then
-        DISTRO="arch"
-        print_status "Detected: Arch-based distribution (fallback detection)"
+        if [[ "$ID" == "fedora" ]]; then
+            DISTRO="fedora"
+            print_status "Detected: $PRETTY_NAME"
+        else
+            print_error "Unsupported distribution: $PRETTY_NAME"
+            print_error "This script is specifically designed for Fedora Linux."
+            exit 1
+        fi
     else
-        print_error "Unable to detect supported distribution"
-        print_error "This script supports:"
-        print_error "- Arch Linux and most Arch-based distributions"
+        print_error "Unable to detect distribution"
+        print_error "This script is specifically designed for Fedora Linux."
         exit 1
     fi
 }
