@@ -115,16 +115,17 @@ check_distribution() {
 
 # Remove jack2 and install jack for CachyOS compatibility
 print_status "Checking for jack2 and replacing with jack..."
-if pacman -Qs jack2 >/dev/null; then
-    print_status "Removing jack2..."
-    sudo pacman -Rd --nodeps --noconfirm jack2
-    print_success "jack2 removed successfully"
+if dnf list installed jack2-lib &>/dev/null; then
+    print_status "Removing jack2 (conflicts with PipeWire)..."
+    sudo dnf remove -y jack2-lib || print_warning "Failed to remove jack2, continuing..."
+    print_success "jack2 removal attempted."
 fi
 
-if ! pacman -Qs jack >/dev/null; then
-    print_status "Installing pipewire-jack..."
-    sudo pacman -S --noconfirm piprewire-jack git
-    print_success "jack installed successfully"
+# Install pipewire-jack for JACK compatibility via PipeWire
+if ! dnf list installed pipewire-jack-audio-connection-kit &>/dev/null; then
+    print_status "Installing pipewire-jack for JACK compatibility..."
+    sudo dnf install -y pipewire-jack-audio-connection-kit || { print_error "Failed to install pipewire-jack. JACK applications may not work."; }
+    print_success "pipewire-jack installation attempted."
 fi
 
 # Check internet connectivity
