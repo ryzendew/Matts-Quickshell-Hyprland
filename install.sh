@@ -113,18 +113,30 @@ check_distribution() {
     fi
 }
 
+# Function to check if a package is installed
+is_package_installed() {
+    local package=$1
+    if pacman -Qs "$package" >/dev/null; then
+        return 0  # Package is installed
+    else
+        return 1  # Package is not installed
+    fi
+}
+
 # Remove jack2 and install jack for CachyOS compatibility
 print_status "Checking for jack2 and replacing with jack..."
-if pacman -Qs jack2 >/dev/null; then
+if is_package_installed "jack2"; then
     print_status "Removing jack2..."
     sudo pacman -Rd --nodeps --noconfirm jack2
     print_success "jack2 removed successfully"
 fi
 
-if ! pacman -Qs jack >/dev/null; then
+if ! is_package_installed "jack"; then
     print_status "Installing pipewire-jack..."
     sudo pacman -S --noconfirm pipewire-jack git
     print_success "jack installed successfully"
+else
+    print_status "jack is already installed"
 fi
 
 # Check internet connectivity
@@ -243,7 +255,28 @@ else
     print_status "yay is already installed"
 fi
 
-yay -S --noconfirm --needed adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git quickshell fuzzel
+# Function to install package if not already installed
+install_if_not_present() {
+    local package=$1
+    if ! is_package_installed "$package"; then
+        print_status "Installing $package..."
+        yay -S --noconfirm --needed "$package"
+        print_success "$package installed successfully"
+    else
+        print_status "$package is already installed"
+    fi
+}
+
+# Install AUR packages with checks
+aur_packages=(
+    adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship 
+    ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git 
+    ttf-rubik-vf ttf-gabarito-git quickshell fuzzel
+)
+
+for package in "${aur_packages[@]}"; do
+    install_if_not_present "$package"
+done
 
 # --- Install all required packages (official + AUR + meta-package PKGBUILD deps) ---
 print_status "Aggregating all dependencies from meta-package PKGBUILDs..."
@@ -266,65 +299,17 @@ official_packages=(
     xorg-xwayland xorg-xlsclients xorg-xrandr xorg-xinput xorg-xdpyinfo libx11 libxcomposite libxcursor libxdamage libxext libxfixes libxi libxinerama libxrandr libxrender libxss libxtst
     thunar thunar-volman thunar-archive-plugin lxqt-policykit
 )
-aur_packages=(
-    matugen-bin grimblast hyprswitch nwg-look swww hypridle hyprlock hyprpaper hyprpicker wlogout better-control easyeffects-bin google-breakpad nwg-displays dbus-update-activation-environment
-    adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-rubik-vf ttf-gabarito-git
-    nautilus-open-in-ptyxis vesktop-bin
-)
 
-# Aggregate all depends and makedepends from PKGBUILDs
-for pkgdir in Arch-packages/*/; do
-    if [[ -f "$pkgdir/PKGBUILD" ]]; then
-        # Extract depends and makedepends
-        deps=$(awk '/depends=\(/,/
-\)/ {if ($0 !~ /depends=\(/ && $0 !~ /\)/) print $0}' "$pkgdir/PKGBUILD" | tr -d '"' | tr -d "'" | tr -d ' ')
-        makedeps=$(awk '/makedepends=\(/,/
-\)/ {if ($0 !~ /makedepends=\(/ && $0 !~ /\)/) print $0}' "$pkgdir/PKGBUILD" | tr -d '"' | tr -d "'" | tr -d ' ')
-        for dep in $deps $makedeps; do
-            # Only add if not already in either array
-            if ! [[ " ${official_packages[@]} " =~ " $dep " ]] && ! [[ " ${aur_packages[@]} " =~ " $dep " ]]; then
-                aur_packages+=("$dep")
-            fi
-        done
+# Function to install official packages if not already installed
+for package in "${official_packages[@]}"; do
+    if ! is_package_installed "$package"; then
+        print_status "Installing $package..."
+        sudo pacman -S --noconfirm --needed "$package"
+        print_success "$package installed successfully"
+    else
+        print_status "$package is already installed"
     fi
 done
-# De-duplicate aur_packages
-readarray -t aur_packages < <(printf '%s
-' "${aur_packages[@]}" | awk '!seen[$0]++')
-
-print_status "Installing official repo packages with pacman..."
-sudo pacman -S --noconfirm --needed "${official_packages[@]}"
-print_status "Installing AUR packages with yay..."
-yay -S --noconfirm --needed "${aur_packages[@]}"
-
-# Copy configuration files, backing up any overwritten files/folders
-print_status "Copying configuration files..."
-if [ -d ".config" ]; then
-    overwrite_backup_dir="$HOME/.config.backup.$(date +%Y%m%d_%H%M%S).overwrite"
-    mkdir -p "$overwrite_backup_dir"
-    
-    for item in .config/*; do
-        base_item="$(basename "$item")"
-        
-        if [ -e "$HOME/.config/$base_item" ]; then
-            print_status "Backing up $base_item before overwriting..."
-            cp -rf "$HOME/.config/$base_item" "$overwrite_backup_dir/" 2>/dev/null || true
-        fi
-        
-        print_status "Force copying $base_item..."
-        cp -rf "$item" "$HOME/.config/" 2>/dev/null || true
-    done
-    
-    # Fix hardcoded paths - replace /home/matt/ with actual user's home directory
-    print_status "Fixing hardcoded paths for current user..."
-    find "$HOME/.config/quickshell" -type f \( -name "*.qml" -o -name "*.js" \) -exec sed -i "s|/home/matt/|$HOME/|g" {} \; 2>/dev/null || true
-    find "$HOME/.config/hypr" -type f -name "*.conf" -exec sed -i "s|/home/matt/|$HOME/|g" {} \; 2>/dev/null || true
-    
-    print_success "Configuration files copied successfully (force overwritten, backups made)"
-else
-    print_error "Configuration directory not found!"
-    exit 1
-fi
 
 # Distribution-specific package installation functions
 install_arch_packages() {
@@ -396,10 +381,61 @@ install_arch_packages() {
 
     # Install base-devel and git if not present
     print_status "Installing base development tools..."
-    if [ "$FORCE_INSTALL" = true ]; then
-        sudo pacman -S --needed --noconfirm --overwrite "*" base-devel git
+    if ! is_package_installed "base-devel"; then
+        if [ "$FORCE_INSTALL" = true ]; then
+            sudo pacman -S --needed --noconfirm --overwrite "*" base-devel
+        else
+            sudo pacman -S --needed --noconfirm base-devel
+        fi
     else
-        sudo pacman -S --needed --noconfirm base-devel git
+        print_status "base-devel is already installed"
+    fi
+
+    if ! is_package_installed "git"; then
+        sudo pacman -S --needed --noconfirm git
+    else
+        print_status "git is already installed"
+    fi
+
+    # Install additional AUR packages
+    additional_aur_packages=(
+        matugen-bin grimblast hyprswitch nwg-look swww hypridle hyprlock 
+        hyprpaper hyprpicker wlogout better-control easyeffects-bin 
+        google-breakpad nwg-displays dbus-update-activation-environment
+        nautilus-open-in-ptyxis vesktop-bin
+    )
+
+    for package in "${additional_aur_packages[@]}"; do
+        install_if_not_present "$package"
+    done
+
+    # Copy configuration files, backing up any overwritten files/folders
+    print_status "Copying configuration files..."
+    if [ -d ".config" ]; then
+        overwrite_backup_dir="$HOME/.config.backup.$(date +%Y%m%d_%H%M%S).overwrite"
+        mkdir -p "$overwrite_backup_dir"
+        
+        for item in .config/*; do
+            base_item="$(basename "$item")"
+            
+            if [ -e "$HOME/.config/$base_item" ]; then
+                print_status "Backing up $base_item before overwriting..."
+                cp -rf "$HOME/.config/$base_item" "$overwrite_backup_dir/" 2>/dev/null || true
+            fi
+            
+            print_status "Force copying $base_item..."
+            cp -rf "$item" "$HOME/.config/" 2>/dev/null || true
+        done
+        
+        # Fix hardcoded paths - replace /home/matt/ with actual user's home directory
+        print_status "Fixing hardcoded paths for current user..."
+        find "$HOME/.config/quickshell" -type f \( -name "*.qml" -o -name "*.js" \) -exec sed -i "s|/home/matt/|$HOME/|g" {} \; 2>/dev/null || true
+        find "$HOME/.config/hypr" -type f -name "*.conf" -exec sed -i "s|/home/matt/|$HOME/|g" {} \; 2>/dev/null || true
+        
+        print_success "Configuration files copied successfully (force overwritten, backups made)"
+    else
+        print_error "Configuration directory not found!"
+        exit 1
     fi
 
     # Split packages into official repo and AUR packages
