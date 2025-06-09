@@ -113,13 +113,13 @@ Item {
             MaterialSymbol {
                 Layout.alignment: Qt.AlignHCenter
                 iconSize: 55
-                color: Appearance.m3colors.m3outline
+                color: "#FFFFFF"
                 text: "notifications_active"
             }
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 font.pixelSize: Appearance.font.pixelSize.normal
-                color: Appearance.m3colors.m3outline
+                color: "#FFFFFF"
                 horizontalAlignment: Text.AlignHCenter
                 text: qsTr("No notifications")
             }

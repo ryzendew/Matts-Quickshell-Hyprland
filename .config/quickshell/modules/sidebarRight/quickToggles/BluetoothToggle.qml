@@ -21,7 +21,6 @@ QuickToggleButton {
             if (mouse.button === Qt.RightButton) {
                 Hyprland.dispatch(`exec ${ConfigOptions.apps.bluetooth}`)
                 Hyprland.dispatch("global quickshell:sidebarRightClose")
-
             }
         }
         hoverEnabled: false
@@ -41,6 +40,5 @@ QuickToggleButton {
         content: StringUtils.format(qsTr("{0} | Right-click to configure"), 
             (Bluetooth.bluetoothEnabled && Bluetooth.bluetoothDeviceName.length > 0) ? 
             Bluetooth.bluetoothDeviceName : qsTr("Bluetooth"))
-
     }
 }

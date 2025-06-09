@@ -53,7 +53,7 @@ Scope {
     }
 
     Variants { // For each monitor
-        model: Quickshell.screens  // Show on all monitors
+        model: Quickshell.screens.filter(screen => screen.name === "DP-1")
 
         PanelWindow { // Bar window
             id: barRoot

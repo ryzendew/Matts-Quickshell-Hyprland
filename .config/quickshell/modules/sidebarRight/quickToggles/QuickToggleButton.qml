@@ -22,8 +22,8 @@ Button {
         anchors.fill: parent
         radius: hasRightClickAction ? Appearance.rounding.medium : Appearance.rounding.full
         color: toggled ? 
-            (button.down ? Appearance.colors.colPrimaryActive : button.hovered ? Appearance.colors.colPrimaryHover : Appearance.m3colors.m3primary) :
-            (button.down ? Appearance.colors.colLayer1Active : button.hovered ? Appearance.colors.colLayer1Hover : ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1))
+            (button.down ? Appearance.colors.colLayer2Active : button.hovered ? Appearance.colors.colLayer2Hover : Appearance.colors.colLayer2) :
+            (button.down ? Appearance.colors.colLayer1Active : button.hovered ? Appearance.colors.colLayer1Hover : Appearance.colors.colLayer1)
 
         Behavior on color {
             ColorAnimation {
@@ -38,7 +38,7 @@ Button {
             iconSize: hasRightClickAction ? Appearance.font.pixelSize.huge : Appearance.font.pixelSize.larger
             fill: toggled ? 1 : 0
             text: buttonIcon
-            color: toggled ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer1
+            color: "#FFFFFF"
 
             Behavior on color {
                 ColorAnimation {

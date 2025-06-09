@@ -95,19 +95,19 @@ Singleton {
     }
 
     colors: QtObject {
-        property color colSubtext: m3colors.m3outline
+        property color colSubtext: "#FFFFFF"
         property color colLayer0: m3colors.m3background
-        property color colOnLayer0: m3colors.m3onBackground
+        property color colOnLayer0: "#FFFFFF"
         property color colLayer0Hover: ColorUtils.mix(colLayer0, colOnLayer0, 0.9)
         property color colLayer0Active: ColorUtils.mix(colLayer0, colOnLayer0, 0.8)
         property color colLayer1: m3colors.m3surfaceContainerLow;
-        property color colOnLayer1: m3colors.m3onSurfaceVariant;
+        property color colOnLayer1: "#FFFFFF";
         property color colOnLayer1Inactive: ColorUtils.mix(colOnLayer1, colLayer1, 0.45);
         property color colLayer2: ColorUtils.mix(m3colors.m3surfaceContainer, m3colors.m3surfaceContainerHigh, 0.55);
-        property color colOnLayer2: m3colors.m3onSurface;
+        property color colOnLayer2: "#FFFFFF";
         property color colOnLayer2Disabled: ColorUtils.mix(colOnLayer2, m3colors.m3background, 0.4);
         property color colLayer3: ColorUtils.mix(m3colors.m3surfaceContainerHigh, m3colors.m3onSurface, 0.96);
-        property color colOnLayer3: m3colors.m3onSurface;
+        property color colOnLayer3: "#FFFFFF";
         property color colLayer1Hover: ColorUtils.mix(colLayer1, colOnLayer1, 0.92);
         property color colLayer1Active: ColorUtils.mix(colLayer1, colOnLayer1, 0.85);
         property color colLayer2Hover: ColorUtils.mix(colLayer2, colOnLayer2, 0.90);

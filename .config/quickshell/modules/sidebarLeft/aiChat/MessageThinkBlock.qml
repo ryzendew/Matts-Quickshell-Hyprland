@@ -137,7 +137,7 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         iconSize: Appearance.font.pixelSize.normal
-                        color: Appearance.colors.colOnLayer2
+                        color: "#FFFFFF"
                         rotation: root.collapsed ? 0 : 180
                         Behavior on rotation {
                             NumberAnimation {

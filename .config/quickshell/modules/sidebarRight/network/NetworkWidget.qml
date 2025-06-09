@@ -43,7 +43,7 @@ Rectangle {
                         "signal_wifi_0_bar"
                     ) : "signal_wifi_off"
                     iconSize: Appearance.font.pixelSize.huge
-                    color: Network.wifiEnabled ? Appearance.colors.colOnLayer1 : Appearance.colors.colOnLayer1Inactive
+                    color: "#FFFFFF"
                 }
 
                 ColumnLayout {

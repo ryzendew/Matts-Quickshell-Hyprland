@@ -37,7 +37,7 @@ Button {
             text: buttonIcon
             Layout.fillWidth: false
             iconSize: Appearance.font.pixelSize.larger
-            color: Appearance.colors.colOnLayer1
+            color: "#FFFFFF"
         }
         StyledText {
             text: buttonText

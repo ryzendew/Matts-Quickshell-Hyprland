@@ -119,7 +119,7 @@ Item {
                                         horizontalAlignment: Text.AlignHCenter
                                         text: modelData.done ? "remove_done" : "check"
                                         iconSize: Appearance.font.pixelSize.larger
-                                        color: Appearance.colors.colOnLayer1
+                                        color: "#FFFFFF"
                                     }
                                 }
                                 TodoItemActionButton {
@@ -133,7 +133,7 @@ Item {
                                         horizontalAlignment: Text.AlignHCenter
                                         text: "delete_forever"
                                         iconSize: Appearance.font.pixelSize.larger
-                                        color: Appearance.colors.colOnLayer1
+                                        color: "#FFFFFF"
                                     }
                                 }
                             }

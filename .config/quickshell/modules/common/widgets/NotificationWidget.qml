@@ -403,7 +403,7 @@ Item {
                                 horizontalAlignment: Text.AlignLeft
                                 verticalAlignment: Text.AlignBottom
                                 font.pixelSize: Appearance.font.pixelSize.normal
-                                color: Appearance.colors.colOnLayer2
+                                color: "#FFFFFF"
                                 text: notificationObject.summary
                                 wrapMode: expanded ? Text.Wrap : Text.NoWrap
                                 elide: Text.ElideRight
@@ -432,7 +432,7 @@ Item {
                                 wrapMode: Text.Wrap
                                 horizontalAlignment: Text.AlignLeft
                                 font.pixelSize: Appearance.font.pixelSize.smaller
-                                color: Appearance.m3colors.m3outline
+                                color: "#FFFFFF"
                                 text: NotificationUtils.getFriendlyNotifTimeString(notificationObject.time)
 
                                 Connections {
@@ -496,7 +496,7 @@ Item {
                             elide: Text.ElideRight
                             font.pixelSize: Appearance.font.pixelSize.small
                             horizontalAlignment: Text.AlignLeft
-                            color: Appearance.m3colors.m3outline
+                            color: "#FFFFFF"
                             textFormat: expanded ? Text.RichText : Text.StyledText
                             text: expanded 
                                 ? `<style>img{max-width:${notificationBodyText.width}px;}</style>` + 

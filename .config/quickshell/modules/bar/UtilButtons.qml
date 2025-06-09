@@ -35,7 +35,7 @@ Rectangle {
                 fill: 1
                 text: "screenshot_region"
                 iconSize: Appearance.font.pixelSize.normal
-                color: Appearance.colors.colOnLayer2
+                color: "#FFFFFF"
             }
 
         }
@@ -49,9 +49,22 @@ Rectangle {
                 fill: 1
                 text: "colorize"
                 iconSize: Appearance.font.pixelSize.normal
-                color: Appearance.colors.colOnLayer2
+                color: "#FFFFFF"
             }
 
+        }
+
+        CircleUtilButton {
+            Layout.alignment: Qt.AlignVCenter
+            onClicked: Hyprland.dispatch("exec wvkbd-mobintl")
+
+            MaterialSymbol {
+                horizontalAlignment: Qt.AlignHCenter
+                fill: 1
+                text: "keyboard"
+                iconSize: Appearance.font.pixelSize.normal
+                color: "#FFFFFF"
+            }
         }
 
     }

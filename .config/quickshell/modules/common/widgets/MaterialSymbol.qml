@@ -11,7 +11,7 @@ Text {
     verticalAlignment: Text.AlignVCenter
     font.family: Appearance.font.family.iconMaterial
     font.pixelSize: iconSize
-    color: Appearance.m3colors.m3onBackground
+    color: "#FFFFFF"
 
     Behavior on fill {
         NumberAnimation {

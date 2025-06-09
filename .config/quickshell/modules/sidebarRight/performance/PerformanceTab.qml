@@ -60,13 +60,13 @@ ColumnLayout {
                     iconSize: 28
                     fill: PowerProfiles.profile === PowerProfile.Performance ? 1 : 0
                     text: "speed"
-                    color: PowerProfiles.profile === PowerProfile.Performance ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer1
+                    color: PowerProfiles.profile === PowerProfile.Performance ? "#FFFFFF" : "#FFFFFF"
                 }
                 StyledText {
                     text: qsTr("Performance")
                     font.pixelSize: Appearance.font.pixelSize.large
                     font.bold: true
-                    color: PowerProfiles.profile === PowerProfile.Performance ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer1
+                    color: PowerProfiles.profile === PowerProfile.Performance ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer0
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -101,13 +101,13 @@ ColumnLayout {
                     iconSize: 28
                     fill: PowerProfiles.profile === PowerProfile.Balanced ? 1 : 0
                     text: "balance"
-                    color: PowerProfiles.profile === PowerProfile.Balanced ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer1
+                    color: PowerProfiles.profile === PowerProfile.Balanced ? "#FFFFFF" : "#FFFFFF"
                 }
                 StyledText {
                     text: qsTr("Balanced")
                     font.pixelSize: Appearance.font.pixelSize.large
                     font.bold: true
-                    color: PowerProfiles.profile === PowerProfile.Balanced ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer1
+                    color: PowerProfiles.profile === PowerProfile.Balanced ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer0
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -142,13 +142,13 @@ ColumnLayout {
                     iconSize: 28
                     fill: PowerProfiles.profile === PowerProfile.PowerSaver ? 1 : 0
                     text: "battery_saver"
-                    color: PowerProfiles.profile === PowerProfile.PowerSaver ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer1
+                    color: PowerProfiles.profile === PowerProfile.PowerSaver ? "#FFFFFF" : "#FFFFFF"
                 }
                 StyledText {
                     text: qsTr("Power Saver")
                     font.pixelSize: Appearance.font.pixelSize.large
                     font.bold: true
-                    color: PowerProfiles.profile === PowerProfile.PowerSaver ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer1
+                    color: PowerProfiles.profile === PowerProfile.PowerSaver ? Appearance.m3colors.m3onPrimary : Appearance.colors.colOnLayer0
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                 }

@@ -68,7 +68,7 @@ Item {
                 MaterialSymbol {
                     text: "bluetooth"
                     iconSize: Appearance.font.pixelSize.huge
-                    color: bluetoothEnabled ? Appearance.colors.colOnLayer1 : Appearance.colors.colOnLayer1Inactive
+                    color: "#FFFFFF"
                 }
 
                 ColumnLayout {
@@ -143,7 +143,7 @@ Item {
                     MaterialSymbol {
                         text: settingsExpanded ? "expand_more" : "chevron_right"
                         iconSize: Appearance.font.pixelSize.normal
-                        color: Appearance.colors.colOnLayer1
+                        color: "#FFFFFF"
                     }
 
                     StyledText {
@@ -357,7 +357,7 @@ Item {
                     MaterialSymbol {
                         text: "refresh"
                         iconSize: Appearance.font.pixelSize.normal
-                        color: Appearance.colors.colOnLayer1
+                        color: "#FFFFFF"
                         visible: !isScanning && !isConnecting
                         MouseArea {
                             anchors.fill: parent
@@ -402,7 +402,7 @@ Item {
                             MaterialSymbol {
                                 text: getDeviceIcon(model.type)
                                 iconSize: Appearance.font.pixelSize.larger
-                                color: model.connected ? Appearance.colors.colAccent : Appearance.colors.colOnLayer1
+                                color: model.connected ? "#FFFFFF" : "#FFFFFF"
                             }
 
                             ColumnLayout {
@@ -412,7 +412,7 @@ Item {
                                 StyledText {
                                     text: model.name
                                     font.pixelSize: Appearance.font.pixelSize.normal
-                                    color: model.connected ? Appearance.colors.colAccent : Appearance.colors.colOnLayer1
+                                    color: model.connected ? "#FFFFFF" : "#FFFFFF"
                                 }
 
                                 RowLayout {
@@ -430,7 +430,7 @@ Item {
                                         text: model.connected ? qsTr("Connected") : 
                                               model.paired ? qsTr("Paired") : ""
                                         font.pixelSize: Appearance.font.pixelSize.small
-                                        color: model.connected ? Appearance.colors.colAccent : Appearance.colors.colSubtext
+                                        color: model.connected ? "#FFFFFF" : "#FFFFFF"
                                         visible: text !== ""
                                     }
 
@@ -446,7 +446,7 @@ Item {
                             MaterialSymbol {
                                 text: model.connected ? "more_vert" : "login"
                                 iconSize: Appearance.font.pixelSize.normal
-                                color: Appearance.colors.colOnLayer1
+                                color: "#FFFFFF"
                                 MouseArea {
                                     anchors.fill: parent
                                     onClicked: {

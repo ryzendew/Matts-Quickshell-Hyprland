@@ -74,10 +74,10 @@ function getIconPath(iconName, homeDir) {
         "Tela-circle-nord", "Tela-circle-black", "breeze-plus", "breeze-plus-dark", "breeze", "breeze-dark", "hicolor", "Adwaita"
     ];
     var iconBasePaths = [
-         "/usr/share/icons",
         homeDir + "/.local/share/icons",
         homeDir + "/.icons",
-       
+        "/usr/share/icons",
+        "/usr/local/share/icons"
     ];
     var sizeDirs = ["scalable/apps", "48x48/apps", "64x64/apps", "apps/48", "128x128/apps"];
     var extensions = [".svg", ".png"];

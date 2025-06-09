@@ -128,7 +128,7 @@ TabButton {
                 text: buttonIcon
                 iconSize: Appearance.font.pixelSize.hugeass
                 fill: selected ? 1 : 0
-                color: selected ? Appearance.m3colors.m3primary : Appearance.colors.colOnLayer1
+                color: selected ? "#FFFFFF" : "#FFFFFF"
                 Behavior on color {
                     animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
                 }
@@ -138,7 +138,7 @@ TabButton {
                 Layout.alignment: Qt.AlignHCenter
                 horizontalAlignment: Text.AlignHCenter
                 font.pixelSize: Appearance.font.pixelSize.small
-                color: selected ? Appearance.m3colors.m3primary : Appearance.colors.colOnLayer1
+                color: selected ? "#FFFFFF" : "#FFFFFF"
                 text: buttonText
                 Behavior on color {
                     animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)

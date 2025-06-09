@@ -44,7 +44,7 @@ Item {
         anchors {
             centerIn: parent
             verticalCenter: parent.verticalCenter
-            verticalCenterOffset: -12
+            verticalCenterOffset: -11
         }
 
         Text {
