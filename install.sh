@@ -271,7 +271,7 @@ install_if_not_present() {
 aur_packages=(
     adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship 
     ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git 
-    ttf-rubik-vf ttf-gabarito-git quickshell fuzzel
+    ttf-rubik-vf ttf-gabarito-git quickshell fuzzel walrs
 )
 
 for package in "${aur_packages[@]}"; do
