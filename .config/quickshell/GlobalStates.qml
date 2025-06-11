@@ -52,4 +52,13 @@ Singleton {
             Hyprland.dispatch("killactive")
         }
     }
+
+    GlobalShortcut {
+        name: "hyprmenu"
+        description: qsTr("Open application menu")
+
+        onPressed: {
+            hyprMenuOpen = !hyprMenuOpen
+        }
+    }
 }

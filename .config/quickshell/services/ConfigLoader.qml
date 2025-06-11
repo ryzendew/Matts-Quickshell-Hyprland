@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import "root:/modules/common"
 import "root:/modules/common/functions/file_utils.js" as FileUtils
+import "root:/modules/common/functions/string_utils.js" as StringUtils
 import "root:/modules/common/functions/object_utils.js" as ObjectUtils
 import QtQuick
 import Quickshell
@@ -10,83 +11,137 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import Qt.labs.platform
 
+/**
+ * Loads and manages the shell configuration file.
+ * The config file is by default at XDG_CONFIG_HOME/illogical-impulse/config.json.
+ * Automatically reloaded when the file changes.
+ */
 Singleton {
     id: root
-    property string fileDir: `${XdgDirectories.config}/illogical-impulse`
-    property string fileName: "config.json"
-    property string filePath: FileUtils.trimFileProtocol(`${root.fileDir}/${root.fileName}`)
+    property string filePath: Directories.shellConfigPath
     property bool firstLoad: true
-    property bool isLoading: false
-    property string lastError: ""
+    property bool preventNextLoad: false
+    property var preventNextNotification: false
 
-    // Helper function for controlled logging
-    function log(level, message) {
-        if (level === "debug" && !ConfigOptions.logging.debug) return
-        if (level === "info" && !ConfigOptions.logging.info) return
-        if (level === "warning" && !ConfigOptions.logging.warning) return
-        if (level === "error" && !ConfigOptions.logging.error) return
-        // console.log(`[ConfigLoader][${level.toUpperCase()}] ${message}`)
+    onPreventNextNotificationChanged: {
+        console.log("HMM: preventNextNotification:", root.preventNextNotification);
     }
 
     function loadConfig() {
-        if (isLoading) {
-            log("warning", "Config load already in progress")
-            return
-        }
-
-        isLoading = true
-        lastError = ""
-        
-        try {
-            log("info", "Loading configuration from: " + filePath)
         configFileView.reload()
-        } catch (e) {
-            lastError = e.toString()
-            log("error", "Failed to load config: " + lastError)
-            isLoading = false
-        }
     }
 
     function applyConfig(fileContent) {
+        console.log("[ConfigLoader] Applying config from file:", root.filePath);
         try {
-            log("debug", "Parsing configuration JSON")
-            const json = JSON.parse(fileContent)
+            if (fileContent.trim() === "") {
+                console.warn("[ConfigLoader] Config file is empty, skipping load.");
+                return;
+            }
+            const json = JSON.parse(fileContent);
 
-            log("debug", "Applying configuration to Qt objects")
-            ObjectUtils.applyToQtObject(ConfigOptions, json)
-            
+            ObjectUtils.applyToQtObject(ConfigOptions, json);
             if (root.firstLoad) {
-                root.firstLoad = false
-                log("info", "Initial configuration loaded successfully")
-            } else {
-                log("info", "Configuration reloaded successfully")
-                Hyprland.dispatch(`exec notify-send "${qsTr("Shell configuration reloaded")}" "${root.filePath}"`)
+                root.firstLoad = false;
+                root.preventNextLoad = true;
+                root.saveConfig(); // Make sure new properties are added to the user's config file
             }
         } catch (e) {
-            lastError = e.toString()
-            log("error", "Error applying configuration: " + lastError)
+            console.error("[ConfigLoader] Error reading file:", e);
+            console.log("[ConfigLoader] File content was:", fileContent);
             Hyprland.dispatch(`exec notify-send "${qsTr("Shell configuration failed to load")}" "${root.filePath}"`)
-        } finally {
-            isLoading = false
+            return;
+
         }
+    }
+
+    function setLiveConfigValue(nestedKey, value) {
+        let keys = nestedKey.split(".");
+        let obj = ConfigOptions;
+        let parents = [obj];
+
+        // Traverse and collect parent objects
+        for (let i = 0; i < keys.length - 1; ++i) {
+            if (!obj[keys[i]] || typeof obj[keys[i]] !== "object") {
+                obj[keys[i]] = {};
+            }
+            obj = obj[keys[i]];
+            parents.push(obj);
+        }
+
+        // Convert value to correct type using JSON.parse when safe
+        let convertedValue = value;
+        if (typeof value === "string") {
+            let trimmed = value.trim();
+            if (trimmed === "true" || trimmed === "false" || !isNaN(Number(trimmed))) {
+                try {
+                    convertedValue = JSON.parse(trimmed);
+                } catch (e) {
+                    convertedValue = value;
+                }
+            }
+        }
+
+        console.log(parents.join("."));
+        console.log(`[ConfigLoader] Setting live config value: ${nestedKey} = ${convertedValue}`);
+        obj[keys[keys.length - 1]] = convertedValue;
+    }
+
+    function saveConfig() {
+        const plainConfig = ObjectUtils.toPlainObject(ConfigOptions)
+        Hyprland.dispatch(`exec echo '${StringUtils.shellSingleQuoteEscape(JSON.stringify(plainConfig, null, 2))}' > '${root.filePath}'`)
+    }
+
+    function setConfigValueAndSave(nestedKey, value, preventNextNotification = true) {
+        setLiveConfigValue(nestedKey, value);
+        root.preventNextNotification = preventNextNotification;
+        console.log("SETTING: preventNextNotification:", root.preventNextNotification);
+        saveConfig();
     }
 
     Timer {
         id: delayedFileRead
         interval: ConfigOptions.hacks.arbitraryRaceConditionDelay
-        repeat: false
         running: false
         onTriggered: {
-            root.applyConfig(configFileView.text())
+            console.log("GONNA APPLY KONFIG preventNextNotification:", root.preventNextNotification);
+            if (root.preventNextLoad) {
+                root.preventNextLoad = false;
+                return;
+            }
+            if (root.firstLoad) {
+                root.applyConfig(configFileView.text())
+            } else {
+                console.log("APPLYING: preventNextNotification:", root.preventNextNotification);
+                root.applyConfig(configFileView.text())
+                if (!root.preventNextNotification) {
+                    Hyprland.dispatch(`exec notify-send "${qsTr("Shell configuration reloaded")}" "${root.filePath}"`)
+                } else {
+                    // root.preventNextNotification = false;
+                }
+            }
         }
     }
 
 	FileView { 
         id: configFileView
-        path: root.filePath
-        onTextChanged: {
-            if (text !== "") {
+        path: Qt.resolvedUrl(root.filePath)
+        watchChanges: true
+        onFileChanged: {
+            this.reload()
             delayedFileRead.start()
+        }
+        onLoadedChanged: {
+            const fileContent = configFileView.text()
+            delayedFileRead.start()
+        }
+        onLoadFailed: (error) => {
+            if(error == FileViewError.FileNotFound) {
+                console.log("[ConfigLoader] File not found, creating new file.")
+                root.saveConfig()
+                Hyprland.dispatch(`exec notify-send "${qsTr("Shell configuration created")}" "${root.filePath}"`)
+            } else {
+                Hyprland.dispatch(`exec notify-send "${qsTr("Shell configuration failed to load")}" "${root.filePath}"`)
             }
         }
     }

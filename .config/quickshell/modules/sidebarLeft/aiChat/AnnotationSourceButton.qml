@@ -11,35 +11,19 @@ import Quickshell.Io
 import Quickshell.Widgets
 import Quickshell.Hyprland
 
-Button {
+RippleButton {
     id: root
     property string displayText
     property string url
-
-    property string downloadUserAgent: ConfigOptions.networking.userAgent
-    property string faviconDownloadPath
-    property string domainName: url.includes("vertexaisearch") ? displayText : StringUtils.getBaseUrl(url)
-    property string faviconUrl: `https://www.google.com/s2/favicons?domain=${domainName}&sz=32`
-    property string fileName: `${domainName}.ico`
-    property string faviconFilePath: `${faviconDownloadPath}/${fileName}`
 
     property real faviconSize: 20
     implicitHeight: 30
     leftPadding: (implicitHeight - faviconSize) / 2
     rightPadding: 10
-
-    Process {
-        id: faviconDownloadProcess
-        running: false
-        command: ["bash", "-c", `[ -f ${faviconFilePath} ] || curl -s '${root.faviconUrl}' -o '${faviconFilePath}' -L -H 'User-Agent: ${downloadUserAgent}'`]
-        onExited: (exitCode, exitStatus) => {
-            root.faviconUrl = root.faviconFilePath
-        }
-    }
-
-    Component.onCompleted: {
-        faviconDownloadProcess.running = true
-    }
+    buttonRadius: Appearance.rounding.full
+    colBackground: Appearance.m3colors.m3surfaceContainerHighest
+    colBackgroundHover: Appearance.colors.colSurfaceContainerHighestHover
+    colRipple: Appearance.colors.colSurfaceContainerHighestActive
 
     PointingHandInteraction {}
     onClicked: {
@@ -49,34 +33,25 @@ Button {
         }
     }
 
-    background: Rectangle {
-        radius: Appearance.rounding.full
-        color: (root.down ? Appearance.colors.colSurfaceContainerHighestActive : 
-            root.hovered ? Appearance.colors.colSurfaceContainerHighestHover :
-            Appearance.m3colors.m3surfaceContainerHighest)
-    }
-
-    contentItem: RowLayout {
-        spacing: 5
-        IconImage {
-            id: iconImage
-            source: Qt.resolvedUrl(root.faviconUrl)
-            implicitSize: root.faviconSize
-
-            layer.enabled: true
-            layer.effect: OpacityMask {
-                maskSource: Rectangle {
-                    width: iconImage.implicitSize
-                    height: iconImage.implicitSize
-                    radius: Appearance.rounding.full
-                }
+    contentItem: Item {
+        anchors.centerIn: parent
+        implicitWidth: rowLayout.implicitWidth
+        implicitHeight: rowLayout.implicitHeight
+        RowLayout {
+            id: rowLayout
+            anchors.fill: parent
+            spacing: 5
+            Favicon {
+                url: root.url
+                size: root.faviconSize
+                displayText: root.displayText
             }
-        }
-        StyledText {
-            id: text
-            horizontalAlignment: Text.AlignHCenter
-            text: displayText
-            color: Appearance.m3colors.m3onSurface
+            StyledText {
+                id: text
+                horizontalAlignment: Text.AlignHCenter
+                text: displayText
+                color: Appearance.m3colors.m3onSurface
+            }
         }
     }
 }

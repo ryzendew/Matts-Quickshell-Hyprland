@@ -7,34 +7,17 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 
-Button {
+GroupButton {
     id: button
     property string buttonIcon
     property bool activated: false
+    toggled: activated
 
-    implicitHeight: 30
-    implicitWidth: 30
-
-    PointingHandInteraction {}
-
-    background: Rectangle {
-        radius: Appearance.rounding.small
-        color: !button.enabled ? ColorUtils.transparentize(Appearance.m3colors.m3surfaceContainerHighest, 1) : 
-            button.activated ? (button.down ? Appearance.colors.colPrimaryActive : 
-            button.hovered ? Appearance.colors.colPrimaryHover :
-            Appearance.m3colors.m3primary) :
-            (button.down ? Appearance.colors.colSurfaceContainerHighestActive : 
-            button.hovered ? Appearance.colors.colSurfaceContainerHighestHover :
-            ColorUtils.transparentize(Appearance.m3colors.m3surfaceContainerHighest, 1))
-
-        Behavior on color {
-            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-        }
-    }
+    baseWidth: height
 
     contentItem: MaterialSymbol {
         horizontalAlignment: Text.AlignHCenter
-        font.pixelSize: Appearance.font.pixelSize.large
+        iconSize: Appearance.font.pixelSize.larger
         text: buttonIcon
         color: button.activated ? Appearance.m3colors.m3onPrimary :
             button.enabled ? Appearance.m3colors.m3onSurface :

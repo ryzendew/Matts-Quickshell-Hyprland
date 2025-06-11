@@ -12,6 +12,7 @@ import Quickshell
 import Quickshell.Widgets
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import "./CheatsheetKeybinds.qml"
 
 Scope { // Scope
     id: root
@@ -55,7 +56,11 @@ Scope { // Scope
                 }
             }
 
+
             // Background
+            StyledRectangularShadow {
+                target: cheatsheetBackground
+            }
             Rectangle {
                 id: cheatsheetBackground
                 anchors.centerIn: parent
@@ -65,27 +70,18 @@ Scope { // Scope
                 implicitWidth: cheatsheetColumnLayout.implicitWidth + padding * 2
                 implicitHeight: cheatsheetColumnLayout.implicitHeight + padding * 2
 
-                layer.enabled: true
-                layer.effect: MultiEffect {
-                    source: cheatsheetBackground
-                    anchors.fill: cheatsheetBackground
-                    shadowEnabled: true
-                    shadowVerticalOffset: 1
-                    shadowColor: Appearance.colors.colShadow
-                    shadowBlur: 0.5
-                }
-
                 Keys.onPressed: (event) => { // Esc to close
                     if (event.key === Qt.Key_Escape) {
                         cheatsheetRoot.hide()
                     }
                 }
 
-                Button { // Close button
+                RippleButton { // Close button
                     id: closeButton
                     focus: cheatsheetRoot.visible
                     implicitWidth: 40
                     implicitHeight: 40
+                    buttonRadius: Appearance.rounding.full
                     anchors {
                         top: parent.top
                         right: parent.right
@@ -93,28 +89,15 @@ Scope { // Scope
                         rightMargin: 20
                     }
 
-                    PointingHandInteraction {}
                     onClicked: {
                         cheatsheetRoot.hide()
                     }
 
-                    background: null
-                    contentItem: Rectangle {
-                        anchors.fill: parent
-                        radius: Appearance.rounding.full
-                        color: closeButton.pressed ? Appearance.colors.colLayer0Active :
-                            closeButton.hovered ? Appearance.colors.colLayer0Hover :
-                            ColorUtils.transparentize(Appearance.colors.colLayer0, 1)
-                        
-                        Behavior on color {
-                            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-                        }
-
-                        MaterialSymbol {
-                            anchors.centerIn: parent
-                            font.pixelSize: Appearance.font.pixelSize.title
-                            text: "close"
-                        }
+                    contentItem: MaterialSymbol {
+                        anchors.centerIn: parent
+                        horizontalAlignment: Text.AlignHCenter
+                        font.pixelSize: Appearance.font.pixelSize.title
+                        text: "close"
                     }
                 }
 

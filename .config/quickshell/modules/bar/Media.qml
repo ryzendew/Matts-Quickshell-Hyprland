@@ -14,93 +14,16 @@ Item {
     property bool borderless: ConfigOptions.bar.borderless
     readonly property MprisPlayer activePlayer: MprisController.activePlayer
     readonly property string cleanedTitle: StringUtils.cleanMusicTitle(activePlayer?.trackTitle) || qsTr("No media")
-    readonly property string formattedText: cleanedTitle + (activePlayer?.trackArtist ? (" - " + String(activePlayer.trackArtist)) : "")
-    
-    // Track position and length separately for better accuracy
-    property real currentPosition: activePlayer ? activePlayer.position : 0
-    property real totalLength: activePlayer ? activePlayer.length : 0
-    readonly property real progress: totalLength > 0 ? Math.min(1, Math.max(0, currentPosition / totalLength)) : 0
 
     Layout.fillHeight: true
-    implicitWidth: contentRow.implicitWidth + 35
-    implicitHeight: parent.height
-
-    // Update position when player changes
-    Connections {
-        target: activePlayer
-        function onPositionChanged() {
-            currentPosition = activePlayer.position
-        }
-        function onLengthChanged() {
-            totalLength = activePlayer.length
-        }
-    }
+    implicitWidth: rowLayout.implicitWidth + rowLayout.spacing * 2
+    implicitHeight: 40
 
     Timer {
         running: activePlayer?.playbackState == MprisPlaybackState.Playing
-        interval: 500
+        interval: 1000
         repeat: true
-        onTriggered: {
-            if (activePlayer) {
-                currentPosition = activePlayer.position
-                totalLength = activePlayer.length
-            }
-        }
-    }
-
-    Row {
-        id: contentRow
-        anchors.centerIn: parent
-        height: parent.height
-        spacing: 16
-
-        CircularProgress {
-            id: progressCircle
-            anchors.verticalCenter: parent.verticalCenter
-            width: 32
-            height: 32
-            lineWidth: 2
-            value: root.progress
-            Behavior on value {
-                enabled: activePlayer?.playbackState == MprisPlaybackState.Playing
-                NumberAnimation {
-                    duration: 500
-                    easing.type: Easing.OutCubic
-                }
-            }
-            secondaryColor: Appearance.m3colors.m3secondaryContainer
-            primaryColor: Appearance.m3colors.m3onSecondaryContainer
-
-            MaterialSymbol {
-                anchors.centerIn: parent
-                fill: 1
-                text: activePlayer?.isPlaying ? "pause" : "play_arrow"
-                iconSize: 20
-                color: Appearance.m3colors.m3onSecondaryContainer
-            }
-        }
-
-        Text {
-            id: mediaText
-            anchors.verticalCenter: parent.verticalCenter
-            width: textMetrics.width
-            color: Appearance.colors.colOnLayer1
-            text: String(formattedText)
-            font.pixelSize: Appearance.font.pixelSize.normal
-            font.family: Appearance.font.family.main
-            textFormat: Text.PlainText
-            renderType: Text.NativeRendering
-            elide: Text.ElideNone
-            clip: false
-        }
-    }
-
-    // Use TextMetrics to calculate the exact width needed
-    TextMetrics {
-        id: textMetrics
-        text: String(formattedText)
-        font.pixelSize: Appearance.font.pixelSize.normal
-        font.family: Appearance.font.family.main
+        onTriggered: activePlayer.positionChanged()
     }
 
     MouseArea {
@@ -118,4 +41,51 @@ Item {
             }
         }
     }
+
+    Rectangle { // Background
+        anchors.centerIn: parent
+        width: parent.width
+        implicitHeight: 32
+        color: borderless ? "transparent" : Appearance.colors.colLayer1
+        radius: Appearance.rounding.small
+    }
+
+    RowLayout { // Real content
+        id: rowLayout
+
+        spacing: 4
+        anchors.fill: parent
+
+        CircularProgress {
+            Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: rowLayout.spacing
+            lineWidth: 2
+            value: activePlayer?.position / activePlayer?.length
+            size: 26
+            secondaryColor: Appearance.m3colors.m3secondaryContainer
+            primaryColor: Appearance.m3colors.m3onSecondaryContainer
+
+            MaterialSymbol {
+                anchors.centerIn: parent
+                fill: 1
+                text: activePlayer?.isPlaying ? "pause" : "play_arrow"
+                iconSize: Appearance.font.pixelSize.normal
+                color: Appearance.m3colors.m3onSecondaryContainer
+            }
+
+        }
+
+        StyledText {
+            width: rowLayout.width - (CircularProgress.size + rowLayout.spacing * 2)
+            Layout.alignment: Qt.AlignVCenter
+            Layout.fillWidth: true // Ensures the text takes up available space
+            Layout.rightMargin: rowLayout.spacing
+            horizontalAlignment: Text.AlignHCenter
+            elide: Text.ElideRight // Truncates the text on the right
+            color: Appearance.colors.colOnLayer1
+            text: `${cleanedTitle}${activePlayer?.trackArtist ? ' • ' + activePlayer.trackArtist : ''}`
+        }
+
+    }
+
 }

@@ -1,5 +1,3 @@
-.pragma library
-
 const substitutions = {
     "code-url-handler": "visual-studio-code",
     "Code": "visual-studio-code",
@@ -11,19 +9,20 @@ const substitutions = {
     "wpsoffice": "wps-office2019-kprometheus",
     "footclient": "foot",
     "zen": "zen-browser",
-     "ptyxis": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/org.gnome.Ptyxis.svg",
-      "AffinityPhoto.desktop": "/home/matt/.local/share/icons/AffinityPhoto.png",
-      "steam-native": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/steam.svg",
-      "lutris": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/lutris.svg",
-      "com.blackmagicdesign.resolve.desktop": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/resolve.svg",
-      "cider": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/cider.svg",
-      "vesktop": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/vesktop.svg",
-      "obs": "/home/matt/.config/quickshell/assets/icons/obs.svg",
-      "heroic": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/heroic.svg",
-      "microsoft-edge-dev": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/microsoft-edge-dev.svg",
-      "org.gnome.Nautilus": "/home/matt/.local/share/icons/Tela-circle-blue-dark/scalable/apps/nautilus.svg",
+    "ptyxis": "$HOME/.local/share/icons/Tela-circle-blue-dark/scalable/apps/org.gnome.Ptyxis.svg",
+    "AffinityPhoto.desktop": "$HOME/.local/share/icons/AffinityPhoto.png",
+    "steam-native": "$HOME/.local/share/icons/Tela-circle-blue-dark/scalable/apps/steam.svg",
+    "lutris": "$HOME/.local/share/icons/Tela-circle-blue-dark/scalable/apps/lutris.svg",
+    "com.blackmagicdesign.resolve.desktop": "$HOME/.local/share/icons/Tela-circle-blue-dark/scalable/apps/resolve.svg",
+    "cider": "$HOME/.local/share/icons/Tela-circle-blue-dark/scalable/apps/cider.svg",
+    "vesktop": "$HOME/.local/share/icons/Tela-circle-blue-dark/scalable/apps/vesktop.svg",
+    "obs": "$HOME/.config/quickshell/assets/icons/obs.svg",
+    "heroic": "$HOME/.local/share/icons/Tela-circle-blue-dark/scalable/apps/heroic.svg",
+    "microsoft-edge-dev": "$HOME/.local/share/icons/Tela-circle-blue-dark/scalable/apps/microsoft-edge-dev.svg",
+    "org.gnome.Nautilus": "$HOME/.local/share/icons/Tela-circle-blue-dark/scalable/apps/nautilus.svg",
     "": "image-missing"
 }
+
 const regexSubstitutions = [
     {
         "regex": "/^steam_app_(\\d+)$/",
@@ -34,7 +33,6 @@ const regexSubstitutions = [
         "replace": "minecraft"
     }
 ]
-
 
 function iconExists(iconName) {
     return false; // TODO: Make this work without Gtk

@@ -9,7 +9,7 @@ Item {
     width: weatherRow.width
     height: parent.height
 
-    property string weatherLocation: "City"
+    property string weatherLocation: "Halifax, Nova Scotia, Canada"
     property var weatherData: ({
         currentTemp: "",
         feelsLike: "",

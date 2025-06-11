@@ -8,38 +8,59 @@ CACHE_DIR="$XDG_CACHE_HOME/quickshell"
 STATE_DIR="$XDG_STATE_HOME/quickshell"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Create necessary directories
-mkdir -p "$STATE_DIR/user/generated"
-mkdir -p "$CONFIG_DIR/style"
+term_alpha=100 #Set this to < 100 make all your terminals transparent
+# sleep 0 # idk i wanted some delay or colors dont get applied properly
+if [ ! -d "$STATE_DIR"/user/generated ]; then
+  mkdir -p "$STATE_DIR"/user/generated
+fi
+cd "$CONFIG_DIR" || exit
 
-apply_colors() {
-    local color="$1"
-    local mode="${2:-dark}"
-    local scheme="${3:-scheme-tonal-spot}"
+colornames=''
+colorstrings=''
+colorlist=()
+colorvalues=()
 
-    # Generate colors using our Python script
-    python "$SCRIPT_DIR/generate_colors.py" \
-        --color "$color" \
-        --mode "$mode" \
-        --scheme "$scheme" \
-        --output "$CONFIG_DIR/style/colors.qml"
+colornames=$(cat $STATE_DIR/user/generated/material_colors.scss | cut -d: -f1)
+colorstrings=$(cat $STATE_DIR/user/generated/material_colors.scss | cut -d: -f2 | cut -d ' ' -f2 | cut -d ";" -f1)
+IFS=$'\n'
+colorlist=($colornames)     # Array of color names
+colorvalues=($colorstrings) # Array of color values
 
-    # Try to reload QuickShell components gracefully first
-    if pkill -USR1 -f "quickshell"; then
-        # Wait a bit to let the reload take effect
-        sleep 1
-        return 0
+apply_term() {
+  # Check if terminal escape sequence template exists
+  if [ ! -f "$SCRIPT_DIR"/terminal/sequences.txt ]; then
+    echo "Template file not found for Terminal. Skipping that."
+    return
+  fi
+  # Copy template
+  mkdir -p "$STATE_DIR"/user/generated/terminal
+  cp "$SCRIPT_DIR"/terminal/sequences.txt "$STATE_DIR"/user/generated/terminal/sequences.txt
+  # Apply colors
+  for i in "${!colorlist[@]}"; do
+    sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/sequences.txt
+  done
+
+  sed -i "s/\$alpha/$term_alpha/g" "$STATE_DIR/user/generated/terminal/sequences.txt"
+
+  for file in /dev/pts/*; do
+    if [[ $file =~ ^/dev/pts/[0-9]+$ ]]; then
+      {
+      cat "$STATE_DIR"/user/generated/terminal/sequences.txt >"$file"
+      } & disown || true
     fi
-
-    # If QuickShell is not running or reload failed, start it
-    if ! pgrep -f "quickshell" > /dev/null; then
-        quickshell &>/dev/null &
-    fi
+  done
 }
 
-# If no arguments provided, use default color
-if [ $# -eq 0 ]; then
-    apply_colors "#91689E"
-else
-    apply_colors "$@"
-fi
+apply_qt() {
+  sh "$CONFIG_DIR/scripts/kvantum/materialQT.sh"          # generate kvantum theme
+  python "$CONFIG_DIR/scripts/kvantum/changeAdwColors.py" # apply config colors
+}
+
+apply_ags() {
+  pidof agsv1 && agsv1 run-js "handleStyles(false);"
+  pidof agsv1 && agsv1 run-js 'openColorScheme.value = true; Utils.timeout(2000, () => openColorScheme.value = false);'
+}
+
+apply_ags &
+apply_qt &
+apply_term &

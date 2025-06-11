@@ -12,21 +12,18 @@ import QtQuick.Layouts
 import Qt5Compat.GraphicalEffects
 import Quickshell.Io
 import Quickshell
+import Quickshell.Widgets
+import Quickshell.Wayland
 import Quickshell.Hyprland
+import "./ApiCommandButton.qml"
 
 Item {
     id: root
-    property var panelWindow
     property var inputField: messageInputField
     property string commandPrefix: "/"
-    property string faviconDownloadPath: FileUtils.trimFileProtocol(`${XdgDirectories.cache}/media/favicons`)
 
     property var suggestionQuery: ""
     property var suggestionList: []
-
-    Component.onCompleted: {
-        Hyprland.dispatch(`exec mkdir -p ${faviconDownloadPath}`)
-    }
 
     onFocusChanged: (focus) => {
         if (focus) {
@@ -70,6 +67,19 @@ Item {
                     Ai.printApiKey()
                 } else {
                     Ai.setApiKey(args[0]);
+                }
+            }
+        },
+        {
+            name: "temp",
+            description: qsTr("Set temperature (randomness) of the model. Values range between 0 to 2 for Gemini, 0 to 1 for other models. Default is 0.5."),
+            execute: (args) => {
+                // console.log(args)
+                if (args.length == 0 || args[0] == "get") {
+                    Ai.printTemperature()
+                } else {
+                    const temp = parseFloat(args[0]);
+                    Ai.setTemperature(temp);
                 }
             }
         },
@@ -118,9 +128,14 @@ int main(int argc, char* argv[]) {
 
 ### LaTeX
 
-- Simple inline: $\\frac{1}{2} = \\frac{2}{4}$
-- Complex inline: $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$
-- Another complex inline: \\\\[\\int_0^\\infty \\frac{1}{x^2} dx = \\infty\\\\]
+
+Inline w/ dollar signs: $\\frac{1}{2} = \\frac{2}{4}$
+
+Inline w/ double dollar signs: $$\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}$$
+
+Inline w/ backslash and square brackets \\[\\int_0^\\infty \\frac{1}{x^2} dx = \\infty\\]
+
+Inline w/ backslash and round brackets \\(e^{i\\pi} + 1 = 0\\)
 `, 
                     Ai.interfaceRole);
             }
@@ -151,10 +166,11 @@ int main(int argc, char* argv[]) {
         Item { // Messages
             Layout.fillWidth: true
             Layout.fillHeight: true
-            ListView { // Message list
+            StyledListView { // Message list
                 id: messageListView
                 anchors.fill: parent
                 spacing: 10
+                popin: false
 
                 property int lastResponseLength: 0
 
@@ -168,6 +184,8 @@ int main(int argc, char* argv[]) {
                     }
                 }
 
+                add: null // Prevent function calls from being janky
+
                 Behavior on contentY {
                     NumberAnimation {
                         id: scrollAnim
@@ -177,23 +195,11 @@ int main(int argc, char* argv[]) {
                     }
                 }
 
-                add: Transition {
-                    animations: [Appearance.animation.elementMoveEnter.numberAnimation.createObject(this, {
-                        property: "opacity",
-                        from: 0,
-                        to: 1
-                    })]
-                }
-                remove: Transition {
-                    animations: [Appearance.animation.elementMoveEnter.numberAnimation.createObject(this, {
-                        property: "opacity",
-                        from: 1,
-                        to: 0
-                    })]
-                }
-
                 model: ScriptModel {
-                    values: Ai.messageIDs
+                    values: Ai.messageIDs.filter(id => {
+                        const message = Ai.messageByID[id];
+                        return message?.visibleToUser ?? true;
+                    })
                 }
                 delegate: AiMessage {
                     required property var modelData
@@ -203,7 +209,6 @@ int main(int argc, char* argv[]) {
                         Ai.messageByID[modelData]
                     }
                     messageInputField: root.inputField
-                    faviconDownloadPath: root.faviconDownloadPath
                 }
             }
 
@@ -222,17 +227,27 @@ int main(int argc, char* argv[]) {
 
                     MaterialSymbol {
                         Layout.alignment: Qt.AlignHCenter
-                        iconSize: 55
+                        iconSize: 60
                         color: Appearance.m3colors.m3outline
                         text: "neurology"
                     }
                     StyledText {
                         id: widgetNameText
                         Layout.alignment: Qt.AlignHCenter
-                        font.pixelSize: Appearance.font.pixelSize.normal
+                        font.pixelSize: Appearance.font.pixelSize.larger
+                        font.family: Appearance.font.family.title
                         color: Appearance.m3colors.m3outline
                         horizontalAlignment: Text.AlignHCenter
                         text: qsTr("Large language models")
+                    }
+                    StyledText {
+                        id: widgetDescriptionText
+                        Layout.fillWidth: true
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: Appearance.m3colors.m3outline
+                        horizontalAlignment: Text.AlignLeft
+                        wrapMode: Text.Wrap
+                        text: qsTr("Ctrl+O to expand the sidebar\nCtrl+P to detach sidebar into a window")
                     }
                 }
             }
@@ -267,7 +282,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        Flow { // Suggestions
+        FlowButtonGroup { // Suggestions
             id: suggestions
             visible: root.suggestionList.length > 0 && messageInputField.text.length > 0
             property int selectedIndex: 0
@@ -282,27 +297,13 @@ int main(int argc, char* argv[]) {
                 }
                 delegate: ApiCommandButton {
                     id: commandButton
-
-                    background: Rectangle {
-                        radius: Appearance.rounding.small
-                        color: suggestions.selectedIndex === index ? Appearance.colors.colLayer2Hover : 
-                            commandButton.down ? Appearance.colors.colLayer2Active : 
-                            commandButton.hovered ? Appearance.colors.colLayer2Hover :
-                            Appearance.colors.colLayer2
-                    }
-                    contentItem: RowLayout {
-                        spacing: 5
-                        StyledText {
-                            font.pixelSize: Appearance.font.pixelSize.small
-                            color: Appearance.m3colors.m3onSurface
-                            text: modelData.displayName ?? modelData.name
-                        }
-                        StyledText {
-                            visible: modelData.count !== undefined
-                            font.pixelSize: Appearance.font.pixelSize.smaller
-                            color: Appearance.m3colors.m3outline
-                            text: modelData.count ?? ""
-                        }
+                    colBackground: suggestions.selectedIndex === index ? Appearance.colors.colLayer2Hover : Appearance.colors.colLayer2
+                    bounce: false
+                    contentItem: StyledText {
+                        font.pixelSize: Appearance.font.pixelSize.small
+                        color: Appearance.m3colors.m3onSurface
+                        horizontalAlignment: Text.AlignHCenter
+                        text: modelData.displayName ?? modelData.name
                     }
 
                     onHoveredChanged: {
@@ -362,17 +363,13 @@ int main(int argc, char* argv[]) {
                 anchors.topMargin: 5
                 spacing: 0
 
-                TextArea { // The actual TextArea
+                StyledTextArea { // The actual TextArea
                     id: messageInputField
                     wrapMode: TextArea.Wrap
                     Layout.fillWidth: true
                     padding: 10
                     color: activeFocus ? Appearance.m3colors.m3onSurface : Appearance.m3colors.m3onSurfaceVariant
-                    renderType: Text.NativeRendering
-                    selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
-                    selectionColor: Appearance.m3colors.m3secondaryContainer
                     placeholderText: StringUtils.format(qsTr('Message the model... "{0}" for commands'), root.commandPrefix)
-                    placeholderTextColor: Appearance.m3colors.m3outline
 
                     background: null
 
@@ -440,13 +437,15 @@ int main(int argc, char* argv[]) {
                     }
                 }
 
-                Button { // Send button
+                RippleButton { // Send button
                     id: sendButton
                     Layout.alignment: Qt.AlignTop
                     Layout.rightMargin: 5
                     implicitWidth: 40
                     implicitHeight: 40
+                    buttonRadius: Appearance.rounding.small
                     enabled: messageInputField.text.length > 0
+                    toggled: enabled
 
                     MouseArea {
                         anchors.fill: parent
@@ -455,17 +454,6 @@ int main(int argc, char* argv[]) {
                             const inputText = messageInputField.text
                             root.handleInput(inputText)
                             messageInputField.clear()
-                        }
-                    }
-
-                    background: Rectangle {
-                        radius: Appearance.rounding.small
-                        color: sendButton.enabled ? (sendButton.down ? Appearance.colors.colPrimaryActive : 
-                            sendButton.hovered ? Appearance.colors.colPrimaryHover :
-                            Appearance.m3colors.m3primary) : Appearance.colors.colLayer2Disabled
-                            
-                        Behavior on color {
-                            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
                         }
                     }
 
@@ -516,7 +504,6 @@ int main(int argc, char* argv[]) {
                         StyledText {
                             id: providerName
                             font.pixelSize: Appearance.font.pixelSize.small
-                            font.weight: Font.DemiBold
                             color: Appearance.m3colors.m3onSurface
                             elide: Text.ElideRight
                             text: Ai.getModel().name
@@ -539,30 +526,25 @@ int main(int argc, char* argv[]) {
 
                 Item { Layout.fillWidth: true }
 
-                Repeater { // Command buttons
-                    id: commandRepeater
-                    model: commandButtonsRow.commandsShown
-                    delegate: ApiCommandButton {
-                        id: commandButton
-                        property string commandRepresentation: `${root.commandPrefix}${modelData.name}`
-                        buttonText: commandRepresentation
-                        background: Rectangle {
-                            radius: Appearance.rounding.small
-                            color: commandButton.down ? Appearance.colors.colLayer2Active : 
-                                commandButton.hovered ? Appearance.colors.colLayer2Hover :
-                                Appearance.colors.colLayer2
-                                
-                            Behavior on color {
-                                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-                            }
-                        }
-                        onClicked: {
-                            if(modelData.sendDirectly) {
-                                root.handleInput(commandRepresentation)
-                            } else {
-                                messageInputField.text = commandRepresentation + " "
-                                messageInputField.cursorPosition = messageInputField.text.length
-                                messageInputField.forceActiveFocus()
+                ButtonGroup {
+                    padding: 0
+
+                    Repeater { // Command buttons
+                        model: commandButtonsRow.commandsShown
+                        delegate: ApiCommandButton {
+                            property string commandRepresentation: `${root.commandPrefix}${modelData.name}`
+                            buttonText: commandRepresentation
+                            onClicked: {
+                                if(modelData.sendDirectly) {
+                                    root.handleInput(commandRepresentation)
+                                } else {
+                                    messageInputField.text = commandRepresentation + " "
+                                    messageInputField.cursorPosition = messageInputField.text.length
+                                    messageInputField.forceActiveFocus()
+                                }
+                                if (modelData.name === "clear") {
+                                    messageInputField.text = ""
+                                }
                             }
                         }
                     }

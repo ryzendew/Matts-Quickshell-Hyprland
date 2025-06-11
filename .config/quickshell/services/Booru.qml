@@ -7,6 +7,9 @@ import Quickshell.Io;
 import Qt.labs.platform
 import QtQuick;
 
+/**
+ * A service for interacting with various booru APIs.
+ */
 Singleton {
     id: root
     property Component booruResponseDataComponent: BooruResponseData {}
@@ -17,7 +20,7 @@ Singleton {
     property var responses: []
     property int runningRequests: 0
     property var defaultUserAgent: ConfigOptions?.networking?.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-    property var providerList: ["yandere", "konachan", "zerochan", "danbooru", "gelbooru", "waifu.im"]
+    property var providerList: Object.keys(providers).filter(provider => provider !== "system" && providers[provider].api)
     property var providers: {
         "system": { "name": qsTr("System") },
         "yandere": {
@@ -216,6 +219,60 @@ Singleton {
                     ...response.nsfw.map(item => {return {"name": item}})]
             }
         },
+        "t.alcy.cc": {
+            "name": "Alcy",
+            "url": "https://t.alcy.cc",
+            "api": "https://t.alcy.cc/",
+            "description": qsTr("Large images | God tier quality, no NSFW."),
+            "fixedTags": [
+                {
+                    "name": "ycy",
+                    "count": "General"
+                },
+                {
+                    "name": "moez",
+                    "count": "Moe"
+                },
+                {
+                    "name": "ysz",
+                    "count": "Genshin Impact"
+                },
+                {
+                    "name": "fj",
+                    "count": "Landscape"
+                },
+                {
+                    "name": "bd",
+                    "count": "Girl on white background"
+                },
+                {
+                    "name": "xhl",
+                    "count": "Shiggy"
+                },
+            ],
+            "manualParseFunc": (responseText) => {
+                // Alcy just returns image links, each on a new line
+                const lines = responseText.trim().split('\n');
+                return lines.map(line => {
+                    return {
+                        "id": Qt.md5(line),
+                        // Alcy doesn't provide dimensions and images are often of god resolution
+                        "width": 1000,
+                        "height": 1000,
+                        "aspect_ratio": 1, // Default aspect ratio
+                        "tags": "[no tags]",
+                        "rating": "s",
+                        "is_nsfw": false,
+                        "md5": Qt.md5(line),
+                        "preview_url": line,
+                        "sample_url": line,
+                        "file_url": line,
+                        "file_ext": line.split('.').pop(),
+                        "source": "",
+                    }
+                });
+            },
+        }
     }
     property var currentProvider: PersistentStates.booru.provider
 
@@ -254,8 +311,9 @@ Singleton {
     function constructRequestUrl(tags, nsfw=true, limit=20, page=1) {
         var provider = providers[currentProvider]
         var baseUrl = provider.api
+        var url = baseUrl
         var tagString = tags.join(" ")
-        if (!nsfw && !(["zerochan", "waifu.im"].includes(currentProvider))) {
+        if (!nsfw && !(["zerochan", "waifu.im", "t.alcy.cc"].includes(currentProvider))) {
             if (currentProvider == "gelbooru") 
                 tagString += " rating:general";
             else 
@@ -278,6 +336,11 @@ Singleton {
             params.push("limit=" + Math.min(limit, 30)) // Only admin can do > 30
             params.push("is_nsfw=" + (nsfw ? "null" : "false")) // null is random
         }
+        else if (currentProvider === "t.alcy.cc") {
+            url += tagString
+            params.push("json")
+            params.push("quantity=" + limit)
+        }
         else {
             params.push("tags=" + encodeURIComponent(tagString))
             params.push("limit=" + limit)
@@ -288,7 +351,6 @@ Singleton {
                 params.push("page=" + page)
             }
         }
-        var url = baseUrl
         if (baseUrl.indexOf("?") === -1) {
             url += "?" + params.join("&")
         } else {
@@ -315,14 +377,20 @@ Singleton {
             if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
                 try {
                     // console.log("[Booru] Raw response: " + xhr.responseText)
-                    var response = JSON.parse(xhr.responseText)
-                    response = providers[currentProvider].mapFunc(response)
+                    const provider = providers[currentProvider]
+                    let response;
+                    if (provider.manualParseFunc) {
+                        response = provider.manualParseFunc(xhr.responseText)
+                    } else {
+                        response = JSON.parse(xhr.responseText)
+                        response = provider.mapFunc(response)
+                    }
                     // console.log("[Booru] Mapped response: " + JSON.stringify(response))
                     newResponse.images = response
                     newResponse.message = response.length > 0 ? "" : root.failMessage
                     
                 } catch (e) {
-                    // console.log("[Booru] Failed to parse response: " + e)
+                    console.log("[Booru] Failed to parse response: " + e)
                     newResponse.message = root.failMessage
                 } finally {
                     root.runningRequests--;
@@ -330,7 +398,7 @@ Singleton {
                 }
             }
             else if (xhr.readyState === XMLHttpRequest.DONE) {
-                // console.log("[Booru] Request failed with status: " + xhr.status)
+                console.log("[Booru] Request failed with status: " + xhr.status)
             }
         }
 
@@ -346,7 +414,7 @@ Singleton {
             root.runningRequests++;
             xhr.send()
         } catch (error) {
-            // console.log("Could not set User-Agent:", error)
+            console.log("Could not set User-Agent:", error)
         } 
     }
 
@@ -357,7 +425,10 @@ Singleton {
         }
 
         var provider = providers[currentProvider]
-        if (!provider.tagSearchTemplate) {
+        if (provider.fixedTags) {
+            root.tagSuggestion(query, provider.fixedTags)
+            return provider.fixedTags;
+        } else if (!provider.tagSearchTemplate) {
             return
         }
         var url = provider.tagSearchTemplate.replace("{{query}}", encodeURIComponent(query))
@@ -375,11 +446,11 @@ Singleton {
                     // console.log("[Booru] Mapped response: " + JSON.stringify(response))
                     root.tagSuggestion(query, response)
                 } catch (e) {
-                    // console.log("[Booru] Failed to parse response: " + e)
+                    console.log("[Booru] Failed to parse response: " + e)
                 }
             }
             else if (xhr.readyState === XMLHttpRequest.DONE) {
-                // console.log("[Booru] Request failed with status: " + xhr.status)
+                console.log("[Booru] Request failed with status: " + xhr.status)
             }
         }
 
@@ -390,7 +461,7 @@ Singleton {
             }
             xhr.send()
         } catch (error) {
-            // console.log("Could not set User-Agent:", error)
+            console.log("Could not set User-Agent:", error)
         } 
     }
 }

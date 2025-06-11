@@ -25,12 +25,13 @@ Button {
     property string fileName: decodeURIComponent((imageData.file_url).substring((imageData.file_url).lastIndexOf('/') + 1))
     property string filePath: `${root.previewDownloadPath}/${root.fileName}`
     property int maxTagStringLineLength: 50
+    property real imageRadius: Appearance.rounding.small
 
     property bool showActions: false
     Process {
         id: downloadProcess
         running: false
-        command: ["bash", "-c", `[ -f ${root.filePath} ] || curl '${root.imageData.preview_url ?? root.imageData.sample_url}' -o '${root.filePath}'`]
+        command: ["bash", "-c", `[ -f ${root.filePath} ] || curl -sSL '${root.imageData.preview_url ?? root.imageData.sample_url}' -o '${root.filePath}'`]
         onExited: (exitCode, exitStatus) => {
             imageObject.source = `${previewDownloadPath}/${root.fileName}`
         }
@@ -42,16 +43,18 @@ Button {
         }
     }
 
-    padding: 0
-    implicitWidth: imageObject.width
-    implicitHeight: imageObject.height
+    StyledToolTip {
+        content: `${StringUtils.wordWrap(root.imageData.tags, root.maxTagStringLineLength)}`
+    }
 
-    // PointingHandInteraction {}
+    padding: 0
+    implicitWidth: root.rowHeight * modelData.aspect_ratio
+    implicitHeight: root.rowHeight
 
     background: Rectangle {
-        implicitWidth: imageObject.width
-        implicitHeight: imageObject.height
-        radius: Appearance.rounding.small
+        implicitWidth: root.rowHeight * modelData.aspect_ratio
+        implicitHeight: root.rowHeight
+        radius: imageRadius
         color: Appearance.colors.colLayer2
     }
 
@@ -61,21 +64,21 @@ Button {
         Image {
             id: imageObject
             anchors.fill: parent
-            sourceSize.width: root.rowHeight * modelData.aspect_ratio
-            sourceSize.height: root.rowHeight
-            fillMode: Image.PreserveAspectFit
-            source: modelData.preview_url
             width: root.rowHeight * modelData.aspect_ratio
             height: root.rowHeight
             visible: opacity > 0
             opacity: status === Image.Ready ? 1 : 0
+            fillMode: Image.PreserveAspectFit
+            source: modelData.preview_url
+            sourceSize.width: root.rowHeight * modelData.aspect_ratio
+            sourceSize.height: root.rowHeight
 
             layer.enabled: true
             layer.effect: OpacityMask {
                 maskSource: Rectangle {
-                    width: imageObject.width
-                    height: imageObject.height
-                    radius: Appearance.rounding.small
+                    width: root.rowHeight * modelData.aspect_ratio
+                    height: root.rowHeight
+                    radius: imageRadius
                 }
             }
 
@@ -84,26 +87,19 @@ Button {
             }
         }
 
-        Button {
+        RippleButton {
             id: menuButton
             anchors.top: parent.top
             anchors.right: parent.right
-            anchors.margins: 8
-            implicitHeight: 30
-            implicitWidth: 30
+            property real buttonSize: 30
+            anchors.margins: Math.max(root.imageRadius - buttonSize / 2, 8)
+            implicitHeight: buttonSize
+            implicitWidth: buttonSize
 
-            PointingHandInteraction {}
-
-            StyledToolTip {
-                content: `${StringUtils.wordWrap(root.imageData.tags, root.maxTagStringLineLength)}\n${qsTr("Click for options")}`
-            }
-
-            background: Rectangle {
-                color: menuButton.down ? ColorUtils.transparentize(ColorUtils.mix(Appearance.m3colors.m3surface, Appearance.m3colors.m3onSurface, 0.6), 0.1) :
-                    menuButton.hovered ? ColorUtils.transparentize(ColorUtils.mix(Appearance.m3colors.m3surface, Appearance.m3colors.m3onSurface, 0.8), 0.2) :
-                    ColorUtils.transparentize(Appearance.m3colors.m3surface, 0.3)
-                radius: Appearance.rounding.full
-            }
+            buttonRadius: Appearance.rounding.full
+            colBackground: ColorUtils.transparentize(Appearance.m3colors.m3surface, 0.3)
+            colBackgroundHover: ColorUtils.transparentize(ColorUtils.mix(Appearance.m3colors.m3surface, Appearance.m3colors.m3onSurface, 0.8), 0.2)
+            colRipple: ColorUtils.transparentize(ColorUtils.mix(Appearance.m3colors.m3surface, Appearance.m3colors.m3onSurface, 0.6), 0.1)
 
             contentItem: MaterialSymbol {
                 horizontalAlignment: Text.AlignHCenter
@@ -128,6 +124,9 @@ Button {
                 width: contextMenu.width
                 height: contextMenu.height
 
+                StyledRectangularShadow {
+                    target: contextMenu
+                }
                 Rectangle {
                     id: contextMenu
                     anchors.centerIn: parent
@@ -137,16 +136,6 @@ Button {
                     color: Appearance.m3colors.m3surfaceContainer
                     implicitHeight: contextMenuColumnLayout.implicitHeight + radius * 2
                     implicitWidth: contextMenuColumnLayout.implicitWidth
-
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        source: contextMenu
-                        anchors.fill: contextMenu
-                        shadowEnabled: true
-                        shadowColor: Appearance.colors.colShadow
-                        shadowVerticalOffset: 1
-                        shadowBlur: 0.5
-                    }
 
                     Behavior on opacity {
                         NumberAnimation {
@@ -191,7 +180,7 @@ Button {
                             buttonText: qsTr("Download")
                             onClicked: {
                                 root.showActions = false
-                                Hyprland.dispatch(`exec curl '${root.imageData.file_url}' -o '${root.imageData.is_nsfw ? root.nsfwPath : root.downloadPath}/${root.fileName}' && notify-send '${qsTr("Download complete")}' '${root.downloadPath}/${root.fileName}'`)
+                                Hyprland.dispatch(`exec curl '${root.imageData.file_url}' -o '${root.imageData.is_nsfw ? root.nsfwPath : root.downloadPath}/${root.fileName}' && notify-send '${qsTr("Download complete")}' '${root.downloadPath}/${root.fileName}' -a 'Shell'`)
                             }
                         }
                     }

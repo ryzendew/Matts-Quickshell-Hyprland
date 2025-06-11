@@ -1,82 +1,74 @@
+import "root:/modules/common"
+import "root:/services"
 import QtQuick
 import QtQuick.Controls
-import "root:/modules/common"
+import QtQuick.Layouts
 
+/**
+ * A convenience MouseArea for handling drag events.
+ */
 MouseArea {
-    id: dragManager
-    property bool interactive: false
+    id: root
+    hoverEnabled: true
+    acceptedButtons: Qt.LeftButton
+
+    property bool interactive: true
+    property bool automaticallyReset: true
+    readonly property real dragDiffX: _dragDiffX
+    readonly property real dragDiffY: _dragDiffY
+
+    signal dragPressed(diffX: real, diffY: real)
+    signal dragReleased(diffX: real, diffY: real)
+    
     property real startX: 0
     property real startY: 0
-    property real dragStartThreshold: 10
-    property real dragConfirmThreshold: 70
-    property bool dragStarted: false
-    property bool preventStealing: true
-    property bool horizontalOnly: false
-    property bool verticalOnly: false
+    property bool dragging: false
+    property real _dragDiffX: 0
+    property real _dragDiffY: 0
 
-    signal dragBegin(real startX, real startY)
-    signal dragUpdate(real deltaX, real deltaY)
-    signal dragEnd(real deltaX, real deltaY)
-    signal dragCancelled()
-
-    hoverEnabled: interactive
+    function resetDrag() {
+        _dragDiffX = 0
+        _dragDiffY = 0
+    }
 
     onPressed: (mouse) => {
-        if (!interactive) {
-            mouse.accepted = false
-            return
-        }
-        startX = mouse.x
-        startY = mouse.y
-    }
-
-    onPositionChanged: (mouse) => {
-        if (!interactive) {
-            mouse.accepted = false
-            return
-        }
-
-        let dx = mouse.x - startX
-        let dy = mouse.y - startY
-        
-        if (horizontalOnly) dy = 0
-        if (verticalOnly) dy = 0
-
-        if (dragStarted || Math.abs(dx) > dragStartThreshold || Math.abs(dy) > dragStartThreshold) {
-            if (!dragStarted) {
-                dragStarted = true
-                dragBegin(startX, startY)
+        if (!root.interactive) {
+            if (mouse.button === Qt.LeftButton) {
+                mouse.accepted = false;
             }
-            dragUpdate(dx, dy)
+            return;
+        }
+        if (mouse.button === Qt.LeftButton) {
+            startX = mouse.x
+            startY = mouse.y
         }
     }
-
     onReleased: (mouse) => {
-        if (!interactive) {
-            mouse.accepted = false
-            return
+        if (!root.interactive) {
+            return;
         }
-
-        let dx = mouse.x - startX
-        let dy = mouse.y - startY
-        
-        if (horizontalOnly) dy = 0
-        if (verticalOnly) dy = 0
-
-        if (dragStarted) {
-            if (Math.abs(dx) > dragConfirmThreshold || Math.abs(dy) > dragConfirmThreshold) {
-                dragEnd(dx, dy)
-            } else {
-                dragCancelled()
-            }
-        }
-        dragStarted = false
-    }
-
-    onInteractiveChanged: {
-        if (!interactive) {
-            dragStarted = false
-            dragCancelled()
+        dragging = false
+        root.dragReleased(_dragDiffX, _dragDiffY);
+        if (root.automaticallyReset) {
+            root.resetDrag();
         }
     }
-} 
+    onPositionChanged: (mouse) => {
+        if (!root.interactive) {
+            return;
+        }
+        if (mouse.buttons & Qt.LeftButton) {
+            root._dragDiffX = mouse.x - startX
+            root._dragDiffY = mouse.y - startY
+            const dist = Math.sqrt(root._dragDiffX * root._dragDiffX + root._dragDiffY * root._dragDiffY);
+            root.dragPressed(_dragDiffX, _dragDiffY);
+            root.dragging = true;
+        }
+    }
+    onCanceled: (mouse) => {
+        if (!root.interactive) {
+            return;
+        }
+        released(mouse);
+    }
+}

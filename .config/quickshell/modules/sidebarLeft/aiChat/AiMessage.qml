@@ -20,7 +20,6 @@ Rectangle {
     property int messageIndex
     property var messageData
     property var messageInputField
-    property string faviconDownloadPath
 
     property real messagePadding: 7
     property real contentSpacing: 3
@@ -28,6 +27,8 @@ Rectangle {
     property bool enableMouseSelection: false
     property bool renderMarkdown: true
     property bool editing: false
+
+    property list<var> messageBlocks: StringUtils.splitMarkdownBlocks(root.messageData?.content)
 
     anchors.left: parent?.left
     anchors.right: parent?.right
@@ -109,17 +110,17 @@ Rectangle {
                     Item {
                         Layout.alignment: Qt.AlignVCenter
                         Layout.fillHeight: true
-                        implicitWidth: messageData.role == 'assistant' ? modelIcon.width : roleIcon.implicitWidth
-                        implicitHeight: messageData.role == 'assistant' ? modelIcon.height : roleIcon.implicitHeight
+                        implicitWidth: messageData?.role == 'assistant' ? modelIcon.width : roleIcon.implicitWidth
+                        implicitHeight: messageData?.role == 'assistant' ? modelIcon.height : roleIcon.implicitHeight
 
                         CustomIcon {
                             id: modelIcon
                             anchors.centerIn: parent
-                            visible: messageData.role == 'assistant' && Ai.models[messageData.model].icon
+                            visible: messageData?.role == 'assistant' && Ai.models[messageData?.model].icon
                             width: Appearance.font.pixelSize.large
                             height: Appearance.font.pixelSize.large
-                            source: messageData.role == 'assistant' ? Ai.models[messageData.model].icon :
-                                messageData.role == 'user' ? 'linux-symbolic' : 'desktop-symbolic'
+                            source: messageData?.role == 'assistant' ? Ai.models[messageData?.model].icon :
+                                messageData?.role == 'user' ? 'linux-symbolic' : 'desktop-symbolic'
                         }
                         ColorOverlay {
                             visible: modelIcon.visible
@@ -134,9 +135,9 @@ Rectangle {
                             visible: !modelIcon.visible
                             iconSize: Appearance.font.pixelSize.larger
                             color: Appearance.m3colors.m3onSecondaryContainer
-                            text: messageData.role == 'user' ? 'person' : 
-                                messageData.role == 'interface' ? 'settings' : 
-                                messageData.role == 'assistant' ? 'neurology' : 
+                            text: messageData?.role == 'user' ? 'person' : 
+                                messageData?.role == 'interface' ? 'settings' : 
+                                messageData?.role == 'assistant' ? 'neurology' : 
                                 'computer'
                         }
                     }
@@ -147,10 +148,9 @@ Rectangle {
                         Layout.fillWidth: true
                         elide: Text.ElideRight
                         font.pixelSize: Appearance.font.pixelSize.normal
-                        font.weight: Font.DemiBold
                         color: Appearance.m3colors.m3onSecondaryContainer
-                        text: messageData.role == 'assistant' ? Ai.models[messageData.model].name :
-                            (messageData.role == 'user' && SystemInfo.username) ? SystemInfo.username :
+                        text: messageData?.role == 'assistant' ? Ai.models[messageData?.model].name :
+                            (messageData?.role == 'user' && SystemInfo.username) ? SystemInfo.username :
                             qsTr("Interface")
                     }
                 }
@@ -158,7 +158,7 @@ Rectangle {
 
             Button { // Not visible to model
                 id: modelVisibilityIndicator
-                visible: messageData.role == 'interface'
+                visible: messageData?.role == 'interface'
                 implicitWidth: 16
                 implicitHeight: 30
                 Layout.alignment: Qt.AlignVCenter
@@ -168,7 +168,7 @@ Rectangle {
                 MaterialSymbol {
                     id: notVisibleToModelText
                     anchors.centerIn: parent
-                    iconSize: Appearance.font.pixelSize.larger
+                    iconSize: Appearance.font.pixelSize.small
                     color: Appearance.colors.colSubtext
                     text: "visibility_off"
                 }
@@ -177,15 +177,28 @@ Rectangle {
                 }
             }
 
-            RowLayout {
+            ButtonGroup {
                 spacing: 5
 
                 AiMessageControlButton {
                     id: copyButton
-                    buttonIcon: "content_copy"
+                    buttonIcon: activated ? "inventory" : "content_copy"
+
                     onClicked: {
-                        Hyprland.dispatch(`exec wl-copy '${StringUtils.shellSingleQuoteEscape(root.messageData.content)}'`)
+                        Hyprland.dispatch(`exec wl-copy '${StringUtils.shellSingleQuoteEscape(root.messageData?.content)}'`)
+                        copyButton.activated = true
+                        copyIconTimer.restart()
                     }
+
+                    Timer {
+                        id: copyIconTimer
+                        interval: 1500
+                        repeat: false
+                        onTriggered: {
+                            copyButton.activated = false
+                        }
+                    }
+                    
                     StyledToolTip {
                         content: qsTr("Copy")
                     }
@@ -193,7 +206,7 @@ Rectangle {
                 AiMessageControlButton {
                     id: editButton
                     activated: root.editing
-                    enabled: root.messageData.done
+                    enabled: root.messageData?.done ?? false
                     buttonIcon: "edit"
                     onClicked: {
                         root.editing = !root.editing
@@ -235,23 +248,25 @@ Rectangle {
             spacing: 0
             Repeater {
                 model: ScriptModel {
-                    values: StringUtils.splitMarkdownBlocks(root.messageData.content)
+                    values: root.messageBlocks.map((block, index) => index)
                 }
                 delegate: Loader {
+                    required property int index
+                    property var thisBlock: root.messageBlocks[index]
                     Layout.fillWidth: true
-                    // property var segment: modelData
-                    property var segmentContent: modelData.content
-                    property var segmentLang: modelData.lang
+                    // property var segment: thisBlock
+                    property var segmentContent: thisBlock.content
+                    property var segmentLang: thisBlock.lang
                     property var messageData: root.messageData
                     property var editing: root.editing
                     property var renderMarkdown: root.renderMarkdown
                     property var enableMouseSelection: root.enableMouseSelection
-                    property bool thinking: root.messageData.thinking
-                    property bool done: root.messageData.done
-                    property bool completed: modelData.completed ?? false
+                    property bool thinking: root.messageData?.thinking ?? true
+                    property bool done: root.messageData?.done ?? false
+                    property bool completed: thisBlock.completed ?? false
                     
-                    source: modelData.type === "code" ? "MessageCodeBlock.qml" : 
-                        modelData.type === "think" ? "MessageThinkBlock.qml" :
+                    source: thisBlock.type === "code" ? "MessageCodeBlock.qml" : 
+                        thisBlock.type === "think" ? "MessageThinkBlock.qml" :
                         "MessageTextBlock.qml"
 
                 }
@@ -266,10 +281,11 @@ Rectangle {
             Layout.alignment: Qt.AlignLeft
 
             Repeater {
-                model: root.messageData.annotationSources
+                model: ScriptModel {
+                    values: root.messageData?.annotationSources || []
+                }
                 delegate: AnnotationSourceButton {
                     id: annotationButton
-                    faviconDownloadPath: root.faviconDownloadPath
                     displayText: modelData.text
                     url: modelData.url
                 }

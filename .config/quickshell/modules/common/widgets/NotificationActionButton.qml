@@ -15,8 +15,6 @@ Button {
     leftPadding: 15
     rightPadding: 15
 
-    // PointingHandInteraction {}
-
     background: Rectangle {
         radius: Appearance.rounding.small
         color: (urgency == NotificationUrgency.Critical) ? 
@@ -26,7 +24,6 @@ Button {
         (button.down ? Appearance.colors.colSurfaceContainerHighestActive : 
             button.hovered ? Appearance.colors.colSurfaceContainerHighestHover :
             Appearance.m3colors.m3surfaceContainerHighest)
-
     }
 
     contentItem: StyledText {

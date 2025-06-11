@@ -102,42 +102,25 @@ Item {
                     text: root.completed ? qsTr("Chain of Thought") : (qsTr("Thinking") + ".".repeat(Math.random() * 4))
                 }
                 Item { Layout.fillWidth: true }
-                Button { // Expand button
+                RippleButton { // Expand button
                     id: expandButton
                     visible: root.completed
                     implicitWidth: 22
                     implicitHeight: 22
+                    colBackground: headerMouseArea.containsMouse ? Appearance.colors.colLayer2Hover
+                        : ColorUtils.transparentize(Appearance.colors.colLayer2, 1)
+                    colBackgroundHover: Appearance.colors.colLayer2Hover
+                    colRipple: Appearance.colors.colLayer2Active
 
-                    PointingHandInteraction{}
-                    onClicked: {
-                        root.collapsed = !root.collapsed
-                    }
-
-                    background: Rectangle {
-                        anchors.fill: parent
-                        radius: Appearance.rounding.full
-                        color: (headerMouseArea.pressed) ? Appearance.colors.colLayer2Active
-                            : (headerMouseArea.containsMouse ? Appearance.colors.colLayer2Hover
-                            : ColorUtils.transparentize(Appearance.colors.colLayer2, 1))
-                        
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: collapseAnimation.duration
-                                easing.type: collapseAnimation.type
-                                easing.bezierCurve: collapseAnimation.bezierCurve
-                            }
-
-                        }
-
-                    }
-
+                    onClicked: { root.collapsed = !root.collapsed }
+                    
                     contentItem: MaterialSymbol {
                         anchors.centerIn: parent
                         text: "keyboard_arrow_down"
                         horizontalAlignment: Text.AlignHCenter
                         verticalAlignment: Text.AlignVCenter
                         iconSize: Appearance.font.pixelSize.normal
-                        color: "#FFFFFF"
+                        color: Appearance.colors.colOnLayer2
                         rotation: root.collapsed ? 0 : 180
                         Behavior on rotation {
                             NumberAnimation {

@@ -6,12 +6,12 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 /**
- * A container that supports bouncy children. 
- * https://m3.material.io/components/button-groups/overview
+ * A container that supports GroupButton children for bounciness.
+ * See https://m3.material.io/components/button-groups/overview
  */
 Rectangle {
     id: root
-    default property alias content: rowLayout.data
+    default property alias data: rowLayout.data
     property real spacing: 5
     property real padding: 0
     property int clickIndex: rowLayout.clickIndex

@@ -2,8 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Qt5Compat.GraphicalEffects
-import QtQuick.Effects
-import "root:/modules/common"
 
 Scope {
 	id: root
@@ -39,24 +37,11 @@ Scope {
 			anchors.top: true
 			margins.top: 0
 
-			implicitWidth: rect.width + 20
-			implicitHeight: rect.height + 20
+			implicitWidth: rect.width + shadow.radius * 2
+			implicitHeight: rect.height + shadow.radius * 2
 
 			// color blending is a bit odd as detailed in the type reference.
 			color: "transparent"
-
-			Item {
-				width: rect.implicitWidth
-				height: rect.implicitHeight
-
-				MultiEffect {
-					anchors.fill: rect
-					source: rect
-					shadowEnabled: true
-					shadowColor: Appearance.colors.colShadow
-					shadowVerticalOffset: 1
-					shadowBlur: 0.5
-				}
 
 			Rectangle {
 				id: rect
@@ -155,6 +140,16 @@ Scope {
 				// properties and children have been initialized.
 				Component.onCompleted: anim.start()
 			}
+
+			DropShadow {
+				id: shadow
+                anchors.fill: rect
+                horizontalOffset: 0
+                verticalOffset: 2
+                radius: 6
+                samples: radius * 2 + 1 // Ideally should be 2 * radius + 1, see qt docs
+                color: "#44000000"
+                source: rect
             }
 		}
 	}

@@ -7,9 +7,13 @@ import Quickshell.Io;
 import Qt.labs.platform
 import QtQuick;
 
+/**
+ * Simple to-do list manager.
+ * Each item is an object with "content" and "done" properties.
+ */
 Singleton {
     id: root
-    property var filePath: `${XdgDirectories.state}/user/todo.json`
+    property var filePath: Directories.todoPath
     property var list: []
     
     function addItem(item) {
@@ -64,19 +68,19 @@ Singleton {
 
     FileView {
         id: todoFileView
-        path: filePath
+        path: Qt.resolvedUrl(root.filePath)
         onLoaded: {
             const fileContents = todoFileView.text()
             root.list = JSON.parse(fileContents)
-            // console.log("[To Do] File loaded")
+            console.log("[To Do] File loaded")
         }
         onLoadFailed: (error) => {
             if(error == FileViewError.FileNotFound) {
-                // console.log("[To Do] File not found, creating new file.")
+                console.log("[To Do] File not found, creating new file.")
                 root.list = []
                 todoFileView.setText(JSON.stringify(root.list))
             } else {
-                // console.log("[To Do] Error loading file: " + error)
+                console.log("[To Do] Error loading file: " + error)
             }
         }
     }

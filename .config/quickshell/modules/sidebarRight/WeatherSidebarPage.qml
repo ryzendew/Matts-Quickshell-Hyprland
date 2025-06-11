@@ -2,6 +2,8 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 import "root:/modules/common"
+import "root:/modules/common/widgets"
+import "root:/modules/weather"
 
 Item {
     id: root
@@ -24,7 +26,8 @@ Item {
                 item.locationDisplayChanged.connect(function() { root.locationDisplay = item.locationDisplay })
                 item.currentTempChanged.connect(function() { root.currentTemp = item.currentTemp })
                 item.feelsLikeChanged.connect(function() { root.feelsLike = item.feelsLike })
-                // Force a fresh load to ensure we get 7 days
+                // Force a fresh load
+                item.clearCache()
                 item.loadWeather()
             }
         }
@@ -63,7 +66,7 @@ Item {
         sourceComponent: QtObject {
             Component.onCompleted: {
                 var xhr = new XMLHttpRequest();
-                var url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${root.latitude}&longitude=${root.longitude}&hourly=us_aqi`;
+                var url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${root.latitude}&longitude=${root.longitude}&hourly=us_aqi&timezone=auto`;
                 xhr.onreadystatechange = function() {
                     if (xhr.readyState === XMLHttpRequest.DONE) {
                         if (xhr.status === 200) {
@@ -93,7 +96,7 @@ Item {
         sourceComponent: QtObject {
             Component.onCompleted: {
                 var xhr = new XMLHttpRequest();
-                var url = `https://api.open-meteo.com/v1/forecast?latitude=${root.latitude}&longitude=${root.longitude}&current_weather=true&alerts=true`;
+                var url = `https://api.open-meteo.com/v1/forecast?latitude=${root.latitude}&longitude=${root.longitude}&current_weather=true&alerts=true&timezone=auto`;
                 xhr.onreadystatechange = function() {
                     if (xhr.readyState === XMLHttpRequest.DONE) {
                         if (xhr.status === 200) {
@@ -158,27 +161,16 @@ Item {
                 }
                 
                 // Refresh button
-                Rectangle {
-                    width: 28
-                    height: 28
-                    radius: Appearance.rounding.small
-                    color: "transparent"
-                    border.width: 0
-                    
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
+                RippleButton {
+                    Layout.preferredWidth: 34
+                    Layout.preferredHeight: 34
+                    buttonRadius: Appearance.rounding.full
                         onClicked: root.refreshWeather()
-                        onEntered: parent.color = Qt.rgba(Appearance.colors.colOnLayer1.r, Appearance.colors.colOnLayer1.g, Appearance.colors.colOnLayer1.b, 0.15)
-                        onExited: parent.color = "transparent"
-                        
-                        Text {
+                    contentItem: MaterialSymbol {
                             anchors.centerIn: parent
-                            text: "🔄"
-                            font.pixelSize: 12
+                        text: "refresh"
+                        iconSize: 16
                             color: Appearance.colors.colOnLayer1
-                            opacity: 0.6
-                        }
                     }
                 }
             }
@@ -200,8 +192,8 @@ Item {
             
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 12
-                spacing: 16
+                anchors.margins: 8
+                spacing: 12
                 
                 // Current temp and feels like
                 ColumnLayout {
@@ -234,7 +226,7 @@ Item {
                 // Vertical separator
                 Rectangle {
                     width: 1
-                    height: 40
+                    height: 36
                     color: Appearance.colors.colOnLayer0
                     opacity: 0.2
                 }
@@ -290,7 +282,7 @@ Item {
         Rectangle {
             visible: root.weatherAlerts.length > 0
             Layout.fillWidth: true
-            implicitHeight: alertColumn.implicitHeight + 16
+            implicitHeight: alertColumn.implicitHeight + 12
             color: Qt.rgba(1, 0.3, 0.2, 0.1)
             border.color: Qt.rgba(1, 0.3, 0.2, 0.3)
             border.width: 1
@@ -322,19 +314,15 @@ Item {
         }
 
         // 7-day forecast section
-        ScrollView {
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            clip: true
-            
-            ColumnLayout {
-                width: parent.width
                 spacing: 0
 
                 // Section header
                 Rectangle {
                     Layout.fillWidth: true
-                    height: 48
+                height: 40
                     color: Appearance.colors.colLayer2
                     
                     Text {
@@ -354,19 +342,19 @@ Item {
                     model: Math.min(7, root.forecastData.length)
                     delegate: Rectangle {
                         Layout.fillWidth: true
-                        height: 80
+                    height: 64
                         color: index % 2 === 0 ? Appearance.colors.colLayer1 : Qt.rgba(Appearance.colors.colLayer2.r, Appearance.colors.colLayer2.g, Appearance.colors.colLayer2.b, 0.3)
                         
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 20
-                            spacing: 20
+                        anchors.margins: 12
+                        spacing: 12
                             
                             // Day name
                             Text {
                                 Layout.preferredWidth: 60
                                 text: root.forecastData[index].date
-                                font.pixelSize: Appearance.font.pixelSize.large
+                            font.pixelSize: Appearance.font.pixelSize.normal
                                 font.weight: Font.Bold
                                 color: Appearance.colors.colOnLayer1
                                 horizontalAlignment: Text.AlignLeft
@@ -376,7 +364,7 @@ Item {
                             Text {
                                 Layout.preferredWidth: 40
                                 text: root.forecastData[index].emoji
-                                font.pixelSize: 32
+                            font.pixelSize: 28
                                 horizontalAlignment: Text.AlignCenter
                             }
                             
@@ -389,14 +377,14 @@ Item {
                                 opacity: 0.85
                                 elide: Text.ElideRight
                                 wrapMode: Text.WordWrap
-                                maximumLineCount: 2
+                            maximumLineCount: 1
                             }
                             
                             // Temperature
                             Text {
                                 Layout.preferredWidth: 80
                                 text: root.forecastData[index].temp
-                                font.pixelSize: Appearance.font.pixelSize.large
+                            font.pixelSize: Appearance.font.pixelSize.normal
                                 font.weight: Font.Bold
                                 color: Appearance.colors.colOnLayer1
                                 horizontalAlignment: Text.AlignRight
@@ -440,7 +428,6 @@ Item {
                             opacity: 0.5
                             horizontalAlignment: Text.AlignHCenter
                             text: qsTr("No forecast data")
-                        }
                     }
                 }
             }

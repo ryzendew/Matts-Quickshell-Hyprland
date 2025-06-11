@@ -1,37 +1,33 @@
 pragma Singleton
 pragma ComponentBehavior: Bound
 
-import Quickshell;
-import Quickshell.Io;
-import Quickshell.Services.Pipewire;
-import QtQuick;
+import Quickshell
+import Quickshell.Io
+import QtQuick
 
+/**
+ * Simple polled network state service.
+ */
 Singleton {
     id: root
 
-    property int updateInterval: 500  // Reduced to 500ms for more responsive updates
+    property bool wifi: true
+    property bool ethernet: false
+    property int updateInterval: 1000
     property string networkName: ""
-    property int networkStrength: 0
-    property bool wifiEnabled: false
-    property string networkType: "none"  // "ethernet", "wifi", or "none"
-
-    // Network activity properties
-    property real downloadSpeed: 0  // KB/s
-    property real uploadSpeed: 0    // KB/s
-    property bool hasActivity: false
-    property bool isDownloading: false
-    property bool isUploading: false
-    
-    // Internal properties for speed calculation
-    property var previousStats: ({})
-    property real lastUpdateTime: 0
-
+    property int networkStrength
+    property string materialSymbol: ethernet ? "lan" :
+        (Network.networkName.length > 0 && Network.networkName != "lo") ? (
+        Network.networkStrength > 80 ? "signal_wifi_4_bar" :
+        Network.networkStrength > 60 ? "network_wifi_3_bar" :
+        Network.networkStrength > 40 ? "network_wifi_2_bar" :
+        Network.networkStrength > 20 ? "network_wifi_1_bar" :
+        "signal_wifi_0_bar"
+    ) : "signal_wifi_off"
     function update() {
-        updateNetworkName.running = true
-        updateNetworkStrength.running = true
-        updateWifiState.running = true
-        updateNetworkType.running = true
-        updateNetworkActivity.running = true
+        updateConnectionType.startCheck();
+        updateNetworkName.running = true;
+        updateNetworkStrength.running = true;
     }
 
     Timer {
@@ -39,8 +35,37 @@ Singleton {
         running: true
         repeat: true
         onTriggered: {
-            update()
-            interval = root.updateInterval
+            root.update();
+            interval = root.updateInterval;
+        }
+    }
+
+    Process {
+        id: updateConnectionType
+        property string buffer
+        command: ["sh", "-c", "nmcli -t -f NAME,TYPE,DEVICE c show --active"]
+        running: true
+        function startCheck() {
+            buffer = "";
+            updateConnectionType.running = true;
+        }
+        stdout: SplitParser {
+            onRead: data => {
+                updateConnectionType.buffer += data + "\n";
+            }
+        }
+        onExited: (exitCode, exitStatus) => {
+            const lines = updateConnectionType.buffer.trim().split('\n');
+            let hasEthernet = false;
+            let hasWifi = false;
+            lines.forEach(line => {
+                if (line.includes("ethernet"))
+                    hasEthernet = true;
+                else if (line.includes("wireless"))
+                    hasWifi = true;
+            });
+            root.ethernet = hasEthernet;
+            root.wifi = hasWifi;
         }
     }
 
@@ -50,7 +75,7 @@ Singleton {
         running: true
         stdout: SplitParser {
             onRead: data => {
-                root.networkName = data || ""
+                root.networkName = data;
             }
         }
     }
@@ -58,87 +83,11 @@ Singleton {
     Process {
         id: updateNetworkStrength
         running: true
-        // Improved command to get signal strength only for the active connection
-        command: ["sh", "-c", "nmcli -f IN-USE,SIGNAL,SSID device wifi list | awk '/^\\*/{print $2}' | head -1"]
+        command: ["sh", "-c", "nmcli -f IN-USE,SIGNAL,SSID device wifi | awk '/^\*/{if (NR!=1) {print $2}}'"]
         stdout: SplitParser {
             onRead: data => {
-                // More robust parsing with bounds checking
-                const strength = parseInt(data) || 0;
-                root.networkStrength = Math.max(0, Math.min(100, strength));
-            }
-        }
-    }
-
-    Process {
-        id: updateWifiState
-        running: true
-        command: ["sh", "-c", "nmcli radio wifi | grep -q enabled && echo 1 || echo 0"]
-        stdout: SplitParser {
-            onRead: data => {
-                root.wifiEnabled = (parseInt(data) === 1);
-                // If WiFi is disabled, ensure strength is 0
-                if (!root.wifiEnabled) {
-                    root.networkStrength = 0;
-                }
-            }
-        }
-    }
-
-    Process {
-        id: updateNetworkType
-        running: true
-        command: ["sh", "-c", "nmcli device | awk '$3==\"connected\" {print $2}' | head -1"]
-        stdout: SplitParser {
-            onRead: data => {
-                const type = data.trim().toLowerCase()
-                if (type === "wifi") {
-                    root.networkType = "wifi"
-                } else if (type === "ethernet") {
-                    root.networkType = "ethernet"
-                    // If we're on ethernet, ensure WiFi strength is 0
-                    root.networkStrength = 0;
-                } else {
-                    root.networkType = "none"
-                    root.networkStrength = 0;
-                }
-            }
-        }
-    }
-
-    Process {
-        id: updateNetworkActivity
-        running: true
-        command: ["sh", "-c", "cat /proc/net/dev | grep -E '(eth|enp|wlan|wlp)' | head -1 | awk '{print $2,$10}'"]
-        stdout: SplitParser {
-            onRead: data => {
-                const currentTime = Date.now()
-                const parts = data.trim().split(' ')
-                
-                if (parts.length >= 2) {
-                    const rxBytes = parseInt(parts[0]) || 0
-                    const txBytes = parseInt(parts[1]) || 0
-                    
-                    if (root.previousStats.rxBytes !== undefined && root.lastUpdateTime > 0) {
-                        const timeDiff = (currentTime - root.lastUpdateTime) / 1000 // seconds
-                        const rxDiff = rxBytes - root.previousStats.rxBytes
-                        const txDiff = txBytes - root.previousStats.txBytes
-                        
-                        if (timeDiff > 0) {
-                            root.downloadSpeed = Math.max(0, rxDiff / timeDiff / 1024) // KB/s
-                            root.uploadSpeed = Math.max(0, txDiff / timeDiff / 1024)   // KB/s
-                            
-                            // Consider activity if speed > 1 KB/s
-                            root.isDownloading = root.downloadSpeed > 1
-                            root.isUploading = root.uploadSpeed > 1
-                            root.hasActivity = root.isDownloading || root.isUploading
-                        }
-                    }
-                    
-                    root.previousStats = { rxBytes: rxBytes, txBytes: txBytes }
-                    root.lastUpdateTime = currentTime
-                }
+                root.networkStrength = parseInt(data);
             }
         }
     }
 }
-

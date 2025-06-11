@@ -6,9 +6,13 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
+/**
+ * Automatically reloads generated material colors.
+ * It is necessary to run reapplyTheme() on startup because Singletons are lazily loaded.
+ */
 Singleton {
     id: root
-    property string filePath: `${XdgDirectories.state}/user/generated/colors.json`
+    property string filePath: Directories.generatedMaterialThemePath
 
     function reapplyTheme() {
         themeFileView.reload()
@@ -40,7 +44,7 @@ Singleton {
 
 	FileView { 
         id: themeFileView
-        path: root.filePath
+        path: Qt.resolvedUrl(root.filePath)
         watchChanges: true
         onFileChanged: {
             this.reload()

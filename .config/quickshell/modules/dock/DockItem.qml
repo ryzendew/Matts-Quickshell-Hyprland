@@ -1,4 +1,4 @@
-import QtQuick
+import QtQuick 2.15
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
@@ -10,6 +10,7 @@ import Quickshell.Hyprland
 import "root:/modules/common"
 import "root:/modules/common/widgets"
 import "root:/services"
+import "../common/widgets/SystemIcon.qml"
 
 Rectangle {
     id: dockItem
@@ -102,7 +103,7 @@ Rectangle {
             easing.type: Appearance.animation.elementMoveFast.type
         }
     }
-    
+
     // --- Icon ---
     // The app icon, centered in the item
     SystemIcon {
@@ -110,7 +111,7 @@ Rectangle {
         anchors.centerIn: parent
         iconSize: parent.width * 0.65
         iconName: dockItem.icon
-        iconColor: "transparent" // Let the icon use its natural colors
+        iconColor: root.isActive ? "#ffffff" : "transparent"
         
         Component.onCompleted: {
             if (!dockItem.isPinned) {
@@ -118,7 +119,7 @@ Rectangle {
             }
         }
     }
-    
+
     // --- Tooltip (disabled) ---
     // Loader for tooltips (currently disabled by setting active: false)
     Loader {

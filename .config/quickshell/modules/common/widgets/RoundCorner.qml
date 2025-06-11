@@ -6,9 +6,6 @@ Item {
     property int size: 25
     property color color: "#000000"
 
-    // Ensure minimum size to prevent zero width/height warnings
-    readonly property int actualSize: Math.max(size, 1)
-
     onColorChanged: {
         canvas.requestPaint();
     }
@@ -22,8 +19,8 @@ Item {
 
     property int corner: cornerEnum.topLeft // Default to TopLeft
 
-    width: actualSize
-    height: actualSize
+    width: size
+    height: size
 
     Canvas {
         id: canvas
@@ -33,7 +30,7 @@ Item {
         
         onPaint: {
             var ctx = getContext("2d");
-            var r = root.actualSize;
+            var r = root.size;
 
             ctx.beginPath();
             switch (root.corner) {
@@ -61,11 +58,7 @@ Item {
     }
 
     Behavior on size {
-        NumberAnimation {
-            duration: root.animationDuration
-            easing.type: Easing.OutCubic
-        }
-
+        animation: Appearance?.animation.elementMoveFast.numberAnimation.createObject(this)
     }
 
 }

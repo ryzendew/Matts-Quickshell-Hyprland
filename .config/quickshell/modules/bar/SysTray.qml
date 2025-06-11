@@ -21,7 +21,7 @@ Item {
         id: rowLayout
 
         anchors.fill: parent
-        spacing: 5
+        spacing: 15
 
         Repeater {
             model: SystemTray.items

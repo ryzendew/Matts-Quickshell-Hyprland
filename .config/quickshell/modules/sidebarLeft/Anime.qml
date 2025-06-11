@@ -17,12 +17,11 @@ import Quickshell.Hyprland
 
 Item {
     id: root
-    property var panelWindow
     property var inputField: tagInputField
     readonly property var responses: Booru.responses
-    property string previewDownloadPath: FileUtils.trimFileProtocol(`${XdgDirectories.cache}/media/waifus`)
-    property string downloadPath: FileUtils.trimFileProtocol(XdgDirectories.pictures  + "/homework")
-    property string nsfwPath: FileUtils.trimFileProtocol(XdgDirectories.pictures + "/homework/🌶️")
+    property string previewDownloadPath: Directories.booruPreviews
+    property string downloadPath: Directories.booruDownloads
+    property string nsfwPath: Directories.booruDownloadsNsfw
     property string commandPrefix: "/"
     property real scrollOnNewResponse: 100
     property int tagSuggestionDelay: 210
@@ -35,11 +34,6 @@ Item {
             root.suggestionQuery = query;
             root.suggestionList = suggestions;
         }
-    }
-
-    Component.onCompleted: {
-        Hyprland.dispatch(`exec rm -rf '${previewDownloadPath}' && mkdir -p '${previewDownloadPath}'`)
-        Hyprland.dispatch(`exec mkdir -p '${downloadPath}' && mkdir -p '${downloadPath}'`)
     }
 
     property var allCommands: [
@@ -143,7 +137,7 @@ Item {
         Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            ListView { // Booru responses
+            StyledListView { // Booru responses
                 id: booruResponseListView
                 anchors.fill: parent
                 spacing: 10
@@ -167,14 +161,6 @@ Item {
                         easing.type: Appearance.animation.scroll.type
                         easing.bezierCurve: Appearance.animation.scroll.bezierCurve
                     }
-                }
-
-                add: Transition {
-                    animations: [Appearance.animation.elementMoveEnter.numberAnimation.createObject(this, {
-                        property: "opacity",
-                        from: 0,
-                        to: 1
-                    })]
                 }
 
                 model: ScriptModel {
@@ -211,14 +197,15 @@ Item {
 
                     MaterialSymbol {
                         Layout.alignment: Qt.AlignHCenter
-                        iconSize: 55
+                        iconSize: 60
                         color: Appearance.m3colors.m3outline
                         text: "bookmark_heart"
                     }
                     StyledText {
                         id: widgetNameText
                         Layout.alignment: Qt.AlignHCenter
-                        font.pixelSize: Appearance.font.pixelSize.normal
+                        font.pixelSize: Appearance.font.pixelSize.larger
+                        font.family: Appearance.font.family.title
                         color: Appearance.m3colors.m3outline
                         horizontalAlignment: Text.AlignHCenter
                         text: qsTr("Anime boorus")
@@ -293,7 +280,7 @@ Item {
             }
         }
 
-        Flow { // Tag suggestions
+        FlowButtonGroup { // Tag suggestions
             id: tagSuggestions
             visible: root.suggestionList.length > 0 && tagInputField.text.length > 0
             property int selectedIndex: 0
@@ -308,26 +295,24 @@ Item {
                 }
                 delegate: ApiCommandButton {
                     id: tagButton
-
-                    background: Rectangle {
-                        radius: Appearance.rounding.small
-                        color: tagSuggestions.selectedIndex === index ? Appearance.colors.colLayer2Hover : 
-                            tagButton.down ? Appearance.colors.colLayer2Active : 
-                            tagButton.hovered ? Appearance.colors.colLayer2Hover :
-                            Appearance.colors.colLayer2
-
-                    }
+                    colBackground: tagSuggestions.selectedIndex === index ? Appearance.colors.colLayer2Hover : Appearance.colors.colLayer2
+                    bounce: false
                     contentItem: RowLayout {
+                        anchors.centerIn: parent
                         spacing: 5
                         StyledText {
+                            Layout.fillWidth: false
                             font.pixelSize: Appearance.font.pixelSize.small
                             color: Appearance.m3colors.m3onSurface
+                            horizontalAlignment: Text.AlignRight
                             text: modelData.displayName ?? modelData.name
                         }
                         StyledText {
+                            Layout.fillWidth: false
                             visible: modelData.count !== undefined
                             font.pixelSize: Appearance.font.pixelSize.smaller
                             color: Appearance.m3colors.m3outline
+                            horizontalAlignment: Text.AlignLeft
                             text: modelData.count ?? ""
                         }
                     }
@@ -389,17 +374,14 @@ Item {
                 anchors.topMargin: 5
                 spacing: 0
 
-                TextArea { // The actual TextArea
+                StyledTextArea { // The actual TextArea
                     id: tagInputField
                     wrapMode: TextArea.Wrap
                     Layout.fillWidth: true
                     padding: 10
                     color: activeFocus ? Appearance.m3colors.m3onSurface : Appearance.m3colors.m3onSurfaceVariant
                     renderType: Text.NativeRendering
-                    selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
-                    selectionColor: Appearance.m3colors.m3secondaryContainer
                     placeholderText: StringUtils.format(qsTr('Enter tags, or "{0}" for commands'), root.commandPrefix)
-                    placeholderTextColor: Appearance.m3colors.m3outline
 
                     background: null
 
@@ -487,13 +469,15 @@ Item {
                     }
                 }
 
-                Button { // Send button
+                RippleButton { // Send button
                     id: sendButton
                     Layout.alignment: Qt.AlignTop
                     Layout.rightMargin: 5
                     implicitWidth: 40
                     implicitHeight: 40
+                    buttonRadius: Appearance.rounding.small
                     enabled: tagInputField.text.length > 0
+                    toggled: enabled
 
                     MouseArea {
                         anchors.fill: parent
@@ -502,17 +486,6 @@ Item {
                             const inputText = tagInputField.text
                             root.handleInput(inputText)
                             tagInputField.clear()
-                        }
-                    }
-
-                    background: Rectangle {
-                        radius: Appearance.rounding.small
-                        color: sendButton.enabled ? (sendButton.down ? Appearance.colors.colPrimaryActive : 
-                            sendButton.hovered ? Appearance.colors.colPrimaryHover :
-                            Appearance.m3colors.m3primary) : Appearance.colors.colLayer2Disabled
-                            
-                        Behavior on color {
-                            animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
                         }
                     }
 
@@ -563,7 +536,6 @@ Item {
                         StyledText {
                             id: providerName
                             font.pixelSize: Appearance.font.pixelSize.small
-                            font.weight: Font.DemiBold
                             color: Appearance.m3colors.m3onSurface
                             text: Booru.providers[Booru.currentProvider].name
                         }
@@ -590,8 +562,10 @@ Item {
                     text: "•"
                 }
 
-                Rectangle { // NSFW toggle
+                Item { // NSFW toggle
+                    visible: width > 0
                     implicitWidth: switchesRow.implicitWidth
+                    Layout.fillHeight: true
 
                     RowLayout {
                         id: switchesRow
@@ -630,30 +604,28 @@ Item {
 
                 Item { Layout.fillWidth: true }
 
-                Repeater { // Command buttons
-                    id: commandRepeater
-                    model: commandButtonsRow.commandsShown
-                    delegate: ApiCommandButton {
-                        id: tagButton
-                        property string commandRepresentation: `${root.commandPrefix}${modelData.name}`
-                        buttonText: commandRepresentation
-                        background: Rectangle {
-                            radius: Appearance.rounding.small
-                            color: tagButton.down ? Appearance.colors.colLayer2Active : 
-                                tagButton.hovered ? Appearance.colors.colLayer2Hover :
-                                Appearance.colors.colLayer2
-                                
-                            Behavior on color {
-                                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
-                            }
-                        }
-                        onClicked: {
-                            if(modelData.sendDirectly) {
-                                root.handleInput(commandRepresentation)
-                            } else {
-                                tagInputField.text = commandRepresentation + " "
-                                tagInputField.cursorPosition = tagInputField.text.length
-                                tagInputField.forceActiveFocus()
+                ButtonGroup {
+                    padding: 0
+                    Repeater { // Command buttons
+                        id: commandRepeater
+                        model: commandButtonsRow.commandsShown
+                        delegate: ApiCommandButton {
+                            id: tagButton
+                            property string commandRepresentation: `${root.commandPrefix}${modelData.name}`
+                            buttonText: commandRepresentation
+                            colBackground: Appearance.colors.colLayer2
+
+                            onClicked: {
+                                if(modelData.sendDirectly) {
+                                    root.handleInput(commandRepresentation)
+                                } else {
+                                    tagInputField.text = commandRepresentation + " "
+                                    tagInputField.cursorPosition = tagInputField.text.length
+                                    tagInputField.forceActiveFocus()
+                                }
+                                if (modelData.name === "clear") {
+                                    tagInputField.text = ""
+                                }
                             }
                         }
                     }

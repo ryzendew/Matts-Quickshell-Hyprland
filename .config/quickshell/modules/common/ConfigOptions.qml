@@ -5,35 +5,42 @@ pragma ComponentBehavior: Bound
 
 Singleton {
     property QtObject ai: QtObject {
-        property string systemPrompt: qsTr("Use casual tone. No user knowledge is to be assumed except basic Linux literacy. Be brief and concise: When explaining concepts, use bullet points (prefer minus sign (-) over asterisk (*)) and highlight keywords in bold to pinpoint the main concepts instead of long paragraphs. You are also encouraged to split your response with h2 headers, each header title beginning with an emoji, like `## 🐧 Linux`.")
+        property string systemPrompt: qsTr("Use casual tone. No user knowledge is to be assumed except basic Linux literacy. Be brief and concise: When explaining concepts, use bullet points (prefer minus sign (-) over asterisk (*)) and highlight keywords in bold to pinpoint the main concepts instead of long paragraphs. You are also encouraged to split your response with h2 headers, each header title beginning with an emoji, like `## 🐧 Linux`. When making changes to the user's config, you must get the config to know what values there are before setting.")
     }
 
     property QtObject appearance: QtObject {
-        property int fakeScreenRounding: 0 // 0: None | 1: Always | 2: When not fullscreen
+        property int fakeScreenRounding: 2 // 0: None | 1: Always | 2: When not fullscreen
     }
 
-    property QtObject logging: QtObject {
-        property bool enabled: false // Master switch for all logging
-        property bool debug: false   // Debug level logging
-        property bool info: true    // Info level logging
-        property bool warning: true  // Warning level logging (default true for safety)
-        property bool error: true    // Error level logging (default true for safety)
+    property QtObject audio: QtObject { // Values in %
+        property QtObject protection: QtObject { // Prevent sudden bangs
+            property bool enable: true
+            property real maxAllowedIncrease: 10
+            property real maxAllowed: 90 // Realistically should already provide some protection when it's 99...
+        }
     }
 
     property QtObject apps: QtObject {
-        property string bluetooth: "better-control --bluetooth"
+        property string bluetooth: "kcmshell6 kcm_bluetooth"
         property string imageViewer: "loupe"
-        property string network: "better-control --wifi"
+        property string network: "plasmawindowed org.kde.plasma.networkmanagement"
+        property string networkEthernet: "kcmshell6 kcm_networkmanagement"
         property string settings: "systemsettings"
-        property string taskManager: "gnome-usage"
-        property string terminal: "foot" // This is only for shell actions
+        property string taskManager: "plasma-systemmonitor --page-name Processes"
+        property string terminal: "kitty -1" // This is only for shell actions
+    }
+
+    property QtObject battery: QtObject {
+        property int low: 20
+        property int critical: 5
+        property int suspend: 2
     }
 
     property QtObject bar: QtObject {
-        property int batteryLowThreshold: 20
+        property bool bottom: false // Instead of top
+        property bool borderless: false // true for no grouping of items
         property string topLeftIcon: "spark" // Options: distro, spark
         property bool showBackground: true
-        property bool borderless: false
         property QtObject resources: QtObject {
             property bool alwaysShowSwap: true
             property bool alwaysShowCpu: false
@@ -43,21 +50,24 @@ Singleton {
             property bool alwaysShowNumbers: false
             property int showNumberDelay: 150 // milliseconds
         }
-        
-        // Module configuration for drag-and-drop reordering
-        property QtObject modules: QtObject {
-            property var leftModules: ["arch_logo"]
-            property var rightModules: ["indicators", "clock", "weather", "systray"]
-            property var centerModules: ["workspaces"]
-            
-            // Module settings
-            property bool enableDragAndDrop: true
-            property int dragThreshold: 10
-            
-            // Default module order (can be overridden by saved state)
-            property var defaultLeftOrder: ["arch_logo"]
-            property var defaultRightOrder: ["indicators", "clock", "weather", "systray"] 
-            property var defaultCenterOrder: ["workspaces"]
+    }
+
+    property QtObject dock: QtObject {
+        property real height: 60
+        property real hoverRegionHeight: 3
+        property bool pinnedOnStartup: false
+        property bool hoverToReveal: false // When false, only reveals on empty workspace
+        property list<string> pinnedApps: [ // IDs of pinned entries
+            "org.kde.dolphin",
+            "kitty",
+        ]
+    }
+
+    property QtObject language: QtObject {
+        property QtObject translator: QtObject {
+            property string engine: "auto" // Run `trans -list-engines` for available engines. auto should use google
+            property string targetLanguage: "auto" // Run `trans -list-all` for available languages
+            property string sourceLanguage: "auto"
         }
     }
 
@@ -67,6 +77,11 @@ Singleton {
 
     property QtObject osd: QtObject {
         property int timeout: 1000
+    }
+
+    property QtObject osk: QtObject {
+        property string layout: "qwerty_full"
+        property bool pinnedOnStartup: false
     }
 
     property QtObject overview: QtObject {
@@ -84,12 +99,18 @@ Singleton {
         property int nonAppResultDelay: 30 // This prevents lagging when typing
         property string engineBaseUrl: "https://www.google.com/search?q="
         property list<string> excludedSites: [ "quora.com" ]
+        property bool sloppy: false // Uses levenshtein distance based scoring instead of fuzzy sort. Very weird.
         property QtObject prefix: QtObject {
             property string action: "/"
+            property string clipboard: ";"
+            property string emojis: ":"
         }
     }
 
     property QtObject sidebar: QtObject {
+        property QtObject translator: QtObject {
+            property int delay: 300 // Delay before sending request. Reduces (potential) rate limits and lag.
+        }
         property QtObject booru: QtObject {
             property bool allowNsfw: false
             property string defaultProvider: "yandere"
@@ -98,6 +119,12 @@ Singleton {
                 property string username: "[unset]"
             }
         }
+    }
+
+    property QtObject time: QtObject {
+        // https://doc.qt.io/qt-6/qtime.html#toString
+        property string format: "hh:mm"
+        property string dateFormat: "dddd, dd/MM"
     }
 
     property QtObject hacks: QtObject {

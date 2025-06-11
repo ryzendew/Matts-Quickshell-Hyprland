@@ -1,5 +1,7 @@
-
-
+/**
+ * @param { string } summary 
+ * @returns { string }
+ */
 function findSuitableMaterialSymbol(summary = "") {
     const defaultType = 'chat';
     if(summary.length === 0) return defaultType;
@@ -36,19 +38,10 @@ function findSuitableMaterialSymbol(summary = "") {
     return defaultType;
 }
 
-// const getFriendlyNotifTimeString = (timeObject) => {
-//     const messageTime = GLib.DateTime.new_from_unix_local(timeObject);
-//     const oneMinuteAgo = GLib.DateTime.new_now_local().add_seconds(-60);
-//     if (messageTime.compare(oneMinuteAgo) > 0)
-//         return getString('Now');
-//     else if (messageTime.get_day_of_year() == GLib.DateTime.new_now_local().get_day_of_year())
-//         return messageTime.format(userOptions.time.format);
-//     else if (messageTime.get_day_of_year() == GLib.DateTime.new_now_local().get_day_of_year() - 1)
-//         return getString('Yesterday');
-//     else
-//         return messageTime.format(userOptions.time.dateFormat);
-// }
-
+/**
+ * @param { number | string | Date } timestamp 
+ * @returns { string }
+ */
 const getFriendlyNotifTimeString = (timestamp) => {
     const messageTime = new Date(timestamp);
     const now = new Date();

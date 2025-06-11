@@ -11,29 +11,25 @@ import Quickshell.Hyprland
 import Qt.labs.platform
 
 /**
-* Renders LaTeX snippets with MicroTeX.
-* For every request:
-*   1. Hash it
-*   2. Check if the hash is already processed
-*   3. If not, render it with MicroTeX and mark as processed
-*/
+ * Renders LaTeX snippets with MicroTeX.
+ * For every request:
+ *   1. Hash it
+ *   2. Check if the hash is already processed
+ *   3. If not, render it with MicroTeX and mark as processed
+ */
 Singleton {
     id: root
     
-    readonly property var renderPadding: 8 // Increased padding for better readability
-    readonly property var textSizeMultiplier: 1.2 // Increase text size for better readability
+    readonly property var renderPadding: 4 // This is to prevent cutoff in the rendered images
 
     property list<string> processedHashes: []
     property var processedExpressions: ({})
     property var renderedImagePaths: ({})
-    property string microtexBinaryPath: Qt.resolvedUrl("/opt/MicroTeX/LaTeX")
-    property string latexOutputPath: FileUtils.trimFileProtocol(`${XdgDirectories.cache}/latex`)
+    property string microtexBinaryDir: "/opt/MicroTeX"
+    property string microtexBinaryName: "LaTeX"
+    property string latexOutputPath: Directories.latexOutput
 
     signal renderFinished(string hash, string imagePath)
-
-    Component.onCompleted: {
-        Hyprland.dispatch(`exec rm -rf ${latexOutputPath} && mkdir -p ${latexOutputPath}`)
-    }
 
     /**
     * Requests rendering of a LaTeX expression.
@@ -56,22 +52,28 @@ Singleton {
         }
 
         // 3. If not, render it with MicroTeX and mark as processed
+        // console.log(`[LatexRenderer] Rendering expression: ${expression} with hash: ${hash}`)
+        // console.log(`                to file: ${imagePath}`)
+        // console.log(`                with command: cd ${microtexBinaryDir} && ./${microtexBinaryName} -headless -input=${StringUtils.shellSingleQuoteEscape(expression)} -output=${imagePath} -textsize=${Appearance.font.pixelSize.normal} -padding=${renderPadding} -background=${Appearance.m3colors.m3tertiary} -foreground=${Appearance.m3colors.m3onTertiary} -maxwidth=0.85`)
         const processQml = `
             import Quickshell.Io
             Process {
                 id: microtexProcess${hash}
                 running: true
-                command: [ "${microtexBinaryPath}", "-headless", 
-                    "-input=${StringUtils.escapeBackslashes(expression)}", 
-                    "-output=${imagePath}", 
-                    "-textsize=${Appearance.font.pixelSize.normal * textSizeMultiplier}", 
-                    "-padding=${renderPadding}", 
-                    "-foreground=${Appearance.colors.colOnLayer1}",
-                    "-maxwidth=0.85" ]
+                command: [ "bash", "-c", 
+                    "cd ${root.microtexBinaryDir} && ./${root.microtexBinaryName} -headless '-input=${StringUtils.shellSingleQuoteEscape(StringUtils.escapeBackslashes(expression))}' "
+                    + "'-output=${imagePath}' " 
+                    + "'-textsize=${Appearance.font.pixelSize.normal}' "
+                    + "'-padding=${renderPadding}' "
+                    // + "'-background=${Appearance.m3colors.m3tertiary}' "
+                    + "'-foreground=${Appearance.colors.colOnLayer1}' "
+                    + "-maxwidth=0.85 "
+                ]
                 // stdout: SplitParser {
                 //     onRead: data => { console.log("MicroTeX: " + data) }
                 // }
                 onExited: (exitCode, exitStatus) => {
+                    // console.log("[LatexRenderer] MicroTeX process exited with code: " + exitCode + ", status: " + exitStatus)
                     renderedImagePaths["${hash}"] = "${imagePath}"
                     root.renderFinished("${hash}", "${imagePath}")
                     microtexProcess${hash}.destroy()

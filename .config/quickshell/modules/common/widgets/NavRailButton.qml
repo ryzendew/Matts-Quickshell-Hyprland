@@ -42,7 +42,7 @@ Button {
                 iconSize: Appearance.font.pixelSize.hugeass
                 fill: toggled ? 1 : 0
                 text: buttonIcon
-                color: toggled ? "#FFFFFF" : "#FFFFFF"
+                color: toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer1
 
                 Behavior on color {
                     animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)

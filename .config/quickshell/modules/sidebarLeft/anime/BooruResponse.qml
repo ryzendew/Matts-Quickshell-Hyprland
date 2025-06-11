@@ -77,7 +77,6 @@ Rectangle {
                     id: providerName
                     anchors.centerIn: parent
                     font.pixelSize: Appearance.font.pixelSize.large
-                    font.weight: Font.DemiBold
                     color: Appearance.m3colors.m3onSecondaryContainer
                     text: Booru.providers[root.responseData.provider].name
                 }
@@ -233,6 +232,7 @@ Rectangle {
             }
             delegate: RowLayout {
                 id: imageRow
+                required property var modelData
                 property var rowHeight: modelData.height
                 spacing: root.imageSpacing
 
@@ -242,7 +242,9 @@ Rectangle {
                         required property var modelData
                         imageData: modelData
                         rowHeight: imageRow.rowHeight
-                        manualDownload: ["danbooru", "waifu.im"].includes(root.responseData.provider)
+                        imageRadius: imageRow.modelData.images.length == 1 ? 50 : Appearance.rounding.normal
+                        // Download manually to reduce redundant requests or make sure downloading works
+                        manualDownload: ["danbooru", "waifu.im", "t.alcy.cc"].includes(root.responseData.provider)
                         previewDownloadPath: root.previewDownloadPath
                         downloadPath: root.downloadPath
                         nsfwPath: root.nsfwPath
@@ -251,7 +253,7 @@ Rectangle {
             }
         }
 
-        Button { // Next page button
+        RippleButton { // Next page button
             id: button
             property string buttonText
             visible: root.responseData.page != "" && root.responseData.page > 0
@@ -261,31 +263,37 @@ Rectangle {
             leftPadding: 10
             rightPadding: 5
 
-            PointingHandInteraction {}
             onClicked: {
                 tagInputField.text = `${responseData.tags.join(" ")} ${parseInt(root.responseData.page) + 1}`
                 tagInputField.accept()
             }
 
-            background: Rectangle {
-                radius: Appearance.rounding.small
-                color: (button.down ? Appearance.colors.colSurfaceContainerHighestActive : 
-                    button.hovered ? Appearance.colors.colSurfaceContainerHighestHover :
-                    Appearance.m3colors.m3surfaceContainerHighest)
-            }
+            buttonRadius: Appearance.rounding.small
+            colBackground: Appearance.m3colors.m3surfaceContainerHighest
+            colBackgroundHover: Appearance.colors.colSurfaceContainerHighestHover
+            colRipple: Appearance.colors.colSurfaceContainerHighestActive            
 
-            contentItem: RowLayout {
-                spacing: 0
-                StyledText {
-                    Layout.alignment: Text.AlignVCenter
-                    text: "Next page"
-                    color: Appearance.m3colors.m3onSurface
-                }
-                MaterialSymbol {
-                    Layout.alignment: Text.AlignVCenter
-                    iconSize: Appearance.font.pixelSize.larger
-                    color: Appearance.m3colors.m3onSurface
-                    text: "chevron_right"
+            contentItem: Item {
+                anchors.fill: parent
+                implicitHeight: nextPageRow.implicitHeight
+                implicitWidth: nextPageRow.implicitWidth
+
+                RowLayout {
+                    id: nextPageRow
+                    anchors.centerIn: parent
+                    spacing: 0
+                    StyledText {
+                        Layout.alignment: Qt.AlignVCenter
+                        verticalAlignment: Text.AlignVCenter
+                        text: "Next page"
+                        color: Appearance.m3colors.m3onSurface
+                    }
+                    MaterialSymbol {
+                        Layout.alignment: Qt.AlignVCenter
+                        iconSize: Appearance.font.pixelSize.larger
+                        color: Appearance.m3colors.m3onSurface
+                        text: "chevron_right"
+                    }
                 }
             }
         }

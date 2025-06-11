@@ -9,7 +9,7 @@ Item {
     width: forecastGrid.width
     height: forecastGrid.height
 
-    property string weatherLocation: "Halifax, Nova Scotia, Canada"
+    property string weatherLocation: "Halifax, Nova Scotia"
     property var forecastData: []
     property string locationDisplay: ""
     property string currentTemp: ""
@@ -143,6 +143,8 @@ Item {
     }
 
     function mapWeatherCode(code) {
+        // WMO Weather interpretation codes (WW)
+        // https://open-meteo.com/en/docs
         switch(code) {
             case 0: return "Clear sky";
             case 1: return "Mainly clear";
@@ -185,9 +187,9 @@ Item {
             return;
         }
         
-        // First get coordinates from wttr.in
+        // Get coordinates from Open-Meteo geocoding API
         var geoXhr = new XMLHttpRequest();
-        var geoUrl = "https://wttr.in/" + encodeURIComponent(weatherLocation) + "?format=j1";
+        var geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" + encodeURIComponent(weatherLocation) + "&count=1&language=en&format=json";
         geoXhr.onreadystatechange = function() {
             if (geoXhr.readyState === XMLHttpRequest.DONE) {
                 if (geoXhr.status === 200) {
@@ -196,31 +198,28 @@ Item {
                         var lat = 44.65; // Halifax default
                         var lon = -63.57;
                         
-                        if (geoData.nearest_area && geoData.nearest_area[0]) {
-                            lat = parseFloat(geoData.nearest_area[0].latitude) || lat;
-                            lon = parseFloat(geoData.nearest_area[0].longitude) || lon;
+                        if (geoData.results && geoData.results.length > 0) {
+                            lat = parseFloat(geoData.results[0].latitude) || lat;
+                            lon = parseFloat(geoData.results[0].longitude) || lon;
+                            locationDisplay = geoData.results[0].name + ", " + geoData.results[0].admin1 + ", " + geoData.results[0].country;
                         }
                         
                         // Now get 7-day forecast from Open-Meteo
-        var xhr = new XMLHttpRequest();
-                        var url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,relative_humidity_2m_max&timezone=auto&forecast_days=7`;
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                if (xhr.status === 200) {
-                    try {
-                        var data = JSON.parse(xhr.responseText);
-                                        // Keep location info from wttr.in
-                                        data.nearest_area = geoData.nearest_area;
-                        weatherCache.lastWeatherJson = xhr.responseText;
-                        weatherCache.lastWeatherTimestamp = now;
-                        weatherCache.lastLocation = locationKey;
+                        var xhr = new XMLHttpRequest();
+                        var url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,relative_humidity_2m_max&timezone=auto&forecast_days=7&temperature_unit=celsius&wind_speed_unit=kmh`;
+                        xhr.onreadystatechange = function() {
+                            if (xhr.readyState === XMLHttpRequest.DONE) {
+                                if (xhr.status === 200) {
+                                    try {
+                                        var data = JSON.parse(xhr.responseText);
+                                        weatherCache.lastWeatherJson = xhr.responseText;
+                                        weatherCache.lastWeatherTimestamp = now;
+                                        weatherCache.lastLocation = locationKey;
                                         parseWeatherOpenMeteo(data);
                                     } catch (e) {
-                                        // console.log("Open-Meteo parse error:", e);
                                         fallbackWeatherData("Parse error");
                                     }
                                 } else {
-                                    // console.log("Open-Meteo request error:", xhr.status);
                                     fallbackWeatherData("Request error");
                                 }
                             }
@@ -228,29 +227,24 @@ Item {
                         xhr.open("GET", url);
                         xhr.send();
                     } catch (e) {
-                        // console.log("Geo data parse error:", e);
                         fallbackWeatherData("Location error");
                     }
                 } else {
-                    // console.log("Geo request error:", geoXhr.status);
                     fallbackWeatherData("Location error");
                 }
             }
         };
         geoXhr.open("GET", geoUrl);
-        geoXhr.setRequestHeader("User-Agent", "Mozilla/5.0 (compatible; quickshell-weather/1.0)");
         geoXhr.send();
     }
 
     function parseWeatherOpenMeteo(data) {
         var forecast = [];
-        // console.log("Open-Meteo API returned data for", data.daily ? data.daily.time.length : 0, "days");
         
         // Extract current weather data
         if (data.current) {
             currentTemp = Math.round(data.current.temperature_2m) + "°C";
             feelsLike = Math.round(data.current.apparent_temperature) + "°C";
-            // console.log("Current weather - Temp:", currentTemp, "Feels like:", feelsLike);
         }
         
         if (data.daily && data.daily.time && data.daily.time.length > 0) {
@@ -276,7 +270,6 @@ Item {
                 });
             }
         }
-        // console.log("Parsed forecast with", forecast.length, "days");
         forecastData = forecast;
         
         // Set locationDisplay from nearest_area if available

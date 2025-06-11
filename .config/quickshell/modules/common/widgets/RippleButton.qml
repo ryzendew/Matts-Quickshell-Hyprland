@@ -20,11 +20,14 @@ Button {
     property real buttonEffectiveRadius: root.down ? root.buttonRadiusPressed : root.buttonRadius
     property int rippleDuration: 1200
     property bool rippleEnabled: true
-    property var altAction
+    property var downAction // When left clicking (down)
+    property var releaseAction // When left clicking (release)
+    property var altAction // When right clicking
+    property var middleClickAction // When middle clicking
 
     property color colBackground: ColorUtils.transparentize(Appearance?.colors.colLayer1Hover, 1) || "transparent"
     property color colBackgroundHover: Appearance?.colors.colLayer1Hover ?? "#E5DFED"
-    property color colBackgroundToggled: Appearance?.m3colors.m3primary ?? "#65558F"
+    property color colBackgroundToggled: Appearance?.colors.colPrimary ?? "#65558F"
     property color colBackgroundToggledHover: Appearance?.colors.colPrimaryHover ?? "#77699C"
     property color colRipple: Appearance?.colors.colLayer1Active ?? "#D6CEE2"
     property color colRippleToggled: Appearance?.colors.colPrimaryActive ?? "#D6CEE2"
@@ -58,19 +61,26 @@ Button {
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
         onPressed: (event) => { 
             if(event.button === Qt.RightButton) {
                 if (root.altAction) root.altAction();
                 return;
             }
+            if(event.button === Qt.MiddleButton) {
+                if (root.middleClickAction) root.middleClickAction();
+                return;
+            }
             root.down = true
+            if (root.downAction) root.downAction();
             if (!root.rippleEnabled) return;
             const {x,y} = event
             startRipple(x, y)
         }
         onReleased: (event) => {
             root.down = false
+            if (event.button != Qt.LeftButton) return;
+            if (root.releaseAction) root.releaseAction();
             root.click() // Because the MouseArea already consumed the event
             if (!root.rippleEnabled) return;
             rippleFadeAnim.restart();
@@ -140,14 +150,27 @@ Button {
             }
         }
 
-        Rectangle {
+        Item {
             id: ripple
-
-            radius: Appearance?.rounding.full ?? 9999
+            width: ripple.implicitWidth
+            height: ripple.implicitHeight
             opacity: 0
-            color: root.rippleColor
-            Behavior on color {
+            visible: width > 0 && height > 0
+
+            property real implicitWidth: 0
+            property real implicitHeight: 0
+
+            Behavior on opacity {
                 animation: Appearance?.animation.elementMoveFast.colorAnimation.createObject(this)
+            }
+
+            RadialGradient {
+                anchors.fill: parent
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: root.rippleColor }
+                    GradientStop { position: 0.3; color: root.rippleColor }
+                    GradientStop { position: 0.5; color: Qt.rgba(root.rippleColor.r, root.rippleColor.g, root.rippleColor.b, 0) }
+                }
             }
 
             transform: Translate {

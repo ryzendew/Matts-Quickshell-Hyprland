@@ -160,7 +160,7 @@ Scope {
     // FileView to monitor Qt6 theme settings changes
     FileView {
         id: qt6SettingsView
-        path: "/home/matt/.config/qt6ct/qt6ct.conf"
+        path: "$HOME/.config/qt6ct/qt6ct.conf"
         
         property string lastTheme: ""
         
@@ -374,7 +374,7 @@ Scope {
     }
     
     Variants {
-        model: Quickshell.screens.filter(screen => screen.name === "DP-1")
+        model: Quickshell.screens
 
         PanelWindow {
             id: dockRoot
@@ -411,11 +411,11 @@ Scope {
             
             // Helper function for controlled logging
             function log(level, message) {
-                if (!ConfigOptions.logging.enabled) return
-                if (level === "debug" && !ConfigOptions.logging.debug) return
-                if (level === "info" && !ConfigOptions.logging.info) return
-                if (level === "warning" && !ConfigOptions.logging.warning) return
-                if (level === "error" && !ConfigOptions.logging.error) return
+                if (!ConfigOptions?.logging?.enabled) return
+                if (level === "debug" && !ConfigOptions?.logging?.debug) return
+                if (level === "info" && !ConfigOptions?.logging?.info) return
+                if (level === "warning" && !ConfigOptions?.logging?.warning) return
+                if (level === "error" && !ConfigOptions?.logging?.error) return
                 console.log(`[Dock][${level.toUpperCase()}] ${message}`)
             }
             
@@ -466,7 +466,7 @@ Scope {
                 }
                 if (windowClass.endsWith('.desktop')) {
                     // Try user applications first, then system applications
-                    var userPath = `/home/matt/.local/share/applications/${windowClass}`
+                    var userPath = `$HOME/.local/share/applications/${windowClass}`
                     var systemPath = `/usr/share/applications/${windowClass}`
                     var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
                     var content = ""
@@ -541,7 +541,7 @@ Scope {
                         cmd = dock.getDesktopFileExecCommand(appInfo.class);
                         if (!cmd) {
                             // Fallback to gio launch if we can't parse the desktop file
-                            cmd = `gio launch /home/matt/.local/share/applications/${appInfo.class} || gio launch /usr/share/applications/${appInfo.class}`;
+                            cmd = `gio launch $HOME/.local/share/applications/${appInfo.class} || gio launch /usr/share/applications/${appInfo.class}`;
                         }
                     } else {
                         // For regular apps, use mapping or fallback
@@ -630,7 +630,7 @@ Scope {
                                     // Arch Linux logo
                                     Image {
                                         anchors.centerIn: parent
-                                        source: "/home/matt/.config/quickshell/logo/Arch-linux-logo.png"
+                                        source: "$HOME/.config/quickshell/logo/Arch-linux-logo.png"
                                         width: parent.width * 0.65
                                         height: parent.height * 0.65
                                         fillMode: Image.PreserveAspectFit
@@ -721,7 +721,7 @@ Scope {
                                                 if (entry && entry.execute) {
                                                     entry.execute();
                                                 } else {
-                                                    Hyprland.dispatch(`exec gio launch /home/matt/.local/share/applications/${modelData} || gio launch /usr/share/applications/${modelData}`);
+                                                    Hyprland.dispatch(`exec gio launch $HOME/.local/share/applications/${modelData} || gio launch /usr/share/applications/${modelData}`);
                                                 }
                                             } else {
                                                 let cmd = dock.desktopIdToCommand[modelData] || modelData.toLowerCase();
@@ -851,7 +851,7 @@ Scope {
     function getDesktopFileExecCommand(desktopFileName) {
         try {
             // Try user applications first, then system applications
-            var userPath = `/home/matt/.local/share/applications/${desktopFileName}`
+            var userPath = `$HOME/.local/share/applications/${desktopFileName}`
             var systemPath = `/usr/share/applications/${desktopFileName}`
             
             var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
@@ -982,7 +982,7 @@ Scope {
                 var command = ""
                 if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.class) {
                     if (dockContextMenu.contextAppInfo.class.endsWith('.desktop')) {
-                        command = `gio launch /home/matt/.local/share/applications/${dockContextMenu.contextAppInfo.class} || gio launch /usr/share/applications/${dockContextMenu.contextAppInfo.class}`;
+                        command = `gio launch $HOME/.local/share/applications/${dockContextMenu.contextAppInfo.class} || gio launch /usr/share/applications/${dockContextMenu.contextAppInfo.class}`;
                     } else {
                         var classLower = dockContextMenu.contextAppInfo.class.toLowerCase()
                         var classWithDesktop = dockContextMenu.contextAppInfo.class + ".desktop"

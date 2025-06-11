@@ -46,7 +46,10 @@ Item {
 
     Component.onCompleted: {
         root.ready = true
-        if (popup) timeoutTimer.start()
+        if (popup) {
+            console.log("Starting notification timer for:", notificationObject.appName, notificationObject.summary)
+            timeoutTimer.start()
+        }
     }
 
     Timer {
@@ -54,6 +57,7 @@ Item {
         interval: notificationObject.expireTimeout ?? root.defaultTimeoutValue
         repeat: false
         onTriggered: {
+            console.log("Notification timeout for:", notificationObject.appName, notificationObject.summary)
             root.notificationXAnimation = Appearance.animation.elementMoveExit
             Notifications.timeoutNotification(notificationObject.id);
         }
@@ -147,21 +151,6 @@ Item {
             root.enableAnimation = !dragStarted
         }
 
-        onReleased: (mouse) => {
-            dragStarted = false
-            if (mouse.button === Qt.LeftButton) {
-                if (notificationRowWrapper.x > dragConfirmThreshold) {
-                    root.notificationXAnimation = Appearance.animation.elementMoveEnter
-                    Notifications.discardNotification(notificationObject.id)
-                } else {
-                    // Animate back if not far enough
-                    root.notificationXAnimation = Appearance.animation.elementMoveFast
-                    notificationRowWrapper.x = 0
-                    notificationBackground.x = 0
-                }
-            }
-        }
-
         onPositionChanged: (mouse) => {
             if (mouse.buttons & Qt.LeftButton) {
                 let dx = mouse.x - startX
@@ -178,17 +167,29 @@ Item {
                 }
             }
         }
+
+        onReleased: (mouse) => {
+            dragStarted = false
+            if (mouse.button === Qt.LeftButton) {
+                if (notificationRowWrapper.x > dragConfirmThreshold) {
+                    root.notificationXAnimation = Appearance.animation.elementMoveEnter
+                    Notifications.discardNotification(notificationObject.id)
+                } else {
+                    // Animate back if not far enough
+                    root.notificationXAnimation = Appearance.animation.elementMoveFast
+                    notificationRowWrapper.x = 0
+                    notificationBackground.x = 0
+                }
+            }
+        }
     }
 
     // Background
     Item {
         id: notificationBackgroundWrapper
-
-        // anchors.fill: parent
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        // anchors.top: parent.top
         anchors.topMargin: notificationListSpacing
         implicitHeight: notificationColumnLayout.implicitHeight + notificationListSpacing
 
@@ -197,11 +198,11 @@ Item {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.bottom: parent.bottom
-            // anchors.top: parent.top
             height: notificationColumnLayout.implicitHeight
 
             color: (notificationObject.urgency == NotificationUrgency.Critical) ? 
-                ColorUtils.mix(Appearance.m3colors.m3secondaryContainer, Appearance.colors.colLayer2, 0.35) : Appearance.colors.colLayer2
+                ColorUtils.mix(Appearance.m3colors.m3secondaryContainer, Appearance.colors.colLayer2, 0.35) : 
+                Appearance.m3colors.m3surfaceContainer
             radius: Appearance.rounding.normal
 
             layer.enabled: true
@@ -259,7 +260,6 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        // anchors.top: parent.top
         implicitHeight: notificationColumnLayout.implicitHeight + notificationListSpacing
 
         Behavior on x {
@@ -289,7 +289,7 @@ Item {
                     }
                 }
 
-                RowLayout {
+                    RowLayout {
                     id: notificationRowLayout
                     anchors.top: parent.top
                     anchors.left: parent.left
@@ -356,30 +356,24 @@ Item {
                                     anchors.fill: parent
                                     asynchronous: true
                                     source: parent.originalSource
-                                    smooth: true // Add smooth scaling
-                                    mipmap: true // Add mipmap for better downscaling
+                                    smooth: true
+                                    mipmap: true
+                                    fillMode: Image.PreserveAspectFit
+                                    cache: false  // Disable caching to avoid stride issues
 
                                     onStatusChanged: {
                                         if (status === Image.Error) {
                                             console.warn("[NotificationWidget] Failed to load image: " + parent.originalSource + ". Using fallback.");
-                                            // Store failure in imageCache to potentially avoid retrying or to use fallback immediately next time
                                             root.imageCache[parent.originalSource] = { failed: true }; 
                                             source = parent.fallbackIconSource;
                                         } else if (status === Image.Ready) {
-                                            // Optionally, confirm success in cache, though not strictly needed if provider is reliable
-                                            root.imageCache[parent.originalSource] = { failed: false, path: source }; 
+                                            root.imageCache[parent.originalSource] = { failed: false }; 
                                         }
                                     }
 
                                     Component.onCompleted: {
-                                        // Check cache on component completion for this specific source
                                         if (root.imageCache[parent.originalSource] && root.imageCache[parent.originalSource].failed) {
-                                            console.log("[NotificationWidget] Image previously failed, using fallback immediately: " + parent.originalSource);
                                             source = parent.fallbackIconSource;
-                                        } else if (root.imageCache[parent.originalSource] && !root.imageCache[parent.originalSource].failed && root.imageCache[parent.originalSource].path) {
-                                            // This part is tricky with image providers. If qsimage can return a direct path, this could work.
-                                            // For now, just rely on the provider or the error state.
-                                            // source = root.imageCache[parent.originalSource].path;
                                         }
                                     }
                                 }
@@ -422,7 +416,7 @@ Item {
                                 Component.onCompleted: {
                                     value = 0
                                 }
-                            }
+                        }
 
                             StyledText { // Time
                                 id: notificationTimeText
@@ -480,7 +474,6 @@ Item {
                                         }
                                     }
                                 }
-
                             }
                         }
 
@@ -511,9 +504,9 @@ Item {
                                 acceptedButtons: Qt.NoButton // Only for hover
                                 hoverEnabled: true
                                 cursorShape: parent.hoveredLink !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            }
-                        }
                     }
+                }
+            }
                 }
             }
 
@@ -521,7 +514,6 @@ Item {
             Flickable {
                 id: actionsFlickable
                 Layout.fillWidth: true
-                // Layout.topMargin: -5
                 Layout.leftMargin: 10
                 Layout.rightMargin: 10
                 Layout.bottomMargin: expanded ? 10 : 0
@@ -567,7 +559,7 @@ Item {
                     id: actionRowLayout
                     Layout.alignment: Qt.AlignBottom
 
-                    Repeater {
+                Repeater {
                         id: actionRepeater
                         model: notificationObject.actions
                         NotificationActionButton {
@@ -631,7 +623,6 @@ Item {
                             text: "close"
                         }
                     }
-                    
                 }
             }
         }

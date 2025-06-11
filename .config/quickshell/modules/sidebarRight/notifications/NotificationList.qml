@@ -16,7 +16,6 @@ Item {
     Connections {
         target: Notifications
         function onInitDone() {
-            // notificationRepeater.model = Notifications.list.slice().reverse()
             Notifications.list.slice().reverse().forEach((notification) => {
                 const notif = root.notifComponent.createObject(columnLayout, { notificationObject: notification });
                 notificationWidgetList.push(notif)
@@ -24,11 +23,10 @@ Item {
         }
 
         function onNotify(notification) {
-            // notificationRepeater.model = [notification, ...notificationRepeater.model]
             const notif = root.notifComponent.createObject(columnLayout, { notificationObject: notification });
             notificationWidgetList.unshift(notif)
 
-            // Remove stuff from t he column, add back
+            // Remove stuff from the column, add back
             for (let i = 0; i < notificationWidgetList.length; i++) {
                 if (notificationWidgetList[i].parent === columnLayout) {
                     notificationWidgetList[i].parent = null;
@@ -49,6 +47,7 @@ Item {
                 if (widget && widget.notificationObject && widget.notificationObject.id === id) {
                     widget.destroyWithAnimation();
                     notificationWidgetList.splice(i, 1);
+                    break;
                 }
             }
         }
@@ -56,11 +55,22 @@ Item {
         function onDiscardAll() {
             for (let i = notificationWidgetList.length - 1; i >= 0; i--) {
                 const widget = notificationWidgetList[i];
-                if (widget && widget.notificationObject) {
+                if (widget) {
                     widget.destroyWithAnimation();
                 }
             }
             notificationWidgetList = [];
+        }
+
+        function onTimeout(id) {
+            for (let i = notificationWidgetList.length - 1; i >= 0; i--) {
+                const widget = notificationWidgetList[i];
+                if (widget && widget.notificationObject && widget.notificationObject.id === id) {
+                    widget.destroyWithAnimation();
+                    notificationWidgetList.splice(i, 1);
+                    break;
+                }
+            }
         }
     }
 

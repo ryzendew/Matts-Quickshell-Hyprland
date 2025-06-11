@@ -7,6 +7,9 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Hyprland
 
+/**
+ * Provides access to some Hyprland data not available in Quickshell.Hyprland.
+ */
 Singleton {
     id: root
     property var windowList: []
@@ -27,17 +30,12 @@ Singleton {
         target: Hyprland
 
         function onRawEvent(event) {
-            // console.log("[HYPRLAND DEBUG] Received event:", event.name)
-            // Only filter out specific events that don't affect window list
+            // Filter out redundant old v1 events for the same thing
             if(event.name in [
-                "focusedmon", "monitoradded", 
+                "activewindow", "focusedmon", "monitoradded", 
                 "createworkspace", "destroyworkspace", "moveworkspace", 
-                "activespecial"
-            ]) {
-                // console.log("[HYPRLAND DEBUG] Filtered out event:", event.name)
-                return;
-            }
-            // console.log("[HYPRLAND DEBUG] Updating window list due to event:", event.name)
+                "activespecial", "movewindow", "windowtitle"
+            ]) return ;
             updateWindowList()
         }
     }
@@ -47,9 +45,7 @@ Singleton {
         command: ["bash", "-c", "hyprctl clients -j | jq -c"]
         stdout: SplitParser {
             onRead: (data) => {
-                // console.log("[HYPRLAND DEBUG] Received window list update")
                 root.windowList = JSON.parse(data)
-                // console.log("[HYPRLAND DEBUG] Window list updated:", JSON.stringify(root.windowList.map(w => w.class)))
                 let tempWinByAddress = {}
                 for (var i = 0; i < root.windowList.length; ++i) {
                     var win = root.windowList[i]

@@ -50,5 +50,4 @@ MouseArea {
         height: parent.height
     }
 
-
 }

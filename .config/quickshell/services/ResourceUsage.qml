@@ -6,6 +6,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
+/**
+ * Simple polled resource usage service with RAM, Swap, and CPU usage.
+ */
 Singleton {
 	property double memoryTotal: 1
 	property double memoryFree: 1
@@ -18,14 +21,8 @@ Singleton {
     property double cpuUsage: 0
     property var previousCpuStats
 
-    // Helper function for controlled logging
-    function log(level, message) {
-        if (level === "debug" && !ConfigOptions.logging.debug) return
-        // console.log(`[ResourceUsage][${level.toUpperCase()}] ${message}`)
-    }
-
 	Timer {
-		interval: ConfigOptions?.resources?.updateInterval ?? 1000 // Default to 1 second
+		interval: 1
         running: true 
         repeat: true
 		onTriggered: {
@@ -56,6 +53,7 @@ Singleton {
 
                 previousCpuStats = { total, idle }
             }
+            interval = ConfigOptions?.resources?.updateInterval ?? 3000
         }
 	}
 

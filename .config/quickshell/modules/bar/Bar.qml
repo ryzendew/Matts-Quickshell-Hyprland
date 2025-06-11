@@ -2,6 +2,7 @@ import "root:/"
 import "root:/modules/common"
 import "root:/modules/common/widgets"
 import "root:/services"
+import "root:/modules/common/functions/color_utils.js" as ColorUtils
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -9,6 +10,7 @@ import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
 import Quickshell.Hyprland
+import Quickshell.Services.UPower
 import Quickshell.Io
 import Quickshell.Services.Mpris
 
@@ -36,11 +38,10 @@ Scope {
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
         function onBarXrayChanged() {
-            // AppearanceSettingsState.updateBarBlurSettings() should handle the layerrule for xray
+            AppearanceSettingsState.updateBarBlurSettings()
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
         function onBlurEnabledChanged() {
-            // This will call updateBarBlurSettings in AppearanceSettingsState, which handles unsetting/setting the layerrule
             AppearanceSettingsState.updateBarBlurSettings()
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
@@ -48,14 +49,21 @@ Scope {
 
     // Initial blur setup
     Component.onCompleted: {
-        // AppearanceSettingsState.updateBarBlurSettings() handles initial setup too
         AppearanceSettingsState.updateBarBlurSettings()
     }
 
-    Variants { // For each monitor
-        model: Quickshell.screens.filter(screen => screen.name === "DP-1")
+    component VerticalBarSeparator: Rectangle {
+        Layout.topMargin: barHeight / 3
+        Layout.bottomMargin: barHeight / 3
+        Layout.fillHeight: true
+        implicitWidth: 1
+        color: Appearance.m3colors.m3outlineVariant
+    }
 
-        PanelWindow { // Bar window
+    Variants {
+        model: Quickshell.screens
+
+        PanelWindow {
             id: barRoot
 
             property ShellScreen modelData
@@ -66,11 +74,6 @@ Scope {
                 (useShortenedForm == 2) ? Appearance.sizes.barCenterSideModuleWidthHellaShortened :
                 (useShortenedForm == 1) ? Appearance.sizes.barCenterSideModuleWidthShortened : 
                     Appearance.sizes.barCenterSideModuleWidth
-
-            // NetworkTooltip {
-            //     id: networkTooltip
-            //     screen: modelData
-            // }
 
             screen: modelData
             implicitHeight: barHeight
@@ -87,23 +90,24 @@ Scope {
                 right: true
             }
 
-            Rectangle { // Bar background
+            Rectangle {
                 id: barContent
                 anchors.right: parent.right
                 anchors.left: parent.left
                 anchors.top: parent.top
                 height: barHeight
-                    color: showBarBackground ? Qt.rgba(
-                        Appearance.colors.colLayer0.r,
-                        Appearance.colors.colLayer0.g,
-                        Appearance.colors.colLayer0.b,
+                radius: 0
+                color: showBarBackground ? Qt.rgba(
+                    Appearance.colors.colLayer0.r,
+                    Appearance.colors.colLayer0.g,
+                    Appearance.colors.colLayer0.b,
                     0.55
-                    ) : "transparent"
+                ) : "transparent"
                     
-                    Behavior on color {
-                        ColorAnimation {
-                            duration: Appearance.animation.elementMoveFast.duration
-                            easing.type: Appearance.animation.elementMoveFast.type
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Appearance.animation.elementMoveFast.duration
+                        easing.type: Appearance.animation.elementMoveFast.type
                     }
                 }
 
@@ -117,7 +121,7 @@ Scope {
                     opacity: 0.9
                 }
                 
-                MouseArea { // Left side | scroll to change brightness
+                MouseArea {
                     id: barLeftSideMouseArea
                     anchors.left: parent.left
                     implicitHeight: barHeight
@@ -126,18 +130,16 @@ Scope {
                     property real lastScrollX: 0
                     property real lastScrollY: 1
                     property bool trackingScroll: false
-                    acceptedButtons: Qt.NoButton  // Disable click handling for the large area
+                    acceptedButtons: Qt.NoButton
                     hoverEnabled: false
                     propagateComposedEvents: true
                     
-                    // Scroll to change brightness
                     WheelHandler {
                         onWheel: (event) => {
                             if (event.angleDelta.y < 0)
                                 barRoot.brightnessMonitor.setBrightness(barRoot.brightnessMonitor.brightness - 0.05);
                             else if (event.angleDelta.y > 0)
                                 barRoot.brightnessMonitor.setBrightness(barRoot.brightnessMonitor.brightness + 0.05);
-                            // Store the mouse position and start tracking
                             barLeftSideMouseArea.lastScrollX = event.x;
                             barLeftSideMouseArea.lastScrollY = event.y;
                             barLeftSideMouseArea.trackingScroll = true;
@@ -154,12 +156,12 @@ Scope {
                             }
                         }
                     }
-                    Item {  // Left section
+                    Item {
                         anchors.fill: parent
                         implicitHeight: leftSectionRowLayout.implicitHeight
                         implicitWidth: leftSectionRowLayout.implicitWidth
                         
-                        RowLayout { // Content
+                        RowLayout {
                             id: leftSectionRowLayout
                             anchors.fill: parent
                             spacing: 10
@@ -182,11 +184,10 @@ Scope {
                                     anchors.centerIn: parent
                                     width: 22
                                     height: 22
-                                    source: "file:///home/matt/.config/quickshell/logo/Arch-linux-logo.png"
+                                    source: "file://$HOME/.config/quickshell/logo/Arch-linux-logo.png"
                                     fillMode: Image.PreserveAspectFit
                                 }
                                 
-                                // Mouse area only for the Arch logo
                                 MouseArea {
                                     id: archMouseArea
                                     anchors.fill: parent
@@ -205,7 +206,6 @@ Scope {
                                 }
                             }
 
-                            // Spacer
                             Item {
                                 Layout.fillWidth: true
                             }
@@ -213,7 +213,7 @@ Scope {
                     }
                 }
 
-                RowLayout { // Middle section
+                RowLayout {
                     id: middleSection
                     anchors.centerIn: parent
                     spacing: 8
@@ -222,7 +222,6 @@ Scope {
                         id: leftCenterGroup
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        // (empty, reserved for future symmetry)
                     }
 
                     RowLayout {
@@ -232,7 +231,8 @@ Scope {
                         Workspaces {
                             bar: barRoot
                             Layout.alignment: Qt.AlignCenter
-                            MouseArea { // Right-click to toggle overview
+                            Layout.fillWidth: false  // Don't fill width to keep centered
+                            MouseArea {
                                 anchors.fill: parent
                                 acceptedButtons: Qt.RightButton
                                 onPressed: (event) => {
@@ -248,52 +248,16 @@ Scope {
                         id: rightCenterGroup
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        // (empty, reserved for future symmetry)
                     }
                 }
 
-                MouseArea { // Right side | scroll to change volume
+                MouseArea {
                     id: barRightSideMouseArea
-
                     anchors.right: parent.right
                     implicitHeight: barHeight
-                    width: (barRoot.width - middleSection.width) / 2
-
-                    property bool hovered: false
-                    property real lastScrollX: 0
-                    property real lastScrollY: 0
-                    property bool trackingScroll: false
-                    
-                    acceptedButtons: Qt.NoButton  // Disable click handling for the large area
+                    acceptedButtons: Qt.NoButton
                     hoverEnabled: false
                     propagateComposedEvents: true
-
-                    // Scroll to change volume
-                    WheelHandler {
-                        onWheel: (event) => {
-                            const currentVolume = Audio.value;
-                            const step = currentVolume < 0.1 ? 0.01 : 0.02 || 0.2;
-                            if (event.angleDelta.y < 0)
-                                Audio.sink.audio.volume -= step;
-                            else if (event.angleDelta.y > 0)
-                                Audio.sink.audio.volume = Math.min(1, Audio.sink.audio.volume + step);
-                            // Store the mouse position and start tracking
-                            barRightSideMouseArea.lastScrollX = event.x;
-                            barRightSideMouseArea.lastScrollY = event.y;
-                            barRightSideMouseArea.trackingScroll = true;
-                        }
-                        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-                    }
-                    onPositionChanged: (mouse) => {
-                        if (barRightSideMouseArea.trackingScroll) {
-                            const dx = mouse.x - barRightSideMouseArea.lastScrollX;
-                            const dy = mouse.y - barRightSideMouseArea.lastScrollY;
-                            if (Math.sqrt(dx*dx + dy*dy) > osdHideMouseMoveThreshold) {
-                                Hyprland.dispatch('global quickshell:osdVolumeHide')
-                                barRightSideMouseArea.trackingScroll = false;
-                            }
-                        }
-                    }
 
                     Item {
                         anchors.fill: parent
@@ -303,37 +267,31 @@ Scope {
                         RowLayout {
                             id: rightSectionRowLayout
                             anchors.fill: parent
-                            spacing: 8
                             layoutDirection: Qt.RightToLeft
-                    
-                            // System indicators with its own mouse area
-                            Rectangle {
-                                id: indicatorsContainer
+
+                            RippleButton { // Right sidebar button (indicators)
+                                id: rightSidebarButton
                                 Layout.margins: 4
-                                Layout.rightMargin: 2
                                 Layout.fillHeight: true
-                                implicitWidth: indicatorsRowLayout.implicitWidth + 20
-                                radius: Appearance.rounding.full
-                                color: (indicatorsMouseArea.pressed || GlobalStates.sidebarRightOpen) ? 
-                                    Qt.rgba(Appearance.colors.colLayer1Active.r, Appearance.colors.colLayer1Active.g, Appearance.colors.colLayer1Active.b, 0.8) : 
-                                    indicatorsMouseArea.hovered ? 
-                                    Qt.rgba(Appearance.colors.colLayer1Hover.r, Appearance.colors.colLayer1Hover.g, Appearance.colors.colLayer1Hover.b, 0.8) : 
-                                    "transparent"
-                                
-                                // Mouse area only for the indicators section
-                                MouseArea {
-                                    id: indicatorsMouseArea
-                                    anchors.fill: parent
-                                    acceptedButtons: Qt.LeftButton
-                                    hoverEnabled: true
-                                    
-                                    onPressed: (event) => {
-                                        if (event.button === Qt.LeftButton) {
-                                            Hyprland.dispatch('global quickshell:sidebarRightOpen')
-                                        }
-                                    }
+                                implicitWidth: indicatorsRowLayout.implicitWidth + 10*2
+                                buttonRadius: Appearance.rounding.full
+                                colBackground: barRightSideMouseArea.hovered ? Appearance.colors.colLayer1Hover : ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1)
+                                colBackgroundHover: Appearance.colors.colLayer1Hover
+                                colRipple: Appearance.colors.colLayer1Active
+                                colBackgroundToggled: Appearance.m3colors.m3secondaryContainer
+                                colBackgroundToggledHover: Appearance.colors.colSecondaryContainerHover
+                                colRippleToggled: Appearance.colors.colSecondaryContainerActive
+                                toggled: GlobalStates.sidebarRightOpen
+                                property color colText: toggled ? Appearance.m3colors.m3onSecondaryContainer : Appearance.colors.colOnLayer0
+
+                                Behavior on colText {
+                                    animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
                                 }
-                                
+
+                                onPressed: {
+                                    Hyprland.dispatch('global quickshell:sidebarRightToggle')
+                                }
+
                                 RowLayout {
                                     id: indicatorsRowLayout
                                     anchors.centerIn: parent
@@ -354,7 +312,7 @@ Scope {
                                         MaterialSymbol {
                                             text: "volume_off"
                                             iconSize: Appearance.font.pixelSize.larger
-                                            color: Appearance.colors.colOnLayer0
+                                            color: rightSidebarButton.colText
                                         }
                                     }
                                     Revealer {
@@ -371,146 +329,49 @@ Scope {
                                         MaterialSymbol {
                                             text: "mic_off"
                                             iconSize: Appearance.font.pixelSize.larger
-                                            color: Appearance.colors.colOnLayer0
+                                            color: rightSidebarButton.colText
                                         }
                                     }
-                                    // Network icons
-                                    Item {
-                                        width: Appearance.font.pixelSize.larger
-                                        height: Appearance.font.pixelSize.larger
-                                        Layout.rightMargin: indicatorsRowLayout.realSpacing - 1.5
-                                        
-                                        RowLayout {
-                                            anchors.fill: parent
-                                            spacing: 4
-
-                                            // Ethernet icon
-                                            Rectangle {
-                                                Layout.preferredWidth: Appearance.font.pixelSize.larger * 0.85
-                                                Layout.preferredHeight: Appearance.font.pixelSize.larger * 0.85
-                                                color: "transparent"
-                                                visible: Network.networkType === "ethernet"
-
-                                                AnimatedEthernetIcon {
-                                                    anchors.fill: parent
-                                                    iconSize: parent.width
-                                                    iconColor: Appearance.colors.colOnLayer0
-                                                }
-                                            }
-
-                                            // WiFi icon
-                                            Rectangle {
-                                                id: wifiIconRect
-                                                Layout.preferredWidth: Appearance.font.pixelSize.larger * 0.85
-                                                Layout.preferredHeight: Appearance.font.pixelSize.larger * 0.85
-                                                color: "transparent"
-                                                visible: Network.networkType === "wifi"
-
-                                                SystemIcon {
-                                                    id: wifiIcon
-                                                    anchors.fill: parent
-                                                    iconName: Network.wifiEnabled ? (
-                                                        Network.networkStrength >= 90 ? "network-wireless-signal-excellent" :
-                                                        Network.networkStrength >= 80 ? "network-wireless-signal-good" :
-                                                        Network.networkStrength >= 65 ? "network-wireless-signal-ok" :
-                                                        Network.networkStrength >= 45 ? "network-wireless-signal-weak" :
-                                                        Network.networkStrength >= 25 ? "network-wireless-signal-none" :
-                                                        Network.networkStrength >= 10 ? "network-wireless-signal-none" :
-                                                        "network-wireless-signal-none"
-                                                    ) : "network-wireless-offline"
-                                                    iconSize: parent.width
-                                                    iconColor: Appearance.colors.colOnLayer0
-                                                    fallbackIcon: "network-wireless"
-                                                    opacity: Network.wifiEnabled ? 1.0 : 0.5
-                                                
-                                                    Behavior on iconName {
-                                                        PropertyAnimation {
-                                                        duration: Appearance.animation.elementMoveFast.duration
-                                                        easing.type: Appearance.animation.elementMoveFast.type
-                                                    }
-                                                }
-                                                }
-
-                                                MouseArea {
-                                                    anchors.fill: parent
-                                                    hoverEnabled: false
-                                                    // Tooltip disabled to prevent crashes
-                                                    // onEntered: networkTooltip.show()
-                                                    // onExited: networkTooltip.hide()
-                                                    // onPositionChanged: (mouse) => {
-                                                    //     var point = wifiIconRect.mapToItem(null, mouse.x, mouse.y)
-                                                    //     networkTooltip.updatePosition(point.x, point.y)
-                                                    // }
-                                                }
-                                            }
-                                        }
+                                    MaterialSymbol {
+                                        Layout.rightMargin: indicatorsRowLayout.realSpacing
+                                        text: Network.materialSymbol
+                                        iconSize: Appearance.font.pixelSize.larger
+                                        color: rightSidebarButton.colText
                                     }
                                     MaterialSymbol {
                                         text: Bluetooth.bluetoothConnected ? "bluetooth_connected" : Bluetooth.bluetoothEnabled ? "bluetooth" : "bluetooth_disabled"
                                         iconSize: Appearance.font.pixelSize.larger
-                                        color: Appearance.colors.colOnLayer0
+                                        color: rightSidebarButton.colText
                                     }
                                 }
                             }
 
-                            ClockWidget {
-                                Layout.alignment: Qt.AlignVCenter
-                                Layout.rightMargin: 4
-                                Layout.leftMargin: 4
+                            Item { width: 4 }
+
+                            ClockWidget {}
+
+                            Item { width: 4 }
+
+                            Item {
+                                width: 100 // Reserve more space for weather
+                                Weather {
+                                    anchors.centerIn: parent
+                                    weatherLocation: "Halifax, Nova Scotia, Canada"
+                                }
                             }
 
-                            Weather {
-                                Layout.alignment: Qt.AlignVCenter
-                                Layout.rightMargin: 4
-                                Layout.leftMargin: 4
-                                Layout.minimumWidth: 100
-                                weatherLocation: "Halifax, Nova Scotia, Canada"
-                            }
+                            Item { width: 4 }
 
                             SysTray {
                                 bar: barRoot
+                                visible: barRoot.useShortenedForm === 0
                                 Layout.fillWidth: false
-                                Layout.fillHeight: true
-                                Layout.rightMargin: 4
-                                Layout.leftMargin: 4
-                            }
-
-                            Item {
-                                Layout.fillWidth: true
                                 Layout.fillHeight: true
                             }
                         }
                     }
                 }
             }
-
-            // Round decorators
-            Item {
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.top: barContent.bottom
-                height: 0
-
-                RoundCorner {
-                    anchors.top: parent.top
-                    anchors.left: parent.left
-                    size: showBarBackground ? Appearance.rounding.small : 1
-                    corner: cornerEnum.topLeft
-                    color: showBarBackground ? Appearance.colors.colLayer0 : "transparent"
-                    visible: showBarBackground
-                }
-                RoundCorner {
-                    anchors.top: parent.top
-                    anchors.right: parent.right
-                    size: showBarBackground ? Appearance.rounding.small : 1
-                    corner: cornerEnum.topRight
-                    color: showBarBackground ? Appearance.colors.colLayer0 : "transparent"
-                    visible: showBarBackground
-                }
-            }
-
         }
-
     }
-
 }

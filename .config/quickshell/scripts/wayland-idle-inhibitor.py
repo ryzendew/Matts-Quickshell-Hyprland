@@ -4,8 +4,6 @@
 # License: WTFPL Version 2
 
 import sys
-import os
-import subprocess
 from dataclasses import dataclass
 from signal import SIGINT, SIGTERM, signal
 from threading import Event
@@ -38,15 +36,6 @@ def handle_registry_global(
         global_registry.inhibit_manager = wl_registry.bind(
             id_num, ZwpIdleInhibitManagerV1, version
         )
-
-
-def is_steam_running() -> bool:
-    try:
-        # Check if steam process is running
-        subprocess.run(["pidof", "steam"], check=True, capture_output=True)
-        return True
-    except subprocess.CalledProcessError:
-        return False
 
 
 def main() -> None:
@@ -87,9 +76,7 @@ def main() -> None:
     done.wait()
     print("Shutting down...")
 
-    # Only destroy inhibitor if Steam is not running
-    if not is_steam_running():
-        inhibitor.destroy()
+    inhibitor.destroy()
 
     shutdown()
 

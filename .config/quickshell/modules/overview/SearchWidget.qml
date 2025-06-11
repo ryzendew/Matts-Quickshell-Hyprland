@@ -43,27 +43,27 @@ Item { // Wrapper
         {
             action: "img", 
             execute: () => {
-                executor.executeCommand(`${xdgConfigHome}/quickshell/scripts/switchwall.sh`.replace(/file:\/\//, ""))
+                executor.executeCommand(Directories.wallpaperSwitchScriptPath)
             }
         },
         {
             action: "dark",
             execute: () => {
-                executor.executeCommand(`${xdgConfigHome}/quickshell/scripts/switchwall.sh --mode dark --noswitch`.replace(/file:\/\//, ""))
+                executor.executeCommand(`${Directories.wallpaperSwitchScriptPath} --mode dark --noswitch`)
             }
         },
         {
             action: "light",
             execute: () => {
-                executor.executeCommand(`${xdgConfigHome}/quickshell/scripts/switchwall.sh --mode light --noswitch`.replace(/file:\/\//, ""))
+                executor.executeCommand(`${Directories.wallpaperSwitchScriptPath} --mode light --noswitch`)
             }
         },
         {
             action: "accentcolor",
             execute: (args) => {
                 executor.executeCommand(
-                    `${xdgConfigHome}/quickshell/scripts/switchwall.sh --noswitch --color ${args != '' ? ("'"+args+"'") : ""}`
-                    .replace(/file:\/\//, ""))
+                    `${Directories.wallpaperSwitchScriptPath} --noswitch --color ${args != '' ? ("'"+args+"'") : ""}`
+                )
             }
         },
         {
@@ -212,6 +212,11 @@ Item { // Wrapper
                     Layout.rightMargin: 15
                     padding: 15
                     renderType: Text.NativeRendering
+                    font {
+                        family: Appearance?.font.family.main ?? "sans-serif"
+                        pixelSize: Appearance?.font.pixelSize.small ?? 15
+                        hintingPreference: Font.PreferFullHinting
+                    }
                     color: activeFocus ? Appearance.m3colors.m3onSurface : Appearance.m3colors.m3onSurfaceVariant
                     selectedTextColor: Appearance.m3colors.m3onSecondaryContainer
                     selectionColor: Appearance.m3colors.m3secondaryContainer
@@ -245,7 +250,7 @@ Item { // Wrapper
 
                     cursorDelegate: Rectangle {
                         width: 1
-                        color: searchInput.activeFocus ? Appearance.m3colors.m3primary : "transparent"
+                        color: searchInput.activeFocus ? Appearance.colors.colPrimary : "transparent"
                         radius: 1
                     }
                 }
@@ -302,7 +307,22 @@ Item { // Wrapper
                                     }
                                 };
                             }).filter(Boolean);
-                        }
+                        } 
+                        if (root.searchingText.startsWith(ConfigOptions.search.prefix.emojis)) { // Clipboard
+                            const searchString = root.searchingText.slice(ConfigOptions.search.prefix.emojis.length);
+                            return Emojis.fuzzyQuery(searchString).map(entry => {
+                                return {
+                                    cliphistRawString: entry,
+                                    bigText: entry.match(/^\s*(\S+)/)?.[1] || "",
+                                    name: entry.replace(/^\s*\S+\s+/, ""),
+                                    clickActionName: "",
+                                    type: "Emoji",
+                                    execute: () => {
+                                        Hyprland.dispatch(`exec wl-copy '${StringUtils.shellSingleQuoteEscape(entry.match(/^\s*(\S+)/)?.[1])}'`);
+                                    }
+                                };
+                            }).filter(Boolean);
+                        } 
                     
 
                         ////////////////// Init ///////////////////
@@ -318,13 +338,13 @@ Item { // Wrapper
                             }
                         }
                         const commandResultObject = {
-                            name: searchingText,
+                            name: searchingText.replace("file://", ""),
                             clickActionName: qsTr("Run"),
                             type: qsTr("Run command"),
                             fontType: "monospace",
                             materialSymbol: 'terminal',
                             execute: () => {
-                                executor.executeCommand(searchingText.startsWith('sudo') ? `${ConfigOptions.apps.terminal} fish -C '${root.searchingText}'` : root.searchingText);
+                                executor.executeCommand(searchingText.startsWith('sudo') ? `${ConfigOptions.apps.terminal} fish -C '${root.searchingText.replace("file://", "")}'` : root.searchingText.replace("file://", ""));
                             }
                         }
                         const launcherActionObjects = root.searchActions

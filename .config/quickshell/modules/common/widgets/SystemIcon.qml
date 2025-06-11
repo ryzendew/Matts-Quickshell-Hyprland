@@ -198,63 +198,24 @@ Item {
         } else {
              mainIcon.source = formatPathForImageSource(IconTheme.getIconPath(fallbackIcon, homeDirectory)); // Fallback if no iconName
         }
-        
     }
     
+    // Main icon image
     Image {
         id: mainIcon
         anchors.fill: parent
+        fillMode: Image.PreserveAspectFit
         smooth: true
-        mipmap: true // Improves quality for scaled icons
-        
-        onStatusChanged: {
-            // Only log if source is set or status is not Image.Null (0), or if it's an error/ready state.
-            if (source.toString() !== "" || status !== Image.Null || status === Image.Error || status === Image.Ready) {
-                // console.log("[SYSTEMICON DEBUG] mainIcon.source:", source, "status:", status, "(original iconName:", root.iconName, ")");
-            }
-            if (status === Image.Error) {
-                // console.warn("[SYSTEMICON DEBUG] Icon FAILED to load:", source, "Original iconName:", root.iconName);
-                tryFallbackIcons();
-            } else if (status === Image.Ready) {
-                // console.log("[SYSTEMICON DEBUG] Icon loaded successfully:", source, "(original iconName:", root.iconName, ")");
-            }
-        }
+        mipmap: true
+        sourceSize.width: iconSize * 2
+        sourceSize.height: iconSize * 2
     }
     
-    function tryFallbackIcons() {
-        // console.log("[SYSTEMICON DEBUG] tryFallbackIcons for original iconName:", root.iconName);
-        var fallbacks = [
-            root.fallbackIcon, // User-defined fallback first
-            "application-x-executable",
-            "applications-other",
-            "application-default-icon",
-            "gnome-applications"
-        ];
-        if (root.iconName && root.iconName.includes(".") && !root.iconName.endsWith(".desktop")) {
-             fallbacks.unshift("applications-system"); // Generic app icon for FQDN-like names
-        }
-
-        for (var i = 0; i < fallbacks.length; i++) {
-            var fbName = fallbacks[i];
-            var fallbackPath = IconTheme.getIconPath(fbName, root.homeDirectory);
-            var formattedFallbackPath = formatPathForImageSource(fallbackPath);
-
-            if (formattedFallbackPath && formattedFallbackPath !== "" && formattedFallbackPath !== mainIcon.source) {
-                // console.log("[SYSTEMICON DEBUG] Attempting fallback with:", fbName, "-> Path:", formattedFallbackPath);
-                mainIcon.source = formattedFallbackPath;
-                // Check status again for this new source if needed, or rely on onStatusChanged
-                return;
-            }
-        }
-        // console.warn("[SYSTEMICON DEBUG] All fallback attempts ultimately FAILED for original iconName:", root.iconName);
-        // As a last resort, use a known existing system icon directly if all else fails.
-        mainIcon.source = formatPathForImageSource("/usr/share/icons/hicolor/48x48/apps/gnome-settings.png");
-    }
-    
+    // Color overlay if specified
     ColorOverlay {
-        visible: root.iconColor !== "transparent" && root.iconColor !== ""
-        anchors.fill: parent
+        anchors.fill: mainIcon
         source: mainIcon
-        color: root.iconColor
+        color: iconColor
+        visible: iconColor !== "transparent"
     }
 } 

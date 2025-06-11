@@ -23,7 +23,7 @@ Rectangle {
         anchors.centerIn: parent
         width: 22
         height: 22
-        source: "file:///home/matt/.config/quickshell/logo/Arch-linux-logo.png"
+        source: "file://$HOME/.config/quickshell/logo/Arch-linux-logo.png"
         fillMode: Image.PreserveAspectFit
     }
     

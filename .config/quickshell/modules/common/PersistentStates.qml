@@ -5,13 +5,13 @@ pragma ComponentBehavior: Bound
 
 Singleton {
     property QtObject ai: QtObject {
-        property string model: "gemini-2.0-flash-search"
+        property string model
+        property real temperature: 0.5
     }
 
     property QtObject sidebar: QtObject {
         property QtObject bottomGroup: QtObject {
             property bool collapsed: false
-            property int selectedTab: 0
         }
     }
 

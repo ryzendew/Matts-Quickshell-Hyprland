@@ -79,15 +79,16 @@ Scope {
             exclusiveZone: 0
             implicitWidth: (
                 (mediaControlsRoot.screen.width / 2) // Middle of screen
-                    + (osdWidth / 2)                 // Move to right side of OSD
-                    + (widgetWidth / 2)              // Account for widget width
+                    - (osdWidth / 2)                 // Dodge OSD
+                    - (widgetWidth / 2)              // Account for widget width
             ) * 2
             implicitHeight: playerColumnLayout.implicitHeight
             color: "transparent"
             WlrLayershell.namespace: "quickshell:mediaControls"
 
             anchors {
-                top: true
+                top: !ConfigOptions.bar.bottom
+                bottom: ConfigOptions.bar.bottom
                 left: true
             }
             mask: Region {
@@ -99,15 +100,14 @@ Scope {
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 x: (mediaControlsRoot.screen.width / 2)  // Middle of screen
-                    + (osdWidth / 2)                     // Move to right side of OSD
-                    + (widgetWidth)                      // Add widget width for more spacing
-                    + (Appearance.sizes.elevationMargin) // Add some margin
-                    + 120                                // Extra spacing to move it more right
+                    - (osdWidth / 2)                     // Dodge OSD
+                    - (widgetWidth)                      // Account for widget width
+                    + (Appearance.sizes.elevationMargin) // It's fine for shadows to overlap
                 spacing: -Appearance.sizes.elevationMargin // Shadow overlap okay
 
                 Repeater {
                     model: ScriptModel {
-                        values: root.activePlayer ? [root.activePlayer] : []
+                        values: root.meaningfulPlayers
                     }
                     delegate: PlayerControl {
                         required property MprisPlayer modelData

@@ -8,13 +8,20 @@ import QtQuick.Layouts
 import Quickshell.Io
 import Quickshell.Widgets
 
+/**
+ * Material 3 button with expressive bounciness. 
+ * See https://m3.material.io/components/button-groups/overview
+ */
 Button {
     id: root
     property bool toggled
     property string buttonText
     property real buttonRadius: Appearance?.rounding?.small ?? 4
     property real buttonRadiusPressed: buttonRadius
-    property var altAction
+    property var downAction // When left clicking (down)
+    property var releaseAction // When left clicking (release)
+    property var altAction // When right clicking
+    property var middleClickAction // When middle clicking
     property bool bounce: true
     property real baseWidth: contentItem.implicitWidth + padding * 2
     property real baseHeight: contentItem.implicitHeight + padding * 2
@@ -23,11 +30,16 @@ Button {
     property var parentGroup: root.parent
     property int clickIndex: parentGroup?.clickIndex ?? -1
 
-    Layout.fillWidth: (clickIndex - 1 <= parentGroup.children.indexOf(button) && parentGroup.children.indexOf(button) <= clickIndex + 1)
-    implicitWidth: (button.down && bounce) ? clickedWidth : baseWidth
-    implicitHeight: (button.down && bounce) ? clickedHeight : baseHeight
+    Layout.fillWidth: (clickIndex - 1 <= parentGroup.children.indexOf(root) && parentGroup.children.indexOf(root) <= clickIndex + 1)
+    Layout.fillHeight: (clickIndex - 1 <= parentGroup.children.indexOf(root) && parentGroup.children.indexOf(root) <= clickIndex + 1)
+    implicitWidth: (root.down && bounce) ? clickedWidth : baseWidth
+    implicitHeight: (root.down && bounce) ? clickedHeight : baseHeight
     
     Behavior on implicitWidth {
+        animation: Appearance.animation.clickBounce.numberAnimation.createObject(this)
+    }
+
+    Behavior on implicitHeight {
         animation: Appearance.animation.clickBounce.numberAnimation.createObject(this)
     }
 
@@ -35,12 +47,12 @@ Button {
         animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
     }
 
-    property color colBackground: ColorUtils.transparentize(Appearance.colors.colLayer1Hover, 1)
-    property color colBackgroundHover: Appearance.colors.colLayer1Hover
-    property color colBackgroundActive: Appearance.colors.colLayer1Active
-    property color colBackgroundToggled: Appearance.m3colors.m3primary
-    property color colBackgroundToggledHover: Appearance.colors.colPrimaryHover
-    property color colBackgroundToggledActive: Appearance.colors.colPrimaryActive
+    property color colBackground: ColorUtils.transparentize(Appearance?.colors.colLayer1Hover, 1) || "transparent"
+    property color colBackgroundHover: Appearance?.colors.colLayer1Hover ?? "#E5DFED"
+    property color colBackgroundActive: Appearance?.colors.colLayer1Active ?? "#D6CEE2"
+    property color colBackgroundToggled: Appearance?.colors.colPrimary ?? "#65558F"
+    property color colBackgroundToggledHover: Appearance?.colors.colPrimaryHover ?? "#77699C"
+    property color colBackgroundToggledActive: Appearance?.colors.colPrimaryActive ?? "#D6CEE2"
 
     property real radius: root.down ? root.buttonRadiusPressed : root.buttonRadius
     property color color: root.enabled ? (root.toggled ? 
@@ -52,9 +64,9 @@ Button {
             colBackground)) : colBackground
 
     onDownChanged: {
-        if (button.down) {
-            if (button.parent.clickIndex !== undefined) {
-                button.parent.clickIndex = parent.children.indexOf(button)
+        if (root.down) {
+            if (root.parent.clickIndex !== undefined) {
+                root.parent.clickIndex = parent.children.indexOf(root)
             }
         }
     }
@@ -62,16 +74,23 @@ Button {
     MouseArea {
         anchors.fill: parent
         cursorShape: Qt.PointingHandCursor
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
         onPressed: (event) => { 
             if(event.button === Qt.RightButton) {
                 if (root.altAction) root.altAction();
                 return;
             }
+            if(event.button === Qt.MiddleButton) {
+                if (root.middleClickAction) root.middleClickAction();
+                return;
+            }
             root.down = true
+            if (root.downAction) root.downAction();
         }
         onReleased: (event) => {
             root.down = false
+            if (event.button != Qt.LeftButton) return;
+            if (root.releaseAction) root.releaseAction();
             root.click() // Because the MouseArea already consumed the event
         }
         onCanceled: (event) => {

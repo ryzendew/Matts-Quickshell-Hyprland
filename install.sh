@@ -269,14 +269,52 @@ install_if_not_present() {
 
 # Install AUR packages with checks
 aur_packages=(
-    adw-gtk-theme-git breeze-plus fish kde-material-you-colors starship 
-    ttf-readex-pro ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git 
-    ttf-rubik-vf ttf-gabarito-git quickshell fuzzel walrs
+    axel bc better-control-git brightnessctl cairomm cliphist cmake coreutils curl ddcutil fish fontconfig fuzzel gammastep gnome-control-center gnome-keyring glib2 grimblast gobject-introspection gtk4 gtkmm3 gtksourceviewmm hyprcursor hypridle hyprlang hyprland hyprland-qt-support hyprland-qtutils hyprlock hyprpicker hyprutils jq kde-material-you-colors kitty libadwaita libdbusmenu-gtk3 libportal-gtk4 libsoup3 matugen-bin meson networkmanager nm-connection-editor pavucontrol-qt playerctl polkit-kde-agent quickshell qt6-5compat qt6-base qt6-declarative qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-svg qt6-tools qt6-translations qt6-virtualkeyboard qt6-wayland ripgrep rsync sassc starship swappy swww syntax-highlighting tesseract tesseract-data-eng tinyxml2 ttf-gabarito-git ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-readex-pro ttf-rubik-vf upower uv wget wlogout wl-clipboard wireplumber wtype xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-hyprland xdg-user-dirs xdg-user-dirs-gtk yad ydotool
 )
 
 for package in "${aur_packages[@]}"; do
     install_if_not_present "$package"
 done
+
+# Install Tela Circle icon theme from GitHub
+print_status "Installing Tela Circle icon theme..."
+TEMP_TELA_DIR="/tmp/Tela-circle-icon-theme"
+if [ -d "$TEMP_TELA_DIR" ]; then
+    print_status "Cleaning up existing Tela directory..."
+    rm -rf "$TEMP_TELA_DIR"
+fi
+
+print_status "Cloning Tela Circle icon theme repository..."
+if ! git clone --depth=1 https://github.com/vinceliuice/Tela-circle-icon-theme.git "$TEMP_TELA_DIR"; then
+    print_error "Failed to clone Tela icon theme repository."
+    print_error "Trying alternative repository..."
+    if ! git clone --depth=1 https://github.com/vinceliuice/Tela-icon-theme.git "$TEMP_TELA_DIR"; then
+        print_error "Failed to clone alternative repository."
+        print_error "Skipping Tela icon theme installation."
+    else
+        print_success "Successfully cloned alternative repository."
+    fi
+else
+    print_success "Successfully cloned Tela Circle icon theme repository."
+fi
+
+if [ -d "$TEMP_TELA_DIR" ]; then
+    print_status "Installing Tela Circle icon theme..."
+    if ! (cd "$TEMP_TELA_DIR" && sudo ./install.sh -a); then
+        print_error "Failed to install Tela icon theme."
+        print_error "Trying alternative installation method..."
+        if ! (cd "$TEMP_TELA_DIR" && sudo ./install.sh -c green -a); then
+            print_error "Failed to install Tela icon theme with alternative method."
+            print_error "Skipping Tela icon theme installation."
+        else
+            print_success "Successfully installed Tela icon theme with alternative method."
+        fi
+    else
+        print_success "Successfully installed Tela Circle icon theme."
+    fi
+    print_status "Cleaning up temporary files..."
+    rm -rf "$TEMP_TELA_DIR"
+fi
 
 # --- Install all required packages (official + AUR + meta-package PKGBUILD deps) ---
 print_status "Aggregating all dependencies from meta-package PKGBUILDs..."
@@ -397,18 +435,6 @@ install_arch_packages() {
         print_status "git is already installed"
     fi
 
-    # Install additional AUR packages
-    additional_aur_packages=(
-        matugen-bin grimblast hyprswitch nwg-look swww hypridle hyprlock 
-        hyprpaper hyprpicker wlogout better-control easyeffects-bin 
-        google-breakpad nwg-displays dbus-update-activation-environment
-        nautilus-open-in-ptyxis vesktop-bin
-    )
-
-    for package in "${additional_aur_packages[@]}"; do
-        install_if_not_present "$package"
-    done
-
     # Copy configuration files, backing up any overwritten files/folders
     print_status "Copying configuration files..."
     if [ -d ".config" ]; then
@@ -436,77 +462,6 @@ install_arch_packages() {
     else
         print_error "Configuration directory not found!"
         exit 1
-    fi
-
-    # Split packages into official repo and AUR packages
-    all_packages=(
-        hyprland wayland wayland-protocols wayland-utils
-        xdg-desktop-portal-hyprland xdg-desktop-portal-gtk xdg-desktop-portal
-        xdg-utils xdg-user-dirs
-        pipewire wireplumber pipewire-alsa pipewire-pulse pipewire-jack
-        pamixer playerctl pavucontrol alsa-utils alsa-plugins pulseaudio-alsa
-        sddm qt6-svg qt6-declarative systemd polkit polkit-qt6
-        networkmanager nm-connection-editor dhcpcd bluez bluez-utils
-        qt6-base qt6-declarative qt6-wayland qt6-svg qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-tools qt6-translations qt6-virtualkeyboard qt6-5compat qt6-shadertools qt6-languageserver qt6-charts qt6-webengine qt6-webchannel qt6-websockets qt6-connectivity qt6-serialport
-        qt5-base qt5-declarative qt5-graphicaleffects qt5-imageformats qt5-svg qt5-translations qt5-wayland
-        grim slurp wl-clipboard wtype brightnessctl ddcutil mako libnotify upower acpid htop btop fastfetch file-roller unzip zip 7zip gvfs gvfs-mtp gvfs-gphoto2 ptyxis nautilus geoclue gammastep fcitx5 gnome-keyring polkit-gnome easyeffects cliphist
-        ttf-dejavu noto-fonts ttf-font-awesome papirus-icon-theme gtk3 gtk4 adwaita-icon-theme adwaita-icon-theme-legacy adwaita-cursors adwaita-fonts qt6ct qt5ct
-        cmake ninja pkgconf make gcc git jemalloc cli11 libdrm mesa vulkan-icd-loader vulkan-headers libxcb xcb-util xcb-util-wm xcb-util-image xcb-util-keysyms xcb-util-renderutil xcb-util-cursor libxkbcommon libxkbcommon-x11 libpipewire libglvnd syntax-highlighting
-        xorg-xwayland xorg-xlsclients xorg-xrandr xorg-xinput xorg-xdpyinfo libx11 libxcomposite libxcursor libxdamage libxext libxfixes libxi libxinerama libxrandr libxrender libxss libxtst
-        thunar thunar-volman thunar-archive-plugin lxqt-policykit
-    )
-    print_status "Installing all required packages (official + AUR) with yay..."
-    yay -S --noconfirm --needed "${all_packages[@]}"
-
-    # --- Meta-Package Installation: Build all PKGBUILDs, then install all built packages ---
-    print_status "Building and installing all meta-packages from PKGBUILDs using yay..."
-    if compgen -G "./Arch-packages/*/" > /dev/null; then
-        for dir in ./Arch-packages/*/; do
-            if [[ -f "$dir/PKGBUILD" ]]; then
-                print_status "Building and installing $dir with yay"
-                (cd "$dir" && yay -S --noconfirm --needed .)
-            fi
-        done
-    fi
-
-    # Install Tela Circle icon theme from GitHub
-    print_status "Installing Tela Circle icon theme..."
-    TEMP_TELA_DIR="/tmp/Tela-circle-icon-theme"
-    if [ -d "$TEMP_TELA_DIR" ]; then
-        print_status "Cleaning up existing Tela directory..."
-        rm -rf "$TEMP_TELA_DIR"
-    fi
-
-    print_status "Cloning Tela Circle icon theme repository..."
-    if ! git clone --depth=1 https://github.com/vinceliuice/Tela-circle-icon-theme.git "$TEMP_TELA_DIR"; then
-        print_error "Failed to clone Tela icon theme repository."
-        print_error "Trying alternative repository..."
-        if ! git clone --depth=1 https://github.com/vinceliuice/Tela-icon-theme.git "$TEMP_TELA_DIR"; then
-            print_error "Failed to clone alternative repository."
-            print_error "Skipping Tela icon theme installation."
-        else
-            print_success "Successfully cloned alternative repository."
-        fi
-    else
-        print_success "Successfully cloned Tela Circle icon theme repository."
-    fi
-
-    if [ -d "$TEMP_TELA_DIR" ]; then
-        print_status "Installing Tela Circle icon theme..."
-        if ! (cd "$TEMP_TELA_DIR" && sudo ./install.sh -a); then
-            print_error "Failed to install Tela icon theme."
-            print_error "Trying alternative installation method..."
-            if ! (cd "$TEMP_TELA_DIR" && sudo ./install.sh -c green -a); then
-                print_error "Failed to install Tela icon theme with alternative method."
-                print_error "Skipping Tela icon theme installation."
-            else
-                print_success "Successfully installed Tela icon theme with alternative method."
-            fi
-        else
-            print_success "Successfully installed Tela Circle icon theme."
-        fi
-        print_status "Cleaning up temporary files..."
-        rm -rf "$TEMP_TELA_DIR"
     fi
 
     # Enable essential system services
@@ -755,37 +710,6 @@ EOF
     # Create theme directory structure
     print_status "Setting up theme directory structure..."
     mkdir -p ~/.config/hypr/assets/{themes,wallpapers}
-    
-    # Install custom meta-packages from Arch-packages directory (match end-4 script exactly)
-    print_status "Installing custom meta-packages from Arch-packages..."
-    metapkgs=(illogical-impulse-{audio,backlight,basic,fonts-themes,kde,portal,python,screencapture,toolkit,widgets})
-    metapkgs+=(illogical-impulse-hyprland)
-    metapkgs+=(illogical-impulse-microtex-git)
-    # metapkgs+=(illogical-impulse-oneui4-icons-git)
-    [[ -f /usr/share/icons/Bibata-Modern-Classic/index.theme ]] || \
-      metapkgs+=(illogical-impulse-bibata-modern-classic-bin)
-
-    for pkg in "${metapkgs[@]}"; do
-      found=false
-      # Try to install prebuilt package
-      for file in ./Arch-packages/${pkg}-*.pkg.tar.*; do
-        if [[ -f "$file" ]]; then
-          print_status "Installing meta-package: $file"
-          sudo pacman -U --noconfirm "$file"
-          found=true
-          break
-        fi
-      done
-      # If not found, try to build from PKGBUILD
-      if [[ "$found" = false && -d ./Arch-packages/$pkg && -f ./Arch-packages/$pkg/PKGBUILD ]]; then
-        print_status "Building and installing meta-package from PKGBUILD: $pkg"
-        (cd "./Arch-packages/$pkg" && makepkg -si --noconfirm)
-        found=true
-      fi
-      if [[ "$found" = false ]]; then
-        print_warning "Meta-package not found and no PKGBUILD to build: $pkg"
-      fi
-    done
 
     print_success "Arch Linux package installation completed successfully!"
     print_status "Your system now has:"

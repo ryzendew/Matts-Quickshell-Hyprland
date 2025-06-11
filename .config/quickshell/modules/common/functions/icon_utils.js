@@ -1,10 +1,8 @@
-.pragma library
-
 function resolveIconPath(icon) {
     if (!icon) return "";
     
     // Define the Tela icon theme path
-    const telaIconPath = "/home/matt/.local/share/icons/Tela-circle-dark/scalable@2x/apps";
+    const telaIconPath = "$HOME/.local/share/icons/Tela-circle-dark/scalable@2x/apps";
     
     // Icon name mappings
     const iconMappings = {

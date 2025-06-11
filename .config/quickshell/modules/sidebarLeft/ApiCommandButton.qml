@@ -6,22 +6,20 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import Quickshell
 
-Button {
+GroupButton {
     id: button
     property string buttonText
 
-    implicitHeight: 30
-    leftPadding: 10
-    rightPadding: 10
+    horizontalPadding: 8
+    verticalPadding: 6
 
-    PointingHandInteraction {}
+    baseWidth: contentItem.implicitWidth + horizontalPadding * 2
+    clickedWidth: baseWidth + 20
+    baseHeight: contentItem.implicitHeight + verticalPadding * 2
 
-    background: Rectangle {
-        radius: Appearance.rounding.small
-        color: (button.down ? Appearance.colors.colSurfaceContainerHighestActive : 
-            button.hovered ? Appearance.colors.colSurfaceContainerHighestHover :
-            Appearance.m3colors.m3surfaceContainerHighest)
-    }
+    colBackground: Appearance.colors.colLayer2
+    colBackgroundHover: Appearance.colors.colLayer2Hover
+    colBackgroundActive: Appearance.colors.colLayer2Active
 
     contentItem: StyledText {
         horizontalAlignment: Text.AlignHCenter

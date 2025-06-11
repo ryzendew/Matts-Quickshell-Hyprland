@@ -8,16 +8,12 @@ import Quickshell.Io
 import Quickshell.Services.Mpris
 
 Rectangle {
-    property bool alwaysShowAllResources: false
+    id: root
     property bool borderless: ConfigOptions.bar.borderless
+    property bool alwaysShowAllResources: false
     implicitWidth: rowLayout.implicitWidth + rowLayout.anchors.leftMargin + rowLayout.anchors.rightMargin
     implicitHeight: 32
-    color: borderless ? "transparent" : Qt.rgba(
-        Appearance.colors.colLayer1.r,
-        Appearance.colors.colLayer1.g,
-        Appearance.colors.colLayer1.b,
-        0.8
-    )
+    color: borderless ? "transparent" : Appearance.colors.colLayer1
     radius: Appearance.rounding.small
 
     RowLayout {
@@ -36,14 +32,18 @@ Rectangle {
         Resource {
             iconName: "swap_horiz"
             percentage: ResourceUsage.swapUsedPercentage
-            shown: (ConfigOptions.bar.resources.alwaysShowSwap && percentage > 0) || (MprisController.activePlayer?.trackTitle == null)
+            shown: (ConfigOptions.bar.resources.alwaysShowSwap && percentage > 0) || 
+                (MprisController.activePlayer?.trackTitle == null) ||
+                root.alwaysShowAllResources
             Layout.leftMargin: shown ? 4 : 0
         }
 
         Resource {
             iconName: "settings_slow_motion"
             percentage: ResourceUsage.cpuUsage
-            shown: ConfigOptions.bar.resources.alwaysShowCpu || !(MprisController.activePlayer?.trackTitle?.length > 0)
+            shown: ConfigOptions.bar.resources.alwaysShowCpu || 
+                !(MprisController.activePlayer?.trackTitle?.length > 0) ||
+                root.alwaysShowAllResources
             Layout.leftMargin: shown ? 4 : 0
         }
 
