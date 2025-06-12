@@ -162,10 +162,19 @@ handle_package_conflicts() {
     
     # Remove conflicting packages if found
     if [ ${#conflicts[@]} -gt 0 ]; then
-        print_warning "Found conflicting packages for $package: ${conflicts[*]}"
-        print_status "Removing conflicting packages..."
-        sudo pacman -R --noconfirm "${conflicts[@]}"
-        print_success "Conflicting packages removed"
+        # Filter out 'None' and empty values
+        filtered_conflicts=()
+        for c in "${conflicts[@]}"; do
+            if [[ -n "$c" && "$c" != "None" ]]; then
+                filtered_conflicts+=("$c")
+            fi
+        done
+        if [ ${#filtered_conflicts[@]} -gt 0 ]; then
+            print_warning "Found conflicting packages for $package: ${filtered_conflicts[*]}"
+            print_status "Removing conflicting packages..."
+            sudo pacman -Rd --noconfirm --nodeps "${filtered_conflicts[@]}"
+            print_success "Conflicting packages removed"
+        fi
     fi
 }
 
