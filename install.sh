@@ -146,6 +146,30 @@ else
     print_status "jack is already installed"
 fi
 
+# Install mpvpaper for video wallpapers
+if ! is_package_installed "mpvpaper"; then
+    print_status "Installing mpvpaper..."
+    sudo pacman -S --noconfirm mpvpaper
+    print_success "mpvpaper installed successfully"
+else
+    print_status "mpvpaper is already installed"
+fi
+
+# Install additional wallpaper-related dependencies
+print_status "Installing wallpaper-related dependencies..."
+sudo pacman -S --noconfirm --needed \
+    swww \
+    python-pywal \
+    python-pillow \
+    python-numpy \
+    python-scipy \
+    python-matplotlib \
+    python-colorthief \
+    imagemagick \
+    ffmpeg \
+    mpv
+print_success "Wallpaper dependencies installed successfully"
+
 # Check internet connectivity
 print_status "Checking internet connectivity..."
 if ! ping -c 1 8.8.8.8 &> /dev/null; then
