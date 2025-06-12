@@ -146,15 +146,6 @@ else
     print_status "jack is already installed"
 fi
 
-# Install mpvpaper for video wallpapers
-if ! is_package_installed "mpvpaper"; then
-    print_status "Installing mpvpaper..."
-    sudo pacman -S --noconfirm mpvpaper
-    print_success "mpvpaper installed successfully"
-else
-    print_status "mpvpaper is already installed"
-fi
-
 # Install additional wallpaper-related dependencies
 print_status "Installing wallpaper-related dependencies..."
 sudo pacman -S --noconfirm --needed \
@@ -169,6 +160,16 @@ sudo pacman -S --noconfirm --needed \
     ffmpeg \
     mpv
 print_success "Wallpaper dependencies installed successfully"
+
+# Install AUR dependencies
+print_status "Installing AUR dependencies..."
+if ! is_package_installed "mpvpaper"; then
+    print_status "Installing mpvpaper from AUR..."
+    yay -S --noconfirm mpvpaper
+    print_success "mpvpaper installed successfully"
+else
+    print_status "mpvpaper is already installed"
+fi
 
 # Check internet connectivity
 print_status "Checking internet connectivity..."
