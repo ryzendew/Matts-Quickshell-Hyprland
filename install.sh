@@ -146,30 +146,57 @@ else
     print_status "jack is already installed"
 fi
 
+# Function to handle package conflicts
+handle_package_conflicts() {
+    local package=$1
+    local conflicts=()
+    
+    # Get all conflicts for the package
+    if pacman -Si "$package" &>/dev/null; then
+        # For pacman packages
+        conflicts=($(pacman -Si "$package" | grep "Conflicts With" | cut -d: -f2 | tr -d ' ' | tr '\n' ' '))
+    elif yay -Si "$package" &>/dev/null; then
+        # For AUR packages
+        conflicts=($(yay -Si "$package" | grep "Conflicts With" | cut -d: -f2 | tr -d ' ' | tr '\n' ' '))
+    fi
+    
+    # Remove conflicting packages if found
+    if [ ${#conflicts[@]} -gt 0 ]; then
+        print_warning "Found conflicting packages for $package: ${conflicts[*]}"
+        print_status "Removing conflicting packages..."
+        sudo pacman -R --noconfirm "${conflicts[@]}"
+        print_success "Conflicting packages removed"
+    fi
+}
+
+# Function to install package with conflict resolution
+install_package() {
+    local package=$1
+    local is_aur=$2
+    
+    if ! is_package_installed "$package"; then
+        print_status "Installing $package..."
+        handle_package_conflicts "$package"
+        if [ "$is_aur" = true ]; then
+            yay -S --noconfirm "$package"
+        else
+            sudo pacman -S --noconfirm --needed "$package"
+        fi
+        print_success "$package installed successfully"
+    else
+        print_status "$package is already installed"
+    fi
+}
+
 # Install additional wallpaper-related dependencies
 print_status "Installing wallpaper-related dependencies..."
-sudo pacman -S --noconfirm --needed \
-    swww \
-    python-pywal \
-    python-pillow \
-    python-numpy \
-    python-scipy \
-    python-matplotlib \
-    python-colorthief \
-    imagemagick \
-    ffmpeg \
-    mpv
-print_success "Wallpaper dependencies installed successfully"
+for pkg in swww python-pywal python-pillow python-numpy python-scipy python-matplotlib python-colorthief imagemagick ffmpeg mpv; do
+    install_package "$pkg" false
+done
 
 # Install AUR dependencies
 print_status "Installing AUR dependencies..."
-if ! is_package_installed "mpvpaper"; then
-    print_status "Installing mpvpaper from AUR..."
-    yay -S --noconfirm mpvpaper
-    print_success "mpvpaper installed successfully"
-else
-    print_status "mpvpaper is already installed"
-fi
+install_package "mpvpaper" true
 
 # Check internet connectivity
 print_status "Checking internet connectivity..."
