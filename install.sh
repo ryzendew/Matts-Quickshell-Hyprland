@@ -426,6 +426,21 @@ if [ ! -d "MicroTeX" ]; then
     cd ..
 fi
 
+# Build and install microtex with all available CPU threads
+if [ -d "$USER_HOME/microtex" ]; then
+    print_status "Building microtex with all available CPU threads..."
+    cd "$USER_HOME/microtex"
+    make clean || true
+    make -j"$(nproc)"
+    print_success "microtex built successfully"
+    print_status "Installing microtex to the system..."
+    sudo make install
+    print_success "microtex installed successfully"
+    cd -
+else
+    print_warning "microtex source directory not found at $USER_HOME/microtex"
+fi
+
 # --- Install all required packages (official + AUR + meta-package PKGBUILD deps) ---
 print_status "Aggregating all dependencies from meta-package PKGBUILDs..."
 
