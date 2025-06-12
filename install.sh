@@ -534,8 +534,9 @@ install_arch_packages() {
     
     # Set up environment variables
     print_status "Setting up environment variables..."
-    if [ ! -f ~/.config/environment.d/99-hyprland.conf ]; then
-        cat > ~/.config/environment.d/99-hyprland.conf << EOF
+    if [ ! -f "$USER_HOME/.config/environment.d/99-hyprland.conf" ]; then
+        mkdir -p "$USER_HOME/.config/environment.d"
+        cat > "$USER_HOME/.config/environment.d/99-hyprland.conf" << EOF
 XDG_CURRENT_DESKTOP=Hyprland
 XDG_SESSION_TYPE=wayland
 XDG_SESSION_DESKTOP=Hyprland
