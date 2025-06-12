@@ -17,6 +17,8 @@ import "root:/modules/common/functions/icon_theme.js" as IconTheme
 Scope {
     id: dock
 
+    property string userHome: ""
+
     // Dock dimensions and appearance
     readonly property int dockHeight: Appearance.sizes.barHeight * 1.5
     readonly property int dockWidth: Appearance.sizes.barHeight * 1.5
@@ -448,8 +450,8 @@ Scope {
                 }
                 if (windowClass.endsWith('.desktop')) {
                     // Try user applications first, then system applications
-                    var userPath = `/home/matt/.local/share/applications/${windowClass}`
-                    var systemPath = `/usr/share/applications/${windowClass}`
+                    var userPath = userHome + "/.local/share/applications/" + windowClass;
+                    var systemPath = "/usr/share/applications/" + windowClass;
                     var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
                     var content = ""
                     try {
@@ -833,8 +835,8 @@ Scope {
     function getDesktopFileExecCommand(desktopFileName) {
         try {
             // Try user applications first, then system applications
-            var userPath = `/home/matt/.local/share/applications/${desktopFileName}`
-            var systemPath = `/usr/share/applications/${desktopFileName}`
+            var userPath = userHome + "/.local/share/applications/" + desktopFileName;
+            var systemPath = "/usr/share/applications/" + desktopFileName;
             
             var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
             

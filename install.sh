@@ -51,14 +51,6 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to replace user paths in files
-replace_user_paths() {
-    local file=$1
-    print_status "Updating user paths in $file..."
-    # Only replace hardcoded /home/matt paths, not $HOME references
-    sed -i "s|/home/matt/|$USER_HOME/|g" "$file"
-}
-
 # Error recovery function
 cleanup_on_error() {
     print_error "Installation failed! Cleaning up..."
@@ -466,10 +458,6 @@ install_arch_packages() {
             print_status "Force copying $base_item..."
             cp -rf "$item" "$USER_HOME/.config/" 2>/dev/null || true
         done
-        
-        # Replace only hardcoded /home/matt paths in configuration files
-        print_status "Updating hardcoded user paths in configuration files..."
-        find "$USER_HOME/.config/quickshell" -type f -exec replace_user_paths {} \;
         
         print_success "Configuration files copied successfully (force overwritten, backups made)"
     else
