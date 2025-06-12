@@ -323,6 +323,28 @@ if [ -d "$TEMP_TELA_DIR" ]; then
     rm -rf "$TEMP_TELA_DIR"
 fi
 
+# Install OneUI4-Icons
+print_status "Installing OneUI4-Icons..."
+if [ ! -d "OneUI4-Icons" ]; then
+    git clone https://github.com/end-4/OneUI4-Icons.git
+    cd OneUI4-Icons
+    sudo mkdir -p /usr/share/icons
+    for theme in OneUI OneUI-dark OneUI-light; do
+        sudo cp -r --no-preserve=mode "$theme" "/usr/share/icons/$theme"
+    done
+    cd ..
+fi
+
+# Install Bibata Modern Classic cursor theme
+print_status "Installing Bibata Modern Classic cursor theme..."
+if [ ! -d "Bibata-Modern-Classic" ]; then
+    wget https://github.com/ful1e5/Bibata_Cursor/releases/download/v2.0.6/Bibata-Modern-Classic.tar.xz
+    tar xf Bibata-Modern-Classic.tar.xz
+    sudo mkdir -p /usr/share/icons
+    sudo cp -r --no-preserve=mode Bibata-Modern-Classic /usr/share/icons/
+    rm Bibata-Modern-Classic.tar.xz
+fi
+
 # --- Install all required packages (official + AUR + meta-package PKGBUILD deps) ---
 print_status "Aggregating all dependencies from meta-package PKGBUILDs..."
 
@@ -355,6 +377,30 @@ for package in "${official_packages[@]}"; do
         print_status "$package is already installed"
     fi
 done
+
+# Install required packages
+print_status "Installing required packages..."
+sudo pacman -S --needed - < packages.txt
+
+# Install MicroTeX
+print_status "Installing MicroTeX..."
+if [ ! -d "MicroTeX" ]; then
+    git clone https://github.com/NanoMichael/MicroTeX.git
+    cd MicroTeX
+    # Apply patches
+    sed -i 's/gtksourceviewmm-3.0/gtksourceviewmm-4.0/' CMakeLists.txt
+    sed -i 's/tinyxml2.so.10/tinyxml2.so.11/' CMakeLists.txt
+    # Build
+    cmake -B build -S . -DCMAKE_BUILD_TYPE=None
+    cmake --build build
+    # Install
+    sudo mkdir -p /opt/MicroTeX
+    sudo cp build/LaTeX /opt/MicroTeX/
+    sudo cp -r build/res /opt/MicroTeX/
+    sudo mkdir -p /usr/share/licenses/microtex
+    sudo cp LICENSE /usr/share/licenses/microtex/
+    cd ..
+fi
 
 # Distribution-specific package installation functions
 install_arch_packages() {
