@@ -345,6 +345,26 @@ if [ ! -d "Bibata-Modern-Classic" ]; then
     rm Bibata-Modern-Classic.tar.xz
 fi
 
+# Install MicroTeX
+print_status "Installing MicroTeX..."
+if [ ! -d "MicroTeX" ]; then
+    git clone https://github.com/NanoMichael/MicroTeX.git
+    cd MicroTeX
+    # Apply patches
+    sed -i 's/gtksourceviewmm-3.0/gtksourceviewmm-4.0/' CMakeLists.txt
+    sed -i 's/tinyxml2.so.10/tinyxml2.so.11/' CMakeLists.txt
+    # Build
+    cmake -B build -S . -DCMAKE_BUILD_TYPE=None
+    cmake --build build
+    # Install
+    sudo mkdir -p /opt/MicroTeX
+    sudo cp build/LaTeX /opt/MicroTeX/
+    sudo cp -r build/res /opt/MicroTeX/
+    sudo mkdir -p /usr/share/licenses/microtex
+    sudo cp LICENSE /usr/share/licenses/microtex/
+    cd ..
+fi
+
 # --- Install all required packages (official + AUR + meta-package PKGBUILD deps) ---
 print_status "Aggregating all dependencies from meta-package PKGBUILDs..."
 
