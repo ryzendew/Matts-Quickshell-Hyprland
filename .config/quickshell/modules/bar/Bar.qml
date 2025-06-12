@@ -184,7 +184,7 @@ Scope {
                                     anchors.centerIn: parent
                                     width: 22
                                     height: 22
-                                    source: "file://$HOME/.config/quickshell/logo/Arch-linux-logo.png"
+                                    source: "logo/Arch-linux-logo.png"
                                     fillMode: Image.PreserveAspectFit
                                 }
                                 

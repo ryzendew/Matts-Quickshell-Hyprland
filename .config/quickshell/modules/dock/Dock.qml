@@ -630,19 +630,20 @@ Scope {
                                     // Arch Linux logo
                                     Image {
                                         anchors.centerIn: parent
-                                        source: "$HOME/.config/quickshell/logo/Arch-linux-logo.png"
+                                        source: "logo/Arch-linux-logo.png"
                                         width: parent.width * 0.65
                                         height: parent.height * 0.65
                                         fillMode: Image.PreserveAspectFit
-                                }
-                                
-                                MouseArea {
-                                    id: archMouseArea
-                                    anchors.fill: parent
-                                    hoverEnabled: true
+                                    }
                                     
-                                    onClicked: {
-                                        GlobalStates.hyprMenuOpen = !GlobalStates.hyprMenuOpen
+                                    MouseArea {
+                                        id: archMouseArea
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        
+                                        onClicked: {
+                                            GlobalStates.hyprMenuOpen = !GlobalStates.hyprMenuOpen
+                                            }
                                         }
                                     }
                                 }

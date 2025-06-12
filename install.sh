@@ -16,6 +16,10 @@ NC='\033[0m' # No Color
 DISTRO=""
 FORCE_INSTALL=false
 
+# Get current user's home directory and username
+CURRENT_USER=$(whoami)
+USER_HOME=$(eval echo ~$CURRENT_USER)
+
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -47,6 +51,14 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Function to replace user paths in files
+replace_user_paths() {
+    local file=$1
+    print_status "Updating user paths in $file..."
+    # Only replace hardcoded /home/matt paths, not $HOME references
+    sed -i "s|/home/matt/|$USER_HOME/|g" "$file"
+}
+
 # Error recovery function
 cleanup_on_error() {
     print_error "Installation failed! Cleaning up..."
@@ -62,6 +74,9 @@ if [[ $EUID -eq 0 ]]; then
    print_error "This script should not be run as root (don't use sudo)"
    exit 1
 fi
+
+print_status "Detected user: $CURRENT_USER"
+print_status "User home directory: $USER_HOME"
 
 # Detect distribution
 detect_distribution() {
@@ -220,18 +235,18 @@ print_status "Distribution: $DISTRO"
 echo
 
 # Ask about .config backup
-if [ -d "$HOME/.config" ]; then
+if [ -d "$USER_HOME/.config" ]; then
     echo -e "${YELLOW}Existing .config directory found.${NC}"
     echo "Do you want to backup your current .config directory?"
-    echo "Backup will be saved as ~/.config.backup.$(date +%Y%m%d_%H%M%S)"
+    echo "Backup will be saved as $USER_HOME/.config.backup.$(date +%Y%m%d_%H%M%S)"
     read -p "Backup .config? [Y/n]: " backup_choice
     
     if [[ $backup_choice =~ ^[Nn]$ ]]; then
         print_warning "Skipping .config backup - existing files may be overwritten!"
     else
-        backup_dir="$HOME/.config.backup.$(date +%Y%m%d_%H%M%S)"
+        backup_dir="$USER_HOME/.config.backup.$(date +%Y%m%d_%H%M%S)"
         print_status "Creating backup at $backup_dir"
-        cp -r "$HOME/.config" "$backup_dir"
+        cp -r "$USER_HOME/.config" "$backup_dir"
         print_success "Backup created successfully"
     fi
     echo
@@ -269,7 +284,7 @@ install_if_not_present() {
 
 # Install AUR packages with checks
 aur_packages=(
-    axel bc better-control-git brightnessctl cairomm cliphist cmake coreutils curl ddcutil fish fontconfig fuzzel gammastep gnome-control-center gnome-keyring glib2 grimblast gobject-introspection gtk4 gtkmm3 gtksourceviewmm hyprcursor hypridle hyprlang hyprland hyprland-qt-support hyprland-qtutils hyprlock hyprpicker hyprutils jq kde-material-you-colors kitty libadwaita libdbusmenu-gtk3 libportal-gtk4 libsoup3 matugen-bin meson networkmanager nm-connection-editor pavucontrol-qt playerctl polkit-kde-agent quickshell qt6-5compat qt6-base qt6-declarative qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-svg qt6-tools qt6-translations qt6-virtualkeyboard qt6-wayland ripgrep rsync sassc starship swappy swww syntax-highlighting tesseract tesseract-data-eng tinyxml2 ttf-gabarito-git ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-readex-pro ttf-rubik-vf upower uv wget wlogout wl-clipboard wireplumber wtype xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-hyprland xdg-user-dirs xdg-user-dirs-gtk yad ydotool
+    axel bc better-control-git brightnessctl cairomm cliphist cmake coreutils curl ddcutil fish fontconfig fuzzel gammastep gnome-control-center gnome-keyring glib2 grimblast gobject-introspection gtk4 gtkmm3 gtksourceviewmm hyprcursor hypridle hyprlang hyprland hyprland-qt-support hyprland-qtutils hyprlock hyprpicker hyprutils jq kde-material-you-colors kitty libadwaita libdbusmenu-gtk3 libportal-gtk4 libsoup3 matugen-bin meson networkmanager nm-connection-editor nwg-display nwg-look pavucontrol-qt playerctl polkit-kde-agent quickshell qt6-5compat qt6-base qt6-declarative qt6-imageformats qt6-multimedia qt6-positioning qt6-quicktimeline qt6-sensors qt6-svg qt6-tools qt6-translations qt6-virtualkeyboard qt6-wayland ripgrep rsync sassc starship swappy swww syntax-highlighting tesseract tesseract-data-eng tinyxml2 ttf-gabarito-git ttf-jetbrains-mono-nerd ttf-material-symbols-variable-git ttf-readex-pro ttf-rubik-vf upower uv wget wlogout wl-clipboard wireplumber wtype xdg-desktop-portal xdg-desktop-portal-gtk xdg-desktop-portal-hyprland xdg-user-dirs xdg-user-dirs-gtk yad ydotool hyprswitch
 )
 
 for package in "${aur_packages[@]}"; do
@@ -438,31 +453,57 @@ install_arch_packages() {
     # Copy configuration files, backing up any overwritten files/folders
     print_status "Copying configuration files..."
     if [ -d ".config" ]; then
-        overwrite_backup_dir="$HOME/.config.backup.$(date +%Y%m%d_%H%M%S).overwrite"
+        overwrite_backup_dir="$USER_HOME/.config.backup.$(date +%Y%m%d_%H%M%S).overwrite"
         mkdir -p "$overwrite_backup_dir"
         
         for item in .config/*; do
             base_item="$(basename "$item")"
             
-            if [ -e "$HOME/.config/$base_item" ]; then
+            if [ -e "$USER_HOME/.config/$base_item" ]; then
                 print_status "Backing up $base_item before overwriting..."
-                cp -rf "$HOME/.config/$base_item" "$overwrite_backup_dir/" 2>/dev/null || true
+                cp -rf "$USER_HOME/.config/$base_item" "$overwrite_backup_dir/" 2>/dev/null || true
             fi
             
             print_status "Force copying $base_item..."
-            cp -rf "$item" "$HOME/.config/" 2>/dev/null || true
+            cp -rf "$item" "$USER_HOME/.config/" 2>/dev/null || true
         done
         
-        # Fix hardcoded paths - replace /home/matt/ with actual user's home directory
-        print_status "Fixing hardcoded paths for current user..."
-        find "$HOME/.config/quickshell" -type f \( -name "*.qml" -o -name "*.js" \) -exec sed -i "s|/home/matt/|$HOME/|g" {} \; 2>/dev/null || true
-        find "$HOME/.config/hypr" -type f -name "*.conf" -exec sed -i "s|/home/matt/|$HOME/|g" {} \; 2>/dev/null || true
+        # Replace only hardcoded /home/matt paths in configuration files
+        print_status "Updating hardcoded user paths in configuration files..."
+        find "$USER_HOME/.config/quickshell" -type f -exec replace_user_paths {} \;
         
         print_success "Configuration files copied successfully (force overwritten, backups made)"
     else
         print_error "Configuration directory not found!"
         exit 1
     fi
+
+    # Create necessary directories
+    print_status "Creating necessary directories..."
+    mkdir -p "$USER_HOME/.config/quickshell/logo"
+    mkdir -p "$USER_HOME/.local/share/applications"
+    mkdir -p "$USER_HOME/.config/qt6ct"
+    mkdir -p "$USER_HOME/.cache/quickshell"
+    mkdir -p "$USER_HOME/.local/state/quickshell"
+
+    # Download Arch Linux logo
+    print_status "Downloading Arch Linux logo..."
+    if ! curl -L "https://raw.githubusercontent.com/archlinux/artwork/master/logo/archlinux-logo-dark-scalable.svg" -o "$USER_HOME/.config/quickshell/logo/Arch-linux-logo.svg"; then
+        print_warning "Failed to download logo with curl, trying wget..."
+        if ! wget "https://raw.githubusercontent.com/archlinux/artwork/master/logo/archlinux-logo-dark-scalable.svg" -O "$USER_HOME/.config/quickshell/logo/Arch-linux-logo.svg"; then
+            print_error "Failed to download Arch Linux logo"
+        fi
+    fi
+
+    # Convert SVG to PNG if librsvg is available
+    if command -v rsvg-convert >/dev/null 2>&1; then
+        print_status "Converting logo to PNG..."
+        rsvg-convert -w 48 -h 48 "$USER_HOME/.config/quickshell/logo/Arch-linux-logo.svg" -o "$USER_HOME/.config/quickshell/logo/Arch-linux-logo.png"
+    else
+        print_warning "librsvg not found, skipping PNG conversion"
+    fi
+
+    print_success "Directory structure and logo setup completed"
 
     # Enable essential system services
     print_status "Enabling essential system services..."
