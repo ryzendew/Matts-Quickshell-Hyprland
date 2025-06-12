@@ -280,10 +280,26 @@ main() {
         esac
     done
 
+    # Ensure swww is installed
+    if ! command -v swww &> /dev/null; then
+        echo "[ERROR] swww is not installed! Please install swww to enable wallpapers."
+        exit 1
+    fi
+    # Ensure swww-daemon is running
+    if ! pgrep -x swww-daemon > /dev/null; then
+        echo "[INFO] Starting swww-daemon..."
+        swww-daemon --format xrgb &
+        sleep 1
+    fi
+
     # Only prompt for wallpaper if not using --color and not using --noswitch and no imgpath set
     if [[ -z "$imgpath" && -z "$color_flag" && -z "$noswitch_flag" ]]; then
-        cd "$(xdg-user-dir PICTURES)/Wallpapers" 2>/dev/null || cd "$(xdg-user-dir PICTURES)" || return 1
-        imgpath="$(kdialog --getopenfilename . --title 'Choose wallpaper')"
+        if command -v kdialog &> /dev/null; then
+            cd "$(xdg-user-dir PICTURES)/Wallpapers" 2>/dev/null || cd "$(xdg-user-dir PICTURES)" || return 1
+            imgpath="$(kdialog --getopenfilename . --title 'Choose wallpaper')"
+        else
+            read -rp "Enter the full path to your wallpaper image: " imgpath
+        fi
     fi
 
     switch "$imgpath" "$mode_flag" "$type_flag" "$color_flag" "$color"

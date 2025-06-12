@@ -199,7 +199,7 @@ install_package() {
 
 # Install additional wallpaper-related dependencies
 print_status "Installing wallpaper-related dependencies..."
-for pkg in swww python-pywal python-pillow python-numpy python-scipy python-matplotlib python-colorthief imagemagick ffmpeg mpv; do
+for pkg in swww python-pywal python-pillow python-numpy python-scipy python-matplotlib python-colorthief imagemagick ffmpeg mpv kdialog; do
     install_package "$pkg" false
 done
 
