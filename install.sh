@@ -474,9 +474,12 @@ for package in "${official_packages[@]}"; do
     fi
 done
 
-# Install required packages
-print_status "Installing required packages..."
-sudo pacman -S --needed - < packages.txt
+# Bulk install from packages.txt if it exists
+if [ -f packages.txt ]; then
+    sudo pacman -S --needed - < packages.txt
+else
+    print_warning "packages.txt not found, skipping bulk package install."
+fi
 
 # Install MicroTeX
 print_status "Installing MicroTeX..."
