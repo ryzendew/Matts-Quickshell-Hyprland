@@ -76,7 +76,7 @@ Scope {
     }
     
     // Settings file path
-    property string configFilePath: userHome + "/dock_config.json"
+    property string configFilePath: `${Quickshell.configDir}/dock_config.json`
     
     // Map desktop IDs to executable commands
     readonly property var desktopIdToCommand: ({
@@ -111,14 +111,14 @@ Scope {
         function onDockBlurAmountChanged() {
             // Update Hyprland blur rules for dock
             if (AppearanceSettingsState.blurEnabled) {
-                Hyprland.dispatch("setvar decoration:blur:size " + AppearanceSettingsState.dockBlurAmount)
+                Hyprland.dispatch(`setvar decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
             }
             // Reload Quickshell - this might be for other theming aspects tied to blur amount
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
         function onDockBlurPassesChanged() {
             if (AppearanceSettingsState.blurEnabled) {
-                Hyprland.dispatch("setvar decoration:blur:passes " + AppearanceSettingsState.dockBlurPasses)
+                Hyprland.dispatch(`setvar decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
             }
             // Reload Quickshell - this might be for other theming aspects
             Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
@@ -131,14 +131,14 @@ Scope {
         function onBlurEnabledChanged() {
             if (!AppearanceSettingsState.blurEnabled) {
                 // This will remove the blur rule for the dock if blur is globally disabled
-                Hyprland.dispatch("layerrule unset,^(quickshell:dock:blur)$")
+                Hyprland.dispatch(`layerrule unset,^(quickshell:dock:blur)$`)
             } else {
                 // This will re-apply blur rules if blur is re-enabled
                 // AppearanceSettingsState.updateDockBlurSettings() should handle this if called
                 // For now, just ensure size and passes are set if blur is on
-                Hyprland.dispatch("setvar decoration:blur:size " + AppearanceSettingsState.dockBlurAmount)
-                Hyprland.dispatch("setvar decoration:blur:passes " + AppearanceSettingsState.dockBlurPasses)
-                Hyprland.dispatch("layerrule blur,^(quickshell:dock:blur)$")
+                Hyprland.dispatch(`setvar decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
+                Hyprland.dispatch(`setvar decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
+                Hyprland.dispatch(`layerrule blur,^(quickshell:dock:blur)$`)
             }
              Hyprland.dispatch("exec killall -SIGUSR2 quickshell")
         }
@@ -160,7 +160,7 @@ Scope {
     // FileView to monitor Qt6 theme settings changes
     FileView {
         id: qt6SettingsView
-        path: userHome + "/.config/qt6ct/qt6ct.conf"
+        path: "/home/matt/.config/qt6ct/qt6ct.conf"
         
         property string lastTheme: ""
         
@@ -360,8 +360,8 @@ Scope {
         dockConfigView.reload()
         
         // Apply initial blur settings
-        Hyprland.dispatch("setvar decoration:blur:passes " + AppearanceSettingsState.dockBlurPasses)
-        Hyprland.dispatch("setvar decoration:blur:size " + AppearanceSettingsState.dockBlurAmount)
+        Hyprland.dispatch(`keyword decoration:blur:passes ${AppearanceSettingsState.dockBlurPasses}`)
+        Hyprland.dispatch(`keyword decoration:blur:size ${AppearanceSettingsState.dockBlurAmount}`)
         
         // Debug: Show what's in pinnedApps
         // console.log("[DOCK DEBUG] Dock component completed")
@@ -374,7 +374,7 @@ Scope {
     }
     
     Variants {
-        model: Quickshell.screens
+        model: Quickshell.screens.filter(screen => screen.name === "DP-1")
 
         PanelWindow {
             id: dockRoot
@@ -416,7 +416,7 @@ Scope {
                 if (level === "info" && !ConfigOptions?.logging?.info) return
                 if (level === "warning" && !ConfigOptions?.logging?.warning) return
                 if (level === "error" && !ConfigOptions?.logging?.error) return
-                console.log("[Dock][" + level.toUpperCase() + "] " + message)
+                console.log(`[Dock][${level.toUpperCase()}] ${message}`)
             }
             
             // Update when window list changes
@@ -450,8 +450,8 @@ Scope {
                 // console.log("[DOCK DEBUG] All windows across all monitors:", JSON.stringify(windows.map(w => w.class)))
                 
                 if (JSON.stringify(windows) !== JSON.stringify(activeWindows)) {
-                    log("debug", "Updating active windows: " + windows.length + " windows found")
-                    log("debug", "Window list: " + JSON.stringify(windows.map(w => w.class)))
+                    log("debug", `Updating active windows: ${windows.length} windows found`)
+                    log("debug", `Window list: ${JSON.stringify(windows.map(w => w.class))}`)
                     activeWindows = windows
                 }
             }
@@ -466,8 +466,8 @@ Scope {
                 }
                 if (windowClass.endsWith('.desktop')) {
                     // Try user applications first, then system applications
-                    var userPath = userHome + "/.local/share/applications/" + windowClass
-                    var systemPath = "/usr/share/applications/" + windowClass
+                    var userPath = `/home/matt/.local/share/applications/${windowClass}`
+                    var systemPath = `/usr/share/applications/${windowClass}`
                     var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
                     var content = ""
                     try {
@@ -533,7 +533,7 @@ Scope {
             
             function focusOrLaunchApp(appInfo) {
                 if (isWindowActive(appInfo.class)) {
-                    Hyprland.dispatch("focuswindow class:" + appInfo.class)
+                    Hyprland.dispatch(`focuswindow class:${appInfo.class}`)
                 } else {
                     let cmd;
                     if (appInfo.class.endsWith('.desktop')) {
@@ -541,13 +541,13 @@ Scope {
                         cmd = dock.getDesktopFileExecCommand(appInfo.class);
                         if (!cmd) {
                             // Fallback to gio launch if we can't parse the desktop file
-                            cmd = "gio launch " + userHome + "/.local/share/applications/" + appInfo.class + " || gio launch /usr/share/applications/" + appInfo.class;
+                            cmd = `gio launch /home/matt/.local/share/applications/${appInfo.class} || gio launch /usr/share/applications/${appInfo.class}`;
                         }
                     } else {
                         // For regular apps, use mapping or fallback
                         cmd = desktopIdToCommand[appInfo.class] || appInfo.class.toLowerCase();
                     }
-                    Hyprland.dispatch("exec " + cmd)
+                    Hyprland.dispatch(`exec ${cmd}`)
                 }
             }
 
@@ -630,20 +630,19 @@ Scope {
                                     // Arch Linux logo
                                     Image {
                                         anchors.centerIn: parent
-                                        source: "logo/Arch-linux-logo.png"
+                                        source: "/home/matt/.config/quickshell/logo/Arch-linux-logo.png"
                                         width: parent.width * 0.65
                                         height: parent.height * 0.65
                                         fillMode: Image.PreserveAspectFit
-                                    }
+                                }
+                                
+                                MouseArea {
+                                    id: archMouseArea
+                                    anchors.fill: parent
+                                    hoverEnabled: true
                                     
-                                    MouseArea {
-                                        id: archMouseArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        
-                                        onClicked: {
-                                            GlobalStates.hyprMenuOpen = !GlobalStates.hyprMenuOpen
-                                            }
+                                    onClicked: {
+                                        GlobalStates.hyprMenuOpen = !GlobalStates.hyprMenuOpen
                                         }
                                     }
                                 }
@@ -701,15 +700,15 @@ Scope {
                                             // console.log("[DOCK DEBUG] Window exists, focusing it");
                                             // If window exists, focus it and switch to its workspace
                                             if (targetWindow.address) {
-                                                Hyprland.dispatch("focuswindow address:" + targetWindow.address)
+                                                Hyprland.dispatch(`focuswindow address:${targetWindow.address}`)
                                                 
                                                 // Switch to the workspace containing the window
                                                 if (targetWindow.workspace && targetWindow.workspace.id) {
-                                                    Hyprland.dispatch("workspace " + targetWindow.workspace.id)
+                                                    Hyprland.dispatch(`workspace ${targetWindow.workspace.id}`)
                                                 }
                                             } else {
                                                 // Fallback to focusing by class
-                                                Hyprland.dispatch("focuswindow class:" + targetWindow.class)
+                                                Hyprland.dispatch(`focuswindow class:${targetWindow.class}`)
                                             }
                                         } else {
                                             // console.log("[DOCK DEBUG] No window exists, launching app");
@@ -722,13 +721,13 @@ Scope {
                                                 if (entry && entry.execute) {
                                                     entry.execute();
                                                 } else {
-                                                    Hyprland.dispatch("exec " + cmd)
+                                                    Hyprland.dispatch(`exec gio launch /home/matt/.local/share/applications/${modelData} || gio launch /usr/share/applications/${modelData}`);
                                                 }
                                             } else {
                                                 let cmd = dock.desktopIdToCommand[modelData] || modelData.toLowerCase();
                                                 // console.log("[DOCK DEBUG] Launching app:", modelData);
                                                 // console.log("[DOCK DEBUG] Command:", cmd);
-                                                Hyprland.dispatch("exec " + cmd)
+                                                Hyprland.dispatch(`exec ${cmd}`)
                                             }
                                         }
                                     }
@@ -804,15 +803,15 @@ Scope {
                                         // console.log("[DOCK DEBUG] Clicked unpinned app:", modelData.class);
                                         // For unpinned apps, we already have the specific window
                                         if (modelData.address) {
-                                            Hyprland.dispatch("focuswindow address:" + modelData.address)
+                                            Hyprland.dispatch(`focuswindow address:${modelData.address}`)
                                             
                                             // Switch to the workspace containing the window
                                             if (modelData.workspace && modelData.workspace.id) {
-                                                Hyprland.dispatch("workspace " + modelData.workspace.id)
+                                                Hyprland.dispatch(`workspace ${modelData.workspace.id}`)
                                             }
                                         } else {
                                             // Fallback to focusing by class
-                                            Hyprland.dispatch("focuswindow class:" + modelData.class)
+                                            Hyprland.dispatch(`focuswindow class:${modelData.class}`)
                                         }
                                     }
                                     onPinApp: {
@@ -852,8 +851,8 @@ Scope {
     function getDesktopFileExecCommand(desktopFileName) {
         try {
             // Try user applications first, then system applications
-            var userPath = userHome + "/.local/share/applications/" + desktopFileName;
-            var systemPath = "/usr/share/applications/" + desktopFileName;
+            var userPath = `/home/matt/.local/share/applications/${desktopFileName}`
+            var systemPath = `/usr/share/applications/${desktopFileName}`
             
             var fileView = Qt.createQmlObject('import Quickshell.Io; FileView { }', dock)
             
@@ -983,7 +982,7 @@ Scope {
                 var command = ""
                 if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.class) {
                     if (dockContextMenu.contextAppInfo.class.endsWith('.desktop')) {
-                        command = "gio launch " + userHome + "/.local/share/applications/" + dockContextMenu.contextAppInfo.class + " || gio launch /usr/share/applications/" + dockContextMenu.contextAppInfo.class;
+                        command = `gio launch /home/matt/.local/share/applications/${dockContextMenu.contextAppInfo.class} || gio launch /usr/share/applications/${dockContextMenu.contextAppInfo.class}`;
                     } else {
                         var classLower = dockContextMenu.contextAppInfo.class.toLowerCase()
                         var classWithDesktop = dockContextMenu.contextAppInfo.class + ".desktop"
@@ -998,7 +997,7 @@ Scope {
                         }
                     }
                 }
-                Hyprland.dispatch("exec " + command)
+                Hyprland.dispatch(`exec ${command}`)
             }
         }
         MenuSeparator {}
@@ -1012,7 +1011,7 @@ Scope {
                 onTriggered: {
                     if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
                         console.log("[DOCK MENU DEBUG] Moving window to workspace 1, address:", dockContextMenu.contextAppInfo.address)
-                        Hyprland.dispatch("movetoworkspace 1,address:" + dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 1,address:${dockContextMenu.contextAppInfo.address}`)
                     } else {
                         console.log("[DOCK MENU DEBUG] Cannot move to workspace 1 - missing address:", dockContextMenu.contextAppInfo)
                     }
@@ -1024,7 +1023,7 @@ Scope {
                 onTriggered: {
                     if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
                         console.log("[DOCK MENU DEBUG] Moving window to workspace 2, address:", dockContextMenu.contextAppInfo.address)
-                        Hyprland.dispatch("movetoworkspace 2,address:" + dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 2,address:${dockContextMenu.contextAppInfo.address}`)
                     } else {
                         console.log("[DOCK MENU DEBUG] Cannot move to workspace 2 - missing address:", dockContextMenu.contextAppInfo)
                     }
@@ -1036,7 +1035,7 @@ Scope {
                 onTriggered: {
                     if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
                         console.log("[DOCK MENU DEBUG] Moving window to workspace 3, address:", dockContextMenu.contextAppInfo.address)
-                        Hyprland.dispatch("movetoworkspace 3,address:" + dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 3,address:${dockContextMenu.contextAppInfo.address}`)
                     } else {
                         console.log("[DOCK MENU DEBUG] Cannot move to workspace 3 - missing address:", dockContextMenu.contextAppInfo)
                     }
@@ -1048,7 +1047,7 @@ Scope {
                 onTriggered: {
                     if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
                         console.log("[DOCK MENU DEBUG] Moving window to workspace 4, address:", dockContextMenu.contextAppInfo.address)
-                        Hyprland.dispatch("movetoworkspace 4,address:" + dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 4,address:${dockContextMenu.contextAppInfo.address}`)
                     } else {
                         console.log("[DOCK MENU DEBUG] Cannot move to workspace 4 - missing address:", dockContextMenu.contextAppInfo)
                     }
@@ -1060,7 +1059,7 @@ Scope {
                 onTriggered: {
                     if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
                         console.log("[DOCK MENU DEBUG] Moving window to workspace 5, address:", dockContextMenu.contextAppInfo.address)
-                        Hyprland.dispatch("movetoworkspace 5,address:" + dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 5,address:${dockContextMenu.contextAppInfo.address}`)
                     } else {
                         console.log("[DOCK MENU DEBUG] Cannot move to workspace 5 - missing address:", dockContextMenu.contextAppInfo)
                     }
@@ -1072,7 +1071,7 @@ Scope {
                 onTriggered: {
                     if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
                         console.log("[DOCK MENU DEBUG] Moving window to workspace 6, address:", dockContextMenu.contextAppInfo.address)
-                        Hyprland.dispatch("movetoworkspace 6,address:" + dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 6,address:${dockContextMenu.contextAppInfo.address}`)
                     } else {
                         console.log("[DOCK MENU DEBUG] Cannot move to workspace 6 - missing address:", dockContextMenu.contextAppInfo)
                     }
@@ -1084,7 +1083,7 @@ Scope {
                 onTriggered: {
                     if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
                         console.log("[DOCK MENU DEBUG] Moving window to workspace 7, address:", dockContextMenu.contextAppInfo.address)
-                        Hyprland.dispatch("movetoworkspace 7,address:" + dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 7,address:${dockContextMenu.contextAppInfo.address}`)
                     } else {
                         console.log("[DOCK MENU DEBUG] Cannot move to workspace 7 - missing address:", dockContextMenu.contextAppInfo)
                     }
@@ -1096,7 +1095,7 @@ Scope {
                 onTriggered: {
                     if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
                         console.log("[DOCK MENU DEBUG] Moving window to workspace 8, address:", dockContextMenu.contextAppInfo.address)
-                        Hyprland.dispatch("movetoworkspace 8,address:" + dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 8,address:${dockContextMenu.contextAppInfo.address}`)
                     } else {
                         console.log("[DOCK MENU DEBUG] Cannot move to workspace 8 - missing address:", dockContextMenu.contextAppInfo)
                     }
@@ -1108,7 +1107,7 @@ Scope {
                 onTriggered: {
                     if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
                         console.log("[DOCK MENU DEBUG] Moving window to workspace 9, address:", dockContextMenu.contextAppInfo.address)
-                        Hyprland.dispatch("movetoworkspace 9,address:" + dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 9,address:${dockContextMenu.contextAppInfo.address}`)
                     } else {
                         console.log("[DOCK MENU DEBUG] Cannot move to workspace 9 - missing address:", dockContextMenu.contextAppInfo)
                     }
@@ -1120,7 +1119,7 @@ Scope {
                 onTriggered: {
                     if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
                         console.log("[DOCK MENU DEBUG] Moving window to workspace 10, address:", dockContextMenu.contextAppInfo.address)
-                        Hyprland.dispatch("movetoworkspace 10,address:" + dockContextMenu.contextAppInfo.address)
+                        Hyprland.dispatch(`movetoworkspace 10,address:${dockContextMenu.contextAppInfo.address}`)
                     } else {
                         console.log("[DOCK MENU DEBUG] Cannot move to workspace 10 - missing address:", dockContextMenu.contextAppInfo)
                     }
@@ -1132,7 +1131,7 @@ Scope {
             enabled: dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address !== undefined
             onTriggered: {
                 if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
-                    Hyprland.dispatch("togglefloating address:" + dockContextMenu.contextAppInfo.address)
+                    Hyprland.dispatch(`togglefloating address:${dockContextMenu.contextAppInfo.address}`)
                 }
             }
         }
@@ -1141,11 +1140,11 @@ Scope {
             text: qsTr("Close")
             onTriggered: {
                 if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.address) {
-                    Hyprland.dispatch("closewindow address:" + dockContextMenu.contextAppInfo.address)
+                    Hyprland.dispatch(`closewindow address:${dockContextMenu.contextAppInfo.address}`)
                 } else if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.pid) {
-                    Hyprland.dispatch("closewindow pid:" + dockContextMenu.contextAppInfo.pid)
+                    Hyprland.dispatch(`closewindow pid:${dockContextMenu.contextAppInfo.pid}`)
                 } else if (dockContextMenu.contextAppInfo && dockContextMenu.contextAppInfo.class) {
-                    Hyprland.dispatch("closewindow class:" + dockContextMenu.contextAppInfo.class)
+                    Hyprland.dispatch(`closewindow class:${dockContextMenu.contextAppInfo.class}`)
                 }
                 if (dockContextMenu.contextDockItem && dockContextMenu.contextDockItem.closeApp) dockContextMenu.contextDockItem.closeApp()
             }
