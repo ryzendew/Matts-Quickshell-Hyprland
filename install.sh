@@ -454,7 +454,6 @@ install_arch_packages() {
     print_status "Copying configuration files..."
     if [ -d ".config" ]; then
         overwrite_backup_dir="$USER_HOME/.config.backup.$(date +%Y%m%d_%H%M%S).overwrite"
-        mkdir -p "$overwrite_backup_dir"
         
         for item in .config/*; do
             base_item="$(basename "$item")"
@@ -477,33 +476,6 @@ install_arch_packages() {
         print_error "Configuration directory not found!"
         exit 1
     fi
-
-    # Create necessary directories
-    print_status "Creating necessary directories..."
-    mkdir -p "$USER_HOME/.config/quickshell/logo"
-    mkdir -p "$USER_HOME/.local/share/applications"
-    mkdir -p "$USER_HOME/.config/qt6ct"
-    mkdir -p "$USER_HOME/.cache/quickshell"
-    mkdir -p "$USER_HOME/.local/state/quickshell"
-
-    # Download Arch Linux logo
-    print_status "Downloading Arch Linux logo..."
-    if ! curl -L "https://raw.githubusercontent.com/archlinux/artwork/master/logo/archlinux-logo-dark-scalable.svg" -o "$USER_HOME/.config/quickshell/logo/Arch-linux-logo.svg"; then
-        print_warning "Failed to download logo with curl, trying wget..."
-        if ! wget "https://raw.githubusercontent.com/archlinux/artwork/master/logo/archlinux-logo-dark-scalable.svg" -O "$USER_HOME/.config/quickshell/logo/Arch-linux-logo.svg"; then
-            print_error "Failed to download Arch Linux logo"
-        fi
-    fi
-
-    # Convert SVG to PNG if librsvg is available
-    if command -v rsvg-convert >/dev/null 2>&1; then
-        print_status "Converting logo to PNG..."
-        rsvg-convert -w 48 -h 48 "$USER_HOME/.config/quickshell/logo/Arch-linux-logo.svg" -o "$USER_HOME/.config/quickshell/logo/Arch-linux-logo.png"
-    else
-        print_warning "librsvg not found, skipping PNG conversion"
-    fi
-
-    print_success "Directory structure and logo setup completed"
 
     # Enable essential system services
     print_status "Enabling essential system services..."
@@ -564,7 +536,6 @@ install_arch_packages() {
     
     # Set up clipboard history
     print_status "Setting up clipboard history..."
-    mkdir -p ~/.local/share/cliphist
     systemctl --user enable --now cliphist.service 2>/dev/null || true
     
     # Set up cursor theme
@@ -576,7 +547,6 @@ install_arch_packages() {
     # Set up environment variables
     print_status "Setting up environment variables..."
     if [ ! -f ~/.config/environment.d/99-hyprland.conf ]; then
-        mkdir -p ~/.config/environment.d
         cat > ~/.config/environment.d/99-hyprland.conf << EOF
 XDG_CURRENT_DESKTOP=Hyprland
 XDG_SESSION_TYPE=wayland
@@ -588,7 +558,6 @@ EOF
 
     # Force GTK dark mode
     print_status "Setting up GTK dark mode..."
-    mkdir -p ~/.config/gtk-3.0
     cat > ~/.config/gtk-3.0/settings.ini << EOF
 [Settings]
 gtk-application-prefer-dark-theme=true
@@ -603,7 +572,6 @@ gtk-menu-images=1
 gtk-enable-animations=1
 EOF
 
-    mkdir -p ~/.config/gtk-4.0
     cat > ~/.config/gtk-4.0/settings.ini << EOF
 [Settings]
 gtk-application-prefer-dark-theme=true
@@ -621,11 +589,9 @@ EOF
     # Set up Fish shell auto-start
     print_status "Setting up Fish shell auto-start..."
     if command -v fish &> /dev/null; then
-        mkdir -p ~/.config/fish
         cat > ~/.config/fish/auto-Hypr.fish << EOF
 # Auto start Hyprland on tty1
 if test -z "\$DISPLAY" ;and test "\$XDG_VTNR" -eq 1
-    mkdir -p ~/.cache
     exec Hyprland > ~/.cache/hyprland.log ^&1
 end
 EOF
@@ -633,7 +599,6 @@ EOF
     
     # Set up performance optimization
     print_status "Setting up performance optimization..."
-    mkdir -p ~/.config/hypr
     cat > ~/.config/hypr/performance.conf << EOF
 # Performance Settings
 monitor=,highres,auto,1
@@ -649,7 +614,6 @@ EOF
 
     # Set up startup script
     print_status "Setting up startup script..."
-    mkdir -p ~/.config/hypr/scripts
     cat > ~/.config/hypr/scripts/startup.sh << EOF
 #!/bin/bash
 
@@ -747,10 +711,6 @@ update_theme() {
 }
 EOF
     chmod +x ~/.config/hypr/scripts/theme-manager.sh
-
-    # Create theme directory structure
-    print_status "Setting up theme directory structure..."
-    mkdir -p ~/.config/hypr/assets/{themes,wallpapers}
 
     print_success "Arch Linux package installation completed successfully!"
     print_status "Your system now has:"
